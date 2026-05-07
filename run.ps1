@@ -11,7 +11,9 @@
   .\run.ps1 -NoContextMenu       # skip Explorer registry entries
   .\run.ps1 -Unregister          # remove context menu and exit
   .\run.ps1 -Force               # rebuild .exe even if it already exists
-  .\run.ps1 -Verbose             # stream subprocess output live to the console
+  .\run.ps1 -Version             # print script / repo / installed exe versions and exit
+  .\run.ps1 -SelfUpdate          # git pull + rebuild ONLY if version/source/deps changed
+  .\run.ps1 -ShowVerbose         # stream subprocess output live to the console
   .\run.ps1 -LogFile C:\my.log   # custom log path (default: %TEMP%\jpg2pdf-logs\run-<timestamp>.log)
 
 .NOTES
@@ -29,15 +31,19 @@ param(
     [switch]$NoContextMenu,
     [switch]$Unregister,
     [switch]$Force,
-    [switch]$Verbose,                                    # alias for $script:VerboseMode = $true
+    [switch]$Version,
+    [switch]$SelfUpdate,
+    [switch]$ShowVerbose,
     [string]$LogDir      = (Join-Path $env:TEMP "jpg2pdf-logs"),
-    [string]$LogFile     = $null                         # if set, overrides LogDir
+    [string]$LogFile     = $null
 )
+
+$RunPs1Version = "0.2.0"
 
 $ErrorActionPreference = "Stop"
 
 # ---------- Logging ----------
-$script:VerboseMode = [bool]$Verbose -or ($PSBoundParameters['Verbose'] -eq $true) -or ($VerbosePreference -ne 'SilentlyContinue')
+$script:VerboseMode = [bool]$ShowVerbose -or ($VerbosePreference -ne 'SilentlyContinue')
 
 if (-not $LogFile) {
     New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
@@ -132,6 +138,68 @@ if ($PSScriptRoot -and (Test-Path (Join-Path $PSScriptRoot "tools\jpg2pdf\src\jp
     $InstallDir = $localRepo
 }
 
+# ---------- Helpers: versions, build-stamp ----------
+$script:BinDir   = Join-Path $HOME "Tools\bin"
+$script:ExePath  = Join-Path $script:BinDir "jpg2pdf.exe"
+$script:ShimPath = Join-Path $script:BinDir "jpg2pdf.cmd"
+$script:StampPath= Join-Path $script:BinDir "jpg2pdf.buildstamp.json"
+
+function Get-RepoVersion {
+    param([string]$Root)
+    $vf = Join-Path $Root "tools\jpg2pdf\VERSION"
+    if (Test-Path -LiteralPath $vf) { return (Get-Content -LiteralPath $vf -Raw).Trim() }
+    return "unknown"
+}
+function Get-FileSha256 {
+    param([string]$Path)
+    if (-not (Test-Path -LiteralPath $Path)) { return $null }
+    return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash
+}
+function Get-InstalledExeVersion {
+    if (-not (Test-Path -LiteralPath $script:ExePath)) { return $null }
+    try {
+        $tmp = [IO.Path]::GetTempFileName()
+        & $script:ExePath --version 2>&1 | Set-Content -LiteralPath $tmp
+        $line = (Get-Content -LiteralPath $tmp -Raw).Trim()
+        Remove-Item -LiteralPath $tmp -ErrorAction SilentlyContinue
+        return $line
+    } catch { return "(failed to query exe: $_)" }
+}
+function Read-BuildStamp {
+    if (-not (Test-Path -LiteralPath $script:StampPath)) { return $null }
+    try { return Get-Content -LiteralPath $script:StampPath -Raw | ConvertFrom-Json } catch { return $null }
+}
+function Write-BuildStamp {
+    param([hashtable]$Data)
+    $Data | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $script:StampPath -Encoding UTF8
+}
+function Compute-CurrentStamp {
+    param([string]$Root)
+    @{
+        version    = Get-RepoVersion $Root
+        srcSha256  = Get-FileSha256 (Join-Path $Root "tools\jpg2pdf\src\jpg2pdf.py")
+        reqsSha256 = Get-FileSha256 (Join-Path $Root "tools\jpg2pdf\requirements.txt")
+        builtAt    = (Get-Date).ToString("o")
+        runPs1     = $RunPs1Version
+    }
+}
+
+# ---------- -Version short-circuit ----------
+if ($Version) {
+    $repoVer = if ($localRepo) { Get-RepoVersion $localRepo } elseif (Test-Path $InstallDir) { Get-RepoVersion $InstallDir } else { "(no repo)" }
+    Write-Host "run.ps1   : $RunPs1Version"
+    Write-Host "repo      : $repoVer"
+    $exeVer = Get-InstalledExeVersion
+    Write-Host "installed : $(if ($exeVer) { $exeVer } else { '(not installed)' })"
+    $stamp = Read-BuildStamp
+    if ($stamp) {
+        Write-Host "build     : $($stamp.version)  built $($stamp.builtAt)"
+        Write-Host "src sha   : $($stamp.srcSha256)"
+    }
+    Write-Host "exe path  : $script:ExePath"
+    exit 0
+}
+
 # ---------- -Unregister short-circuit ----------
 if ($Unregister) {
     $unreg = Join-Path $InstallDir "tools\jpg2pdf\scripts\unregister-context-menu.ps1"
@@ -209,11 +277,27 @@ if ($script:VerboseMode) { $pipArgs += "--verbose" }
 Invoke-Logged -Label "pip install -r requirements.txt" -FilePath $py -ArgumentList $pipArgs
 
 # ---------- 5. Compile (PyInstaller) or shim ----------
-$binDir = Join-Path $HOME "Tools\bin"
+$binDir = $script:BinDir
 New-Item -ItemType Directory -Force -Path $binDir | Out-Null
-$exePath  = Join-Path $binDir "jpg2pdf.exe"
-$shimPath = Join-Path $binDir "jpg2pdf.cmd"
+$exePath  = $script:ExePath
+$shimPath = $script:ShimPath
 $entryPath = $null
+
+# Compute current vs cached build stamp.
+$currentStamp = Compute-CurrentStamp $InstallDir
+$lastStamp    = Read-BuildStamp
+$stampChanged = $true
+if ($lastStamp) {
+    $stampChanged = -not (
+        $lastStamp.version    -eq $currentStamp.version    -and
+        $lastStamp.srcSha256  -eq $currentStamp.srcSha256  -and
+        $lastStamp.reqsSha256 -eq $currentStamp.reqsSha256
+    )
+}
+Verb ("Stamp: repoVer={0} srcSha={1}... reqsSha={2}... cached={3}" -f `
+      $currentStamp.version, $currentStamp.srcSha256.Substring(0,8),
+      $currentStamp.reqsSha256.Substring(0,8),
+      $(if ($lastStamp) { 'yes' } else { 'no' }))
 
 if ($NoCompile) {
     Info "Writing .cmd shim (no compile)..."
@@ -225,9 +309,14 @@ if ($NoCompile) {
     $entryPath = $shimPath
     Info "Shim: $shimPath"
 } else {
-    if ((Test-Path $exePath) -and -not $Force) {
-        Info "jpg2pdf.exe already exists. Use -Force to rebuild."
+    $needBuild = $Force -or (-not (Test-Path $exePath)) -or $stampChanged
+    if (-not $needBuild) {
+        Info ("jpg2pdf.exe up to date (v{0}). Use -Force to rebuild." -f $currentStamp.version)
     } else {
+        if ($SelfUpdate -and $lastStamp) {
+            Info ("Change detected ({0} -> {1}). Rebuilding..." -f $lastStamp.version, $currentStamp.version)
+        }
+
         Info "Installing PyInstaller..."
         $piInstall = @("-m","pip","install","--user","--upgrade","--disable-pip-version-check","pyinstaller")
         if ($script:VerboseMode) { $piInstall += "--verbose" }
@@ -252,9 +341,19 @@ if ($NoCompile) {
         Copy-Item -Force $built $exePath
         if (Test-Path $shimPath) { Remove-Item $shimPath -Force }
         Remove-Item -Recurse -Force -ErrorAction SilentlyContinue $buildDir,$distDir,$workDir
-        Info "Built: $exePath"
+
+        Write-BuildStamp $currentStamp
+        Info ("Built: {0}  (v{1})" -f $exePath, $currentStamp.version)
     }
     $entryPath = $exePath
+}
+
+# When -SelfUpdate is used and nothing changed, skip context-menu re-registration.
+if ($SelfUpdate -and -not $stampChanged -and -not $Force) {
+    Verb "SelfUpdate: no changes — skipping PATH/context-menu steps."
+    Info "Already up to date."
+    Info "Full session log: $script:LogFile"
+    exit 0
 }
 
 # ---------- 6. Persist on User PATH (safe update) ----------

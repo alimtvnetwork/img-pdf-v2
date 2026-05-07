@@ -14,6 +14,8 @@ import sys
 from pathlib import Path
 from PIL import Image
 
+__version__ = "0.2.0"
+
 PAGE_SIZES = {  # points (1/72 inch)
     "a4":     (595.28, 841.89),
     "letter": (612.00, 792.00),
@@ -73,6 +75,8 @@ def make_page(img_path: Path, page_w: float, page_h: float, fit: str) -> Image.I
 def main():
     ap = argparse.ArgumentParser(
         description="Combine images into a single PDF.")
+    ap.add_argument("--version", action="version",
+                    version=f"jpg2pdf {__version__}")
     ap.add_argument("folder", nargs="?", default=None,
                     help="Folder of images (omit if using --files / --files-from)")
     ap.add_argument("--files", nargs="+", default=None,
