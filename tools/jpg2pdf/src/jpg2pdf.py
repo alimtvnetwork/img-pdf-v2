@@ -49,27 +49,50 @@ def collect_from_list(paths):
     return out
 
 
-def make_page(img_path: Path, page_w: float, page_h: float, fit: str) -> Image.Image:
-    page = Image.new("RGB", (int(page_w), int(page_h)), "white")
+def make_page(img_path: Path, page_w_pt: float, page_h_pt: float,
+              fit: str, dpi: int, auto_rotate: bool) -> Image.Image:
+    """Render one PDF page at `dpi` DPI.
+
+    page_*_pt are in PostScript points (1/72in). Internal canvas is sized in
+    pixels = pt * dpi / 72 so the embedded raster matches the requested DPI.
+    With auto_rotate, the page swaps to landscape if the image is wider than
+    tall — keeps the source orientation, no cropping.
+    """
     with Image.open(img_path) as im:
         im = im.convert("RGB")
         iw, ih = im.size
+
+        # Rotate the *page* (not the image) to match the source orientation
+        # so we don't waste pixels and don't downscale needlessly.
+        if auto_rotate:
+            img_landscape  = iw > ih
+            page_landscape = page_w_pt > page_h_pt
+            if img_landscape != page_landscape:
+                page_w_pt, page_h_pt = page_h_pt, page_w_pt
+
+        scale = dpi / 72.0
+        canvas_w = max(1, int(round(page_w_pt * scale)))
+        canvas_h = max(1, int(round(page_h_pt * scale)))
+
         if fit == "original":
             new_w, new_h = iw, ih
         elif fit == "stretch":
-            new_w, new_h = int(page_w), int(page_h)
+            new_w, new_h = canvas_w, canvas_h
         elif fit == "cover":
-            s = max(page_w / iw, page_h / ih)
-            new_w, new_h = int(iw * s), int(ih * s)
-        else:  # contain
-            s = min(page_w / iw, page_h / ih)
-            new_w, new_h = int(iw * s), int(ih * s)
+            s = max(canvas_w / iw, canvas_h / ih)
+            new_w, new_h = int(round(iw * s)), int(round(ih * s))
+        else:  # contain — fit fully inside without upscaling beyond canvas
+            s = min(canvas_w / iw, canvas_h / ih)
+            new_w, new_h = int(round(iw * s)), int(round(ih * s))
+
         if (new_w, new_h) != (iw, ih):
             im = im.resize((new_w, new_h), Image.LANCZOS)
-        x = (int(page_w) - new_w) // 2
-        y = (int(page_h) - new_h) // 2
+
+        page = Image.new("RGB", (canvas_w, canvas_h), "white")
+        x = (canvas_w - new_w) // 2
+        y = (canvas_h - new_h) // 2
         page.paste(im, (x, y))
-    return page
+        return page
 
 
 def main():
