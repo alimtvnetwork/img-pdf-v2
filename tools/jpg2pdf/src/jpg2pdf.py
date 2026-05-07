@@ -121,8 +121,13 @@ def main():
                     help="Folder mode: include subfolders")
     ap.add_argument("--dpi", type=int, default=300,
                     help="Render DPI for embedded raster (default: 300)")
+    ap.add_argument("--rotate", type=int, choices=[0, 90, 180, 270], default=0,
+                    help="Rotate every image by N degrees CCW before fitting")
+    ap.add_argument("--auto-rotate", choices=["cw", "ccw", "off"], default="cw",
+                    help="Auto-rotate landscape images to fit portrait page "
+                         "(cw = clockwise, default; ccw = counter-clockwise; off)")
     ap.add_argument("--no-auto-rotate", action="store_true",
-                    help="Don't auto-rotate page to match image orientation")
+                    help="Shortcut for --auto-rotate off")
     args = ap.parse_args()
 
     # ---- Resolve input mode ----
