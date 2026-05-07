@@ -138,6 +138,68 @@ if ($PSScriptRoot -and (Test-Path (Join-Path $PSScriptRoot "tools\jpg2pdf\src\jp
     $InstallDir = $localRepo
 }
 
+# ---------- Helpers: versions, build-stamp ----------
+$script:BinDir   = Join-Path $HOME "Tools\bin"
+$script:ExePath  = Join-Path $script:BinDir "jpg2pdf.exe"
+$script:ShimPath = Join-Path $script:BinDir "jpg2pdf.cmd"
+$script:StampPath= Join-Path $script:BinDir "jpg2pdf.buildstamp.json"
+
+function Get-RepoVersion {
+    param([string]$Root)
+    $vf = Join-Path $Root "tools\jpg2pdf\VERSION"
+    if (Test-Path -LiteralPath $vf) { return (Get-Content -LiteralPath $vf -Raw).Trim() }
+    return "unknown"
+}
+function Get-FileSha256 {
+    param([string]$Path)
+    if (-not (Test-Path -LiteralPath $Path)) { return $null }
+    return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash
+}
+function Get-InstalledExeVersion {
+    if (-not (Test-Path -LiteralPath $script:ExePath)) { return $null }
+    try {
+        $tmp = [IO.Path]::GetTempFileName()
+        & $script:ExePath --version 2>&1 | Set-Content -LiteralPath $tmp
+        $line = (Get-Content -LiteralPath $tmp -Raw).Trim()
+        Remove-Item -LiteralPath $tmp -ErrorAction SilentlyContinue
+        return $line
+    } catch { return "(failed to query exe: $_)" }
+}
+function Read-BuildStamp {
+    if (-not (Test-Path -LiteralPath $script:StampPath)) { return $null }
+    try { return Get-Content -LiteralPath $script:StampPath -Raw | ConvertFrom-Json } catch { return $null }
+}
+function Write-BuildStamp {
+    param([hashtable]$Data)
+    $Data | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $script:StampPath -Encoding UTF8
+}
+function Compute-CurrentStamp {
+    param([string]$Root)
+    @{
+        version    = Get-RepoVersion $Root
+        srcSha256  = Get-FileSha256 (Join-Path $Root "tools\jpg2pdf\src\jpg2pdf.py")
+        reqsSha256 = Get-FileSha256 (Join-Path $Root "tools\jpg2pdf\requirements.txt")
+        builtAt    = (Get-Date).ToString("o")
+        runPs1     = $RunPs1Version
+    }
+}
+
+# ---------- -Version short-circuit ----------
+if ($Version) {
+    $repoVer = if ($localRepo) { Get-RepoVersion $localRepo } elseif (Test-Path $InstallDir) { Get-RepoVersion $InstallDir } else { "(no repo)" }
+    Write-Host "run.ps1   : $RunPs1Version"
+    Write-Host "repo      : $repoVer"
+    $exeVer = Get-InstalledExeVersion
+    Write-Host "installed : $(if ($exeVer) { $exeVer } else { '(not installed)' })"
+    $stamp = Read-BuildStamp
+    if ($stamp) {
+        Write-Host "build     : $($stamp.version)  built $($stamp.builtAt)"
+        Write-Host "src sha   : $($stamp.srcSha256)"
+    }
+    Write-Host "exe path  : $script:ExePath"
+    exit 0
+}
+
 # ---------- -Unregister short-circuit ----------
 if ($Unregister) {
     $unreg = Join-Path $InstallDir "tools\jpg2pdf\scripts\unregister-context-menu.ps1"
