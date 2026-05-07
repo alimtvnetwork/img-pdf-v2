@@ -154,17 +154,69 @@ if ($NoCompile) {
     $entryPath = $exePath
 }
 
-# ---------- 6. Persist on User PATH ----------
-$userPath = [Environment]::GetEnvironmentVariable("Path","User")
-if (-not $userPath) { $userPath = "" }
-$paths = $userPath.Split(";") | Where-Object { $_ -ne "" }
-if ($paths -notcontains $binDir) {
-    [Environment]::SetEnvironmentVariable("Path", (($paths + $binDir) -join ";"), "User")
-    Info "Added $binDir to User PATH (persistent)."
-} else {
-    Info "$binDir already on User PATH."
+# ---------- 6. Persist on User PATH (safe update) ----------
+function Update-UserPath {
+    param([Parameter(Mandatory=$true)][string]$Dir)
+
+    # 1. Confirm the folder actually exists before touching PATH.
+    if (-not (Test-Path -LiteralPath $Dir -PathType Container)) {
+        Warn "Bin folder does not exist, skipping PATH update: $Dir"
+        return $false
+    }
+    $resolved = (Resolve-Path -LiteralPath $Dir).Path.TrimEnd('\')
+
+    # 2. Read current User PATH (may be $null on a fresh profile).
+    $current = [Environment]::GetEnvironmentVariable("Path","User")
+    if (-not $current) { $current = "" }
+
+    # 3. Split, trim, drop empties, dedupe case-insensitively, normalise trailing slashes.
+    $cmp = [System.StringComparer]::OrdinalIgnoreCase
+    $seen = New-Object 'System.Collections.Generic.HashSet[string]' $cmp
+    $cleaned = New-Object 'System.Collections.Generic.List[string]'
+    foreach ($entry in $current.Split(';')) {
+        $e = $entry.Trim().TrimEnd('\')
+        if (-not $e) { continue }
+        if ($seen.Add($e)) { [void]$cleaned.Add($e) }
+    }
+    $alreadyPresent = $seen.Contains($resolved)
+    $rawCount = ($current.Split(';') | Where-Object { $_.Trim() }).Count
+    $hadDuplicates = ($cleaned.Count -lt $rawCount)
+
+    if ($alreadyPresent -and -not $hadDuplicates) {
+        Info "$resolved already on User PATH (no changes)."
+    }
+    else {
+        if (-not $alreadyPresent) { [void]$cleaned.Add($resolved) }
+        $newPath = ($cleaned -join ';')
+
+        # Back up the previous value so the user can recover if needed.
+        try {
+            [Environment]::SetEnvironmentVariable("PathBackup_jpg2pdf", $current, "User")
+        } catch { Warn "Could not write PATH backup: $_" }
+
+        try {
+            [Environment]::SetEnvironmentVariable("Path", $newPath, "User")
+        } catch {
+            Warn "Failed to update User PATH: $_"
+            return $false
+        }
+
+        if ($alreadyPresent) {
+            Info "User PATH cleaned (removed duplicates). $resolved already present."
+        } else {
+            Info "Added $resolved to User PATH (persistent). Backup in env var 'PathBackup_jpg2pdf'."
+        }
+    }
+
+    # Update current session only if missing.
+    $sessionEntries = $env:Path.Split(';') | ForEach-Object { $_.Trim().TrimEnd('\') }
+    if ($sessionEntries -notcontains $resolved) {
+        $env:Path = "$($env:Path.TrimEnd(';'));$resolved"
+    }
+    return $true
 }
-$env:Path = "$env:Path;$binDir"
+
+[void](Update-UserPath -Dir $binDir)
 
 # ---------- 7. Register Explorer context menu ----------
 if (-not $NoContextMenu) {
