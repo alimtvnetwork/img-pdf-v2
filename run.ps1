@@ -11,7 +11,9 @@
   .\run.ps1 -NoContextMenu       # skip Explorer registry entries
   .\run.ps1 -Unregister          # remove context menu and exit
   .\run.ps1 -Force               # rebuild .exe even if it already exists
-  .\run.ps1 -Verbose             # stream subprocess output live to the console
+  .\run.ps1 -Version             # print script / repo / installed exe versions and exit
+  .\run.ps1 -SelfUpdate          # git pull + rebuild ONLY if version/source/deps changed
+  .\run.ps1 -ShowVerbose         # stream subprocess output live to the console
   .\run.ps1 -LogFile C:\my.log   # custom log path (default: %TEMP%\jpg2pdf-logs\run-<timestamp>.log)
 
 .NOTES
@@ -29,10 +31,14 @@ param(
     [switch]$NoContextMenu,
     [switch]$Unregister,
     [switch]$Force,
-    [switch]$Verbose,                                    # alias for $script:VerboseMode = $true
+    [switch]$Version,
+    [switch]$SelfUpdate,
+    [switch]$ShowVerbose,
     [string]$LogDir      = (Join-Path $env:TEMP "jpg2pdf-logs"),
-    [string]$LogFile     = $null                         # if set, overrides LogDir
+    [string]$LogFile     = $null
 )
+
+$RunPs1Version = "0.2.0"
 
 $ErrorActionPreference = "Stop"
 
