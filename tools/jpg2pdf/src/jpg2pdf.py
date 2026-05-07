@@ -157,16 +157,17 @@ def main():
     out = Path(args.out).expanduser().resolve() if args.out else default_out
 
     print(f"Files:   {len(images)}")
-    print(f"Page:    {args.size} {args.orientation} ({int(w)}x{int(h)} pt)")
-    print(f"Fit:     {args.fit}")
+    print(f"Page:    {args.size} {args.orientation} ({int(w)}x{int(h)} pt) @ {args.dpi} DPI")
+    print(f"Fit:     {args.fit}  auto-rotate: {not args.no_auto_rotate}")
     print(f"Output:  {out}")
 
     pages = []
     for i, p in enumerate(images, 1):
         print(f"  [{i}/{len(images)}] {p.name}")
-        pages.append(make_page(p, w, h, args.fit))
+        pages.append(make_page(p, w, h, args.fit, args.dpi,
+                               auto_rotate=not args.no_auto_rotate))
 
-    pages[0].save(out, "PDF", resolution=72.0,
+    pages[0].save(out, "PDF", resolution=float(args.dpi),
                   save_all=True, append_images=pages[1:])
     print(f"Done -> {out}")
 
