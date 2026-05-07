@@ -165,16 +165,18 @@ def main():
 
     out = Path(args.out).expanduser().resolve() if args.out else default_out
 
-    print(f"Files:   {len(images)}")
-    print(f"Page:    {args.size} {args.orientation} ({int(w)}x{int(h)} pt) @ {args.dpi} DPI")
-    print(f"Fit:     {args.fit}  auto-rotate: {not args.no_auto_rotate}")
-    print(f"Output:  {out}")
+    auto_rot = "off" if args.no_auto_rotate else args.auto_rotate
+
+    print(f"Files:    {len(images)}")
+    print(f"Page:     {args.size} {args.orientation} ({int(w)}x{int(h)} pt) @ {args.dpi} DPI")
+    print(f"Fit:      {args.fit}  rotate: {args.rotate}  auto-rotate: {auto_rot}")
+    print(f"Output:   {out}")
 
     pages = []
     for i, p in enumerate(images, 1):
         print(f"  [{i}/{len(images)}] {p.name}")
         pages.append(make_page(p, w, h, args.fit, args.dpi,
-                               auto_rotate=not args.no_auto_rotate))
+                               auto_rotate=auto_rot, rotate=args.rotate))
 
     pages[0].save(out, "PDF", resolution=float(args.dpi),
                   save_all=True, append_images=pages[1:])
