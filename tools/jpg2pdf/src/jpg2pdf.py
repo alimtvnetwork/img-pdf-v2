@@ -115,6 +115,10 @@ def main():
     ap.add_argument("--out", default=None, help="Output PDF path")
     ap.add_argument("--recursive", action="store_true",
                     help="Folder mode: include subfolders")
+    ap.add_argument("--dpi", type=int, default=300,
+                    help="Render DPI for embedded raster (default: 300)")
+    ap.add_argument("--no-auto-rotate", action="store_true",
+                    help="Don't auto-rotate page to match image orientation")
     args = ap.parse_args()
 
     # ---- Resolve input mode ----
