@@ -119,10 +119,47 @@ if ($script:VerboseMode) { Info "Verbose mode ON" }
 _Log "ENV " ("PSVersion={0} OS={1} User={2} CWD={3}" -f `
     $PSVersionTable.PSVersion, [Environment]::OSVersion.VersionString, $env:USERNAME, (Get-Location).Path)
 
+function Test-RealPython {
+    param([string]$Path)
+    if (-not $Path) { return $false }
+    # Reject the Microsoft Store stub (returns exit 9009 and only opens the Store).
+    if ($Path -match '\\WindowsApps\\') { return $false }
+    if (-not (Test-Path -LiteralPath $Path)) { return $false }
+    # Probe: a real interpreter prints its version; the stub does not.
+    try {
+        $out = & $Path --version 2>&1
+        if ($LASTEXITCODE -ne 0) { return $false }
+        return ($out -match '^Python\s+\d')
+    } catch { return $false }
+}
+
 function Get-Python {
-    foreach ($n in @("python","py")) {
-        $c = Get-Command $n -ErrorAction SilentlyContinue
-        if ($c) { return $c.Source }
+    # 1) py launcher (preferred — picks the latest installed real Python).
+    $pyLauncher = Get-Command py -ErrorAction SilentlyContinue
+    if ($pyLauncher) {
+        try {
+            $real = & $pyLauncher.Source -3 -c "import sys; print(sys.executable)" 2>$null
+            if ($LASTEXITCODE -eq 0 -and $real -and (Test-RealPython $real)) { return $real }
+        } catch {}
+    }
+
+    # 2) Any python.exe on PATH that isn't the WindowsApps stub.
+    $candidates = Get-Command python.exe -All -ErrorAction SilentlyContinue
+    foreach ($c in $candidates) {
+        if (Test-RealPython $c.Source) { return $c.Source }
+    }
+
+    # 3) Common install locations.
+    $patterns = @(
+        "$env:LOCALAPPDATA\Programs\Python\Python3*\python.exe",
+        "C:\Python3*\python.exe",
+        "C:\Program Files\Python3*\python.exe",
+        "C:\Program Files (x86)\Python3*\python.exe"
+    )
+    foreach ($pat in $patterns) {
+        $hit = Get-ChildItem -Path $pat -ErrorAction SilentlyContinue |
+               Sort-Object FullName -Descending | Select-Object -First 1
+        if ($hit -and (Test-RealPython $hit.FullName)) { return $hit.FullName }
     }
     return $null
 }
