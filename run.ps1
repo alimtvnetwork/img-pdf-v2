@@ -24,17 +24,18 @@ param(
 $size = "a4"
 if ($letter) { $size = "letter" } elseif ($legal) { $size = "legal" }
 
-$repoRoot = Split-Path -Parent $PSScriptRoot
-$pyScript = Join-Path $repoRoot "src\jpg2pdf.py"
+$repoRoot = $PSScriptRoot
+$pyScript = Join-Path $repoRoot "tools\jpg2pdf\src\jpg2pdf.py"
+$reqFile  = Join-Path $repoRoot "tools\jpg2pdf\requirements.txt"
 if (-not (Test-Path $pyScript)) { Write-Error "Missing $pyScript"; exit 1 }
 
 $py = Get-Command python -ErrorAction SilentlyContinue
 if (-not $py) { $py = Get-Command py -ErrorAction SilentlyContinue }
-if (-not $py) { Write-Error "Python not found. Run ..\install.ps1 first."; exit 1 }
+if (-not $py) { Write-Error "Python not found. Run .\install.ps1 first."; exit 1 }
 
 & $py.Source -c "import PIL" 2>$null
 if ($LASTEXITCODE -ne 0) {
-    & $py.Source -m pip install --user --quiet -r (Join-Path $repoRoot "requirements.txt")
+    & $py.Source -m pip install --user --quiet -r $reqFile
 }
 
 $argsList = @($pyScript, $Path, "--size", $size, "--fit", $Fit)
