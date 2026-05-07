@@ -277,11 +277,27 @@ if ($script:VerboseMode) { $pipArgs += "--verbose" }
 Invoke-Logged -Label "pip install -r requirements.txt" -FilePath $py -ArgumentList $pipArgs
 
 # ---------- 5. Compile (PyInstaller) or shim ----------
-$binDir = Join-Path $HOME "Tools\bin"
+$binDir = $script:BinDir
 New-Item -ItemType Directory -Force -Path $binDir | Out-Null
-$exePath  = Join-Path $binDir "jpg2pdf.exe"
-$shimPath = Join-Path $binDir "jpg2pdf.cmd"
+$exePath  = $script:ExePath
+$shimPath = $script:ShimPath
 $entryPath = $null
+
+# Compute current vs cached build stamp.
+$currentStamp = Compute-CurrentStamp $InstallDir
+$lastStamp    = Read-BuildStamp
+$stampChanged = $true
+if ($lastStamp) {
+    $stampChanged = -not (
+        $lastStamp.version    -eq $currentStamp.version    -and
+        $lastStamp.srcSha256  -eq $currentStamp.srcSha256  -and
+        $lastStamp.reqsSha256 -eq $currentStamp.reqsSha256
+    )
+}
+Verb ("Stamp: repoVer={0} srcSha={1}... reqsSha={2}... cached={3}" -f `
+      $currentStamp.version, $currentStamp.srcSha256.Substring(0,8),
+      $currentStamp.reqsSha256.Substring(0,8),
+      $(if ($lastStamp) { 'yes' } else { 'no' }))
 
 if ($NoCompile) {
     Info "Writing .cmd shim (no compile)..."
@@ -293,9 +309,14 @@ if ($NoCompile) {
     $entryPath = $shimPath
     Info "Shim: $shimPath"
 } else {
-    if ((Test-Path $exePath) -and -not $Force) {
-        Info "jpg2pdf.exe already exists. Use -Force to rebuild."
+    $needBuild = $Force -or (-not (Test-Path $exePath)) -or $stampChanged
+    if (-not $needBuild) {
+        Info ("jpg2pdf.exe up to date (v{0}). Use -Force to rebuild." -f $currentStamp.version)
     } else {
+        if ($SelfUpdate -and $lastStamp) {
+            Info ("Change detected ({0} -> {1}). Rebuilding..." -f $lastStamp.version, $currentStamp.version)
+        }
+
         Info "Installing PyInstaller..."
         $piInstall = @("-m","pip","install","--user","--upgrade","--disable-pip-version-check","pyinstaller")
         if ($script:VerboseMode) { $piInstall += "--verbose" }
@@ -320,9 +341,19 @@ if ($NoCompile) {
         Copy-Item -Force $built $exePath
         if (Test-Path $shimPath) { Remove-Item $shimPath -Force }
         Remove-Item -Recurse -Force -ErrorAction SilentlyContinue $buildDir,$distDir,$workDir
-        Info "Built: $exePath"
+
+        Write-BuildStamp $currentStamp
+        Info ("Built: {0}  (v{1})" -f $exePath, $currentStamp.version)
     }
     $entryPath = $exePath
+}
+
+# When -SelfUpdate is used and nothing changed, skip context-menu re-registration.
+if ($SelfUpdate -and -not $stampChanged -and -not $Force) {
+    Verb "SelfUpdate: no changes — skipping PATH/context-menu steps."
+    Info "Already up to date."
+    Info "Full session log: $script:LogFile"
+    exit 0
 }
 
 # ---------- 6. Persist on User PATH (safe update) ----------
