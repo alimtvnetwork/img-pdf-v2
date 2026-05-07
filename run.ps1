@@ -43,7 +43,7 @@ $RunPs1Version = "0.2.0"
 $ErrorActionPreference = "Stop"
 
 # ---------- Logging ----------
-$script:VerboseMode = [bool]$Verbose -or ($PSBoundParameters['Verbose'] -eq $true) -or ($VerbosePreference -ne 'SilentlyContinue')
+$script:VerboseMode = [bool]$ShowVerbose -or ($VerbosePreference -ne 'SilentlyContinue')
 
 if (-not $LogFile) {
     New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
