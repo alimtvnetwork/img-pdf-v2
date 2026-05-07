@@ -11,9 +11,14 @@
   .\run.ps1 -NoContextMenu       # skip Explorer registry entries
   .\run.ps1 -Unregister          # remove context menu and exit
   .\run.ps1 -Force               # rebuild .exe even if it already exists
+  .\run.ps1 -Verbose             # stream subprocess output live to the console
+  .\run.ps1 -LogFile C:\my.log   # custom log path (default: %TEMP%\jpg2pdf-logs\run-<timestamp>.log)
 
 .NOTES
   Open a NEW terminal after install so PATH changes take effect.
+  Every winget/git/pip/PyInstaller invocation is captured to the log file with
+  full stdout/stderr; on failure the captured output is also printed to the
+  console so you don't have to re-run to see it.
 #>
 [CmdletBinding()]
 param(
