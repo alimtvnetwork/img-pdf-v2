@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   One-shot bootstrap for jpg2pdf on Windows:
     pull repo -> install Python deps -> compile jpg2pdf.exe ->
