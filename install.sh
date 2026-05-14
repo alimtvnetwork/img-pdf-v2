@@ -82,6 +82,11 @@ info "Downloading $url"
 DL "$url" "$target" || die "Download failed: $url"
 chmod +x "$target"
 
+# --- macOS: strip quarantine flag (binary is ad-hoc signed, not notarized) -
+if [ "$os" = "macos" ] && command -v xattr >/dev/null 2>&1; then
+  xattr -dr com.apple.quarantine "$target" 2>/dev/null || true
+fi
+
 # --- smoke test ------------------------------------------------------------
 if "$target" --version >/dev/null 2>&1; then
   info "Installed: $("$target" --version) -> $target"
