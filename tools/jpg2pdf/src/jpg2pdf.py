@@ -49,14 +49,32 @@ def collect_from_list(paths):
     return out
 
 
+def apply_pencil(im: Image.Image, opacity: float, brightness: float) -> Image.Image:
+    """Make the image look like a faint pencil sketch on paper.
+
+    - Reduce opacity: blend the image toward a white background
+      (final = white*(1-opacity) + image*opacity).
+    - Increase brightness: lighten the remaining ink.
+    """
+    opacity    = max(0.0, min(1.0, opacity))
+    brightness = max(0.1, brightness)
+    white = Image.new("RGB", im.size, "white")
+    faded = Image.blend(white, im, opacity)
+    return ImageEnhance.Brightness(faded).enhance(brightness)
+
+
 def make_page(img_path: Path, page_w_pt: float, page_h_pt: float,
-              fit: str, dpi: int, auto_rotate: str, rotate: int) -> Image.Image:
+              fit: str, dpi: int, auto_rotate: str, rotate: int,
+              style: str = "none",
+              pencil_opacity: float = 0.4,
+              pencil_brightness: float = 1.25) -> Image.Image:
     """Render one PDF page at `dpi` DPI.
 
     rotate:      extra rotation applied to every image (0/90/180/270, CCW).
     auto_rotate: 'cw'  -> rotate landscape images 90° clockwise to fit portrait page
                  'ccw' -> rotate 90° counter-clockwise
                  'off' -> never auto-rotate
+    style:       'none' (default) or 'pencil' (faint pencil-on-paper look).
     """
     with Image.open(img_path) as im:
         im = im.convert("RGB")
@@ -73,6 +91,9 @@ def make_page(img_path: Path, page_w_pt: float, page_h_pt: float,
                 angle = 90 if auto_rotate == "ccw" else -90
                 im = im.rotate(angle, expand=True)
                 iw, ih = im.size
+
+        if style == "pencil":
+            im = apply_pencil(im, pencil_opacity, pencil_brightness)
 
         scale = dpi / 72.0
         canvas_w = max(1, int(round(page_w_pt * scale)))
