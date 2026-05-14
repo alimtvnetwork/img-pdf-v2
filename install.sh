@@ -26,8 +26,8 @@ info() { printf '\033[36m[jpg2pdf]\033[0m %s\n' "$*"; }
 warn() { printf '\033[33m[jpg2pdf]\033[0m %s\n' "$*" >&2; }
 die()  { printf '\033[31m[jpg2pdf]\033[0m %s\n' "$*" >&2; exit 1; }
 
-if [ "$REPO" = "alimtvnetwork/img-pdf" ]; then
-  die "Set the repo: JPG2PDF_REPO=your-user/your-repo curl ... | sh  (or edit install.sh)."
+if [ -z "$REPO" ]; then
+  die "Set the repo: JPG2PDF_REPO=your-user/your-repo curl ... | sh"
 fi
 
 # --- detect platform -------------------------------------------------------
