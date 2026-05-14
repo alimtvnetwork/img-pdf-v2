@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 from PIL import Image, ImageChops, ImageEnhance, ImageFilter, ImageOps
 
-__version__ = "0.9.1"
+__version__ = "0.10.0"
 
 # Pencil presets — tuned for faint handwritten text.
 # Module-scope so prompt_pencil_strength() can render the live preview with
@@ -47,6 +47,59 @@ def save_prefs(prefs: dict) -> None:
         CONFIG_PATH.write_text(json.dumps(prefs, indent=2), encoding="utf-8")
     except Exception as e:
         print(f"  (warning: could not save prefs: {e})", file=sys.stderr)
+
+
+# ---- Output filename patterns ----
+# Available placeholders for --name-pattern (case-insensitive):
+#   {folder}    parent folder name (or input folder for folder-mode)
+#   {first}     base name of the first input image (no extension)
+#   {count}     number of images included
+#   {style}     "none" or "pencil"
+#   {strength}  pencil strength preset name when --style pencil, else ""
+#   {date}      YYYY-MM-DD (local time)
+#   {time}      HHMMSS (local time, no separators — filesystem-safe)
+#   {datetime}  YYYY-MM-DD_HHMMSS
+#   {y} {m} {d} {hh} {mm} {ss}   individual zero-padded parts
+NAME_PATTERN_TOKENS = (
+    "folder", "first", "count", "style", "strength",
+    "date", "time", "datetime", "y", "m", "d", "hh", "mm", "ss",
+)
+DEFAULT_NAME_PATTERN = "{folder}"
+
+_INVALID_FS_CHARS = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
+
+
+def _sanitize_filename(name: str) -> str:
+    cleaned = _INVALID_FS_CHARS.sub("_", name).strip(" .")
+    return cleaned or "images"
+
+
+def format_pdf_name(pattern: str, *, folder_name: str, first_image: Path,
+                    count: int, style: str, strength: str) -> str:
+    """Render the user's name pattern into a safe filename (no extension)."""
+    import datetime as _dt
+    now = _dt.datetime.now()
+    values = {
+        "folder":   folder_name,
+        "first":    first_image.stem,
+        "count":    str(count),
+        "style":    style,
+        "strength": strength if style == "pencil" else "",
+        "date":     now.strftime("%Y-%m-%d"),
+        "time":     now.strftime("%H%M%S"),
+        "datetime": now.strftime("%Y-%m-%d_%H%M%S"),
+        "y":  now.strftime("%Y"), "m":  now.strftime("%m"), "d":  now.strftime("%d"),
+        "hh": now.strftime("%H"), "mm": now.strftime("%M"), "ss": now.strftime("%S"),
+    }
+    try:
+        rendered = pattern.format(**values)
+    except (KeyError, IndexError, ValueError) as e:
+        print(f"  (warning: bad --name-pattern {pattern!r}: {e}; "
+              f"falling back to '{DEFAULT_NAME_PATTERN}')", file=sys.stderr)
+        rendered = DEFAULT_NAME_PATTERN.format(**values)
+    # Collapse leftover empty pieces (e.g. "{strength}" when style=none)
+    rendered = re.sub(r"_{2,}", "_", rendered).strip("_- ")
+    return _sanitize_filename(rendered)
 
 
 
@@ -418,7 +471,17 @@ def main():
     ap.add_argument("--fit",
                     choices=["contain", "cover", "stretch", "original"],
                     default="contain")
-    ap.add_argument("--out", default=None, help="Output PDF path")
+    ap.add_argument("--out", default=None,
+                    help="Explicit output PDF path (overrides --name-pattern)")
+    ap.add_argument("--name-pattern", default=None,
+                    help="Pattern for the auto-generated PDF filename when "
+                         "--out isn't given. Placeholders: "
+                         "{folder} {first} {count} {style} {strength} "
+                         "{date} {time} {datetime} {y} {m} {d} {hh} {mm} {ss}. "
+                         "Examples: '{folder}', '{folder}_{date}', "
+                         "'{folder}-{count}p-{datetime}', "
+                         "'{first}_{strength}'. Saved as your default after "
+                         "each run (in ~/.jpg2pdf/config.json).")
     ap.add_argument("--recursive", action="store_true",
                     help="Folder mode: include subfolders")
     ap.add_argument("--dpi", type=int, default=300,
@@ -479,7 +542,8 @@ def main():
     # ---- Resolve input mode (BEFORE the strength picker so we can pass a
     # real sample image into the live preview) ----
     images = []
-    default_out = None
+    out_dir = None       # where the PDF will be written
+    folder_name = None   # used by {folder} in --name-pattern
 
     if args.files_from:
         listfile = Path(args.files_from).expanduser().resolve()
@@ -489,17 +553,20 @@ def main():
                  if ln.strip() and not ln.strip().startswith("#")]
         images = collect_from_list(lines)
         if images:
-            default_out = images[0].parent / "images.pdf"
+            out_dir = images[0].parent
+            folder_name = images[0].parent.name
     elif args.files:
         images = collect_from_list(args.files)
         if images:
-            default_out = images[0].parent / "images.pdf"
+            out_dir = images[0].parent
+            folder_name = images[0].parent.name
     elif args.folder:
         folder = Path(args.folder).expanduser().resolve()
         if not folder.is_dir():
             print(f"Not a folder: {folder}", file=sys.stderr); sys.exit(1)
         images = collect_from_folder(folder, args.recursive)
-        default_out = folder / f"{folder.name}.pdf"
+        out_dir = folder
+        folder_name = folder.name
     else:
         ap.error("Provide a folder, or --files, or --files-from.")
 
@@ -533,7 +600,28 @@ def main():
     if args.orientation == "landscape":
         w, h = h, w
 
-    out = Path(args.out).expanduser().resolve() if args.out else default_out
+    # Resolve output filename: explicit --out wins, else apply --name-pattern
+    # (CLI > saved pref > built-in default), persist if user passed one.
+    cli_pattern_explicit = args.name_pattern is not None
+    if args.name_pattern is None:
+        args.name_pattern = prefs.get("name_pattern", DEFAULT_NAME_PATTERN)
+
+    if args.out:
+        out = Path(args.out).expanduser().resolve()
+    else:
+        base = format_pdf_name(
+            args.name_pattern,
+            folder_name=folder_name or "images",
+            first_image=images[0],
+            count=len(images),
+            style=args.style,
+            strength=args.pencil_strength,
+        )
+        out = (out_dir / f"{base}.pdf").resolve()
+
+    if cli_pattern_explicit and prefs.get("name_pattern") != args.name_pattern:
+        prefs["name_pattern"] = args.name_pattern
+        save_prefs(prefs)
 
     auto_rot = "off" if args.no_auto_rotate else args.auto_rotate
 
