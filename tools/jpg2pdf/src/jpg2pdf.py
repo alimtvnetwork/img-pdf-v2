@@ -130,7 +130,7 @@ def make_page(img_path: Path, page_w_pt: float, page_h_pt: float,
               pencil_opacity: float = 0.25,
               pencil_brightness: float = 1.0,
               pencil_ink_threshold: int = 90,
-              pencil_ink_darken: float = 0.65) -> Image.Image:
+              pencil_ink_darken: float = 0.55) -> Image.Image:
     """Render one PDF page at `dpi` DPI.
 
     rotate:      extra rotation applied to every image (0/90/180/270, CCW).
@@ -224,7 +224,7 @@ def main():
     ap.add_argument("--pencil-ink-threshold", type=int, default=90,
                     help="Pencil style: pixel value (0..255) below which a pixel is "
                          "treated as ink and kept dark (default 90).")
-    ap.add_argument("--pencil-ink-darken", type=float, default=0.65,
+    ap.add_argument("--pencil-ink-darken", type=float, default=0.55,
                     help="Pencil style: ink multiplier (<1 makes ink blacker, default 0.65).")
     ap.add_argument("--pencil-brightness", type=float, default=1.0,
                     help="Pencil style: post-process brightness multiplier (default 1.0).")
