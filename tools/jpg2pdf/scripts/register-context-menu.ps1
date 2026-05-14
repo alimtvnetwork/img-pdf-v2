@@ -127,6 +127,7 @@ $args = @("--size", $Size)
 if ($Rotate -ge 0) { $args += @("--rotate", [string]$Rotate) }
 if ($NoAutoRotate) { $args += "--no-auto-rotate" }
 if ($Style) { $args += @("--style", $Style) }
+if ($Style -eq "pencil") { $args += "--ask-strength" }
 $args += @("--files-from", $listFile)
 $quotedArgs = ($args | ForEach-Object { Quote-CmdArg ([string]$_) }) -join " "
 
@@ -265,7 +266,7 @@ function Build-Submenu {
         _add "06_A4_CCW"  "Convert All to A4 (rotate 90 CCW)"       '--size a4 --rotate 90  "%V"'
         _add "07_A4_180"  "Convert All to A4 (rotate 180)"          '--size a4 --rotate 180 "%V"'
         _add "08_A4_NOAR"   "Convert All to A4 (no auto-rotate)"      '--size a4 --no-auto-rotate "%V"'
-        _add "09_A4_PENCIL" "Convert All to A4 (pencil / paper look)" '--size a4 --style pencil "%V"'
+        _add "09_A4_PENCIL" "Convert All to A4 (pencil / paper look)" '--size a4 --style pencil --ask-strength "%V"'
     } else {
         $launcher = 'powershell -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "' + $script:SelectedLauncherPath + '" -ExePath "' + $exe + '"'
         # Explorer can still launch legacy per-file verbs on some file classes.
