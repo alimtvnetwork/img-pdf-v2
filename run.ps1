@@ -38,7 +38,7 @@ param(
     [string]$LogFile     = $null
 )
 
-$RunPs1Version = "0.2.0"
+$RunPs1Version = "0.3.0"
 
 $ErrorActionPreference = "Stop"
 
