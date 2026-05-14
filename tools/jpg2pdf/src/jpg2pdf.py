@@ -317,18 +317,24 @@ def prompt_thumbnail_grid(images, thumb_px: int = 140, cols: int = 4):
     for idx, p in enumerate(images):
         cell = ttk.Frame(inner, padding=6, relief="solid", borderwidth=1)
         cell.grid(row=idx // cols, column=idx % cols, padx=4, pady=4, sticky="n")
-        try:
-            with Image.open(p) as im:
-                im = im.convert("RGB")
-                im.thumbnail((thumb_px, thumb_px), Image.LANCZOS)
-                photo = ImageTk.PhotoImage(im)
-        except Exception:
-            photo = None
+        kind = kind_of(p)
+        photo = None
+        if kind == "image":
+            try:
+                with Image.open(p) as im:
+                    im = im.convert("RGB")
+                    im.thumbnail((thumb_px, thumb_px), Image.LANCZOS)
+                    photo = ImageTk.PhotoImage(im)
+            except Exception:
+                photo = None
         photos.append(photo)
         if photo is not None:
             ttk.Label(cell, image=photo).grid(row=0, column=0)
         else:
-            ttk.Label(cell, text="(unreadable)", width=18).grid(row=0, column=0)
+            badge = {"pdf": "PDF", "html": "HTML",
+                     "word": "DOC", "image": "(unreadable)"}.get(kind, "FILE")
+            ttk.Label(cell, text=badge, width=18,
+                      anchor="center").grid(row=0, column=0, ipady=thumb_px // 3)
         var = tk.BooleanVar(value=True)
         vars_.append((p, var))
         name = p.name if len(p.name) <= 22 else p.name[:19] + "…"
