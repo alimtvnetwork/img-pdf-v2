@@ -163,16 +163,16 @@ function Write-SelectedFilesVbsLauncher {
 
     $escapedLauncher = $PowerShellLauncherPath.Replace('"', '""')
     $content = @"
-Dim shell, args, i, cmd
-Set shell = CreateObject(""WScript.Shell"")
-cmd = ""powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File """"$escapedLauncher""""""
+Dim shell, i, cmd
+Set shell = CreateObject("WScript.Shell")
+cmd = "powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File ""$escapedLauncher"""
 For i = 0 To WScript.Arguments.Count - 1
-  cmd = cmd & "" "" & QuoteArg(WScript.Arguments(i))
+  cmd = cmd & " " & QuoteArg(WScript.Arguments(i))
 Next
 shell.Run cmd, 0, False
 
 Function QuoteArg(value)
-  QuoteArg = """""" & Replace(value, """""", ""\""""") & """"""
+  QuoteArg = """" & Replace(value, """", """""") & """"
 End Function
 "@
     Set-Content -LiteralPath $Path -Value $content -Encoding ASCII
