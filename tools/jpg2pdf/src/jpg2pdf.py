@@ -49,6 +49,59 @@ def save_prefs(prefs: dict) -> None:
         print(f"  (warning: could not save prefs: {e})", file=sys.stderr)
 
 
+# ---- Output filename patterns ----
+# Available placeholders for --name-pattern (case-insensitive):
+#   {folder}    parent folder name (or input folder for folder-mode)
+#   {first}     base name of the first input image (no extension)
+#   {count}     number of images included
+#   {style}     "none" or "pencil"
+#   {strength}  pencil strength preset name when --style pencil, else ""
+#   {date}      YYYY-MM-DD (local time)
+#   {time}      HHMMSS (local time, no separators — filesystem-safe)
+#   {datetime}  YYYY-MM-DD_HHMMSS
+#   {y} {m} {d} {hh} {mm} {ss}   individual zero-padded parts
+NAME_PATTERN_TOKENS = (
+    "folder", "first", "count", "style", "strength",
+    "date", "time", "datetime", "y", "m", "d", "hh", "mm", "ss",
+)
+DEFAULT_NAME_PATTERN = "{folder}"
+
+_INVALID_FS_CHARS = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
+
+
+def _sanitize_filename(name: str) -> str:
+    cleaned = _INVALID_FS_CHARS.sub("_", name).strip(" .")
+    return cleaned or "images"
+
+
+def format_pdf_name(pattern: str, *, folder_name: str, first_image: Path,
+                    count: int, style: str, strength: str) -> str:
+    """Render the user's name pattern into a safe filename (no extension)."""
+    import datetime as _dt
+    now = _dt.datetime.now()
+    values = {
+        "folder":   folder_name,
+        "first":    first_image.stem,
+        "count":    str(count),
+        "style":    style,
+        "strength": strength if style == "pencil" else "",
+        "date":     now.strftime("%Y-%m-%d"),
+        "time":     now.strftime("%H%M%S"),
+        "datetime": now.strftime("%Y-%m-%d_%H%M%S"),
+        "y":  now.strftime("%Y"), "m":  now.strftime("%m"), "d":  now.strftime("%d"),
+        "hh": now.strftime("%H"), "mm": now.strftime("%M"), "ss": now.strftime("%S"),
+    }
+    try:
+        rendered = pattern.format(**values)
+    except (KeyError, IndexError, ValueError) as e:
+        print(f"  (warning: bad --name-pattern {pattern!r}: {e}; "
+              f"falling back to '{DEFAULT_NAME_PATTERN}')", file=sys.stderr)
+        rendered = DEFAULT_NAME_PATTERN.format(**values)
+    # Collapse leftover empty pieces (e.g. "{strength}" when style=none)
+    rendered = re.sub(r"_{2,}", "_", rendered).strip("_- ")
+    return _sanitize_filename(rendered)
+
+
 
 def prompt_pencil_strength(default: str = "normal", sample_path=None) -> str:
     """Show a Tk dropdown to pick pencil strength, with a LIVE preview.
