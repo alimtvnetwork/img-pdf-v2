@@ -256,7 +256,7 @@ function Build-Submenu {
         _add "08_A4_NOAR"   "Convert All to A4 (no auto-rotate)"      '--size a4 --no-auto-rotate "%V"'
         _add "09_A4_PENCIL" "Convert All to A4 (pencil / paper look)" '--size a4 --style pencil "%V"'
     } else {
-        $launcher = 'powershell -NoProfile -ExecutionPolicy Bypass -File "' + $script:SelectedLauncherPath + '" -ExePath "' + $exe + '"'
+        $launcher = 'powershell -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "' + $script:SelectedLauncherPath + '" -ExePath "' + $exe + '"'
         # Explorer can still launch legacy per-file verbs on some file classes.
         # Route every invocation through a tiny queueing launcher so only the
         # first process opens a console and runs jpg2pdf once for the full batch.
