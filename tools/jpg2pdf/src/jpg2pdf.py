@@ -434,11 +434,13 @@ def main():
                     help="Rendering style. 'pencil' = pencil-on-paper look "
                          "(text/dark strokes stay black, paper & mid-tones fade out)")
     ap.add_argument("--pencil-strength",
-                    choices=["subtle", "normal", "extra"], default="normal",
+                    choices=["subtle", "normal", "extra"], default=None,
                     help="Pencil preset for faint text: "
                          "'subtle' (gentle, keeps paper texture), "
                          "'normal' (default, balanced), "
                          "'extra' (extra-visible — aggressive darkening for very faint pencil). "
+                         "Defaults to your last chosen value (saved in "
+                         "~/.jpg2pdf/config.json), or 'normal' on first run. "
                          "Individual --pencil-* flags override the preset.")
     ap.add_argument("--pencil-opacity", type=float, default=None,
                     help="Pencil style: how much non-ink survives (0..1, default 0.25). "
@@ -453,7 +455,26 @@ def main():
     ap.add_argument("--ask-strength", action="store_true",
                     help="When --style pencil, show a desktop dropdown to pick "
                          "subtle/normal/extra before converting.")
+    ap.add_argument("--reset-prefs", action="store_true",
+                    help="Forget the saved pencil-strength preference and exit.")
     args = ap.parse_args()
+
+    # Load persisted prefs (last chosen pencil strength).
+    prefs = load_prefs()
+    if args.reset_prefs:
+        try:
+            CONFIG_PATH.unlink()
+            print(f"Removed {CONFIG_PATH}")
+        except FileNotFoundError:
+            print("No saved prefs to remove.")
+        sys.exit(0)
+
+    # Seed default from saved prefs (CLI value always wins).
+    cli_strength_explicit = args.pencil_strength is not None
+    if not cli_strength_explicit:
+        args.pencil_strength = prefs.get("pencil_strength", "normal")
+        if args.pencil_strength not in PENCIL_PRESETS:
+            args.pencil_strength = "normal"
 
     # ---- Resolve input mode (BEFORE the strength picker so we can pass a
     # real sample image into the live preview) ----
