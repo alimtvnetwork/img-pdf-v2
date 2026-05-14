@@ -884,19 +884,68 @@ def main():
               f"brightness={args.pencil_brightness})")
     print(f"Output:   {out}")
 
-    pages = []
-    for i, p in enumerate(images, 1):
-        print(f"  [{i}/{len(images)}] {p.name}")
-        pages.append(make_page(p, w, h, args.fit, args.dpi,
-                               auto_rotate=auto_rot, rotate=args.rotate,
-                               style=args.style,
-                               pencil_opacity=args.pencil_opacity,
-                               pencil_brightness=args.pencil_brightness,
-                               pencil_ink_threshold=args.pencil_ink_threshold,
-                               pencil_ink_darken=args.pencil_ink_darken))
+    # Group consecutive inputs by kind so adjacent images become a single
+    # image-PDF chunk (efficient + matches user's selection order).
+    import tempfile
+    with tempfile.TemporaryDirectory(prefix="jpg2pdf-") as td:
+        tmp = Path(td)
+        chunks = []          # list of Path to PDF chunks (in final order)
+        chunk_idx = 0
+        i = 0
+        n = len(images)
+        while i < n:
+            p = images[i]
+            kind = kind_of(p)
+            if kind == "image":
+                # Greedily collect consecutive images.
+                j = i
+                batch = []
+                while j < n and kind_of(images[j]) == "image":
+                    batch.append(images[j]); j += 1
+                for k, ip in enumerate(batch, 1):
+                    print(f"  [{i + k}/{n}] image: {ip.name}")
+                chunk_idx += 1
+                out_chunk = tmp / f"chunk_{chunk_idx:03d}_img.pdf"
+                if images_to_pdf_chunk(
+                        batch, out_chunk,
+                        page_w_pt=w, page_h_pt=h, fit=args.fit, dpi=args.dpi,
+                        auto_rotate=auto_rot, rotate=args.rotate,
+                        style=args.style,
+                        pencil_opacity=args.pencil_opacity,
+                        pencil_brightness=args.pencil_brightness,
+                        pencil_ink_threshold=args.pencil_ink_threshold,
+                        pencil_ink_darken=args.pencil_ink_darken):
+                    chunks.append(out_chunk)
+                i = j
+                continue
 
-    pages[0].save(out, "PDF", resolution=float(args.dpi),
-                  save_all=True, append_images=pages[1:])
+            print(f"  [{i + 1}/{n}] {kind}: {p.name}")
+            chunk_idx += 1
+            if kind == "pdf":
+                chunks.append(p)  # use as-is
+            elif kind == "html":
+                out_chunk = tmp / f"chunk_{chunk_idx:03d}_html.pdf"
+                if html_to_pdf(p, out_chunk):
+                    chunks.append(out_chunk)
+            elif kind == "word":
+                out_chunk = tmp / f"chunk_{chunk_idx:03d}_word.pdf"
+                if word_to_pdf(p, out_chunk):
+                    chunks.append(out_chunk)
+            else:
+                print(f"  skip (unknown type): {p.name}", file=sys.stderr)
+            i += 1
+
+        if not chunks:
+            print("Nothing was successfully converted.", file=sys.stderr)
+            sys.exit(1)
+
+        if len(chunks) == 1 and chunks[0].suffix.lower() == ".pdf" \
+                and chunks[0].parent != tmp:
+            # Single pre-existing PDF input — copy to output instead of round-trip.
+            import shutil
+            shutil.copyfile(chunks[0], out)
+        else:
+            merge_pdfs(chunks, out)
     print(f"Done -> {out}")
 
 
