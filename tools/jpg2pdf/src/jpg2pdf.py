@@ -12,7 +12,7 @@ import argparse
 import re
 import sys
 from pathlib import Path
-from PIL import Image, ImageEnhance
+from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 
 __version__ = "0.5.0"
 
