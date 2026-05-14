@@ -274,7 +274,7 @@ if ($Unregister) {
     exit $LASTEXITCODE
 }
 
-# ---------- 1. Python ----------
+Show-Section 1 7 "Python"
 $py = Get-Python
 if (-not $py) {
     Info "Python not found. Installing via winget..."
@@ -292,7 +292,7 @@ if (-not $py) {
 Info "Python: $py"
 Invoke-Logged -Label "python --version" -FilePath $py -ArgumentList @("--version") -AllowFailure | Out-Null
 
-# ---------- 2. Git ----------
+Show-Section 2 7 "Git"
 $git = Get-Command git -ErrorAction SilentlyContinue
 if (-not $git -and (Get-Command winget -ErrorAction SilentlyContinue)) {
     Info "Git not found. Installing..."
@@ -305,7 +305,7 @@ if (-not $git -and (Get-Command winget -ErrorAction SilentlyContinue)) {
 }
 if ($git) { Verb "git: $($git.Source)" }
 
-# ---------- 3. Pull / clone repo ----------
+Show-Section 3 7 "Pull / clone repo"
 if ($localRepo) {
     Info "Using local repo at: $localRepo"
     if ($git -and (Test-Path (Join-Path $localRepo ".git"))) {
@@ -335,14 +335,14 @@ $reqsFile  = Join-Path $InstallDir "tools\jpg2pdf\requirements.txt"
 $regScript = Join-Path $InstallDir "tools\jpg2pdf\scripts\register-context-menu.ps1"
 if (-not (Test-Path $srcScript)) { Die "Missing $srcScript" }
 
-# ---------- 4. Python deps ----------
+Show-Section 4 7 "Python dependencies"
 Info "Installing Python dependencies..."
 # Drop --quiet so log captures real pip output for troubleshooting.
 $pipArgs = @("-m","pip","install","--user","--upgrade","--disable-pip-version-check","-r",$reqsFile)
 if ($script:VerboseMode) { $pipArgs += "--verbose" }
 Invoke-Logged -Label "pip install -r requirements.txt" -FilePath $py -ArgumentList $pipArgs
 
-# ---------- 5. Compile (PyInstaller) or shim ----------
+Show-Section 5 7 "Compile (PyInstaller) or shim"
 $binDir = $script:BinDir
 New-Item -ItemType Directory -Force -Path $binDir | Out-Null
 $exePath  = $script:ExePath
@@ -422,7 +422,7 @@ if ($SelfUpdate -and -not $stampChanged -and -not $Force) {
     exit 0
 }
 
-# ---------- 6. Persist on User PATH (safe update) ----------
+Show-Section 6 7 "Persist on User PATH"
 function Update-UserPath {
     param([Parameter(Mandatory=$true)][string]$Dir)
 
@@ -486,7 +486,7 @@ function Update-UserPath {
 
 [void](Update-UserPath -Dir $binDir)
 
-# ---------- 7. Register Explorer context menu ----------
+Show-Section 7 7 "Explorer context menu"
 if (-not $NoContextMenu) {
     if (-not (Test-Path $regScript)) {
         Warn "Missing $regScript - skipping context-menu registration."
