@@ -90,7 +90,12 @@ try {
 
 if (-not $leader) { exit 0 }
 
-Start-Sleep -Milliseconds 1400
+$deadline = (Get-Date).AddSeconds(6)
+do {
+    $before = if (Test-Path -LiteralPath $queueFile) { (Get-Item -LiteralPath $queueFile).LastWriteTimeUtc } else { Get-Date }
+    Start-Sleep -Milliseconds 900
+    $after = if (Test-Path -LiteralPath $queueFile) { (Get-Item -LiteralPath $queueFile).LastWriteTimeUtc } else { Get-Date }
+} while ($after -ne $before -and (Get-Date) -lt $deadline)
 
 $mutex = New-Object System.Threading.Mutex($false, $mutexName)
 try {
