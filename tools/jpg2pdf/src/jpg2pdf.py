@@ -238,7 +238,14 @@ def main():
     ap.add_argument("--style", choices=["none", "pencil"], default="none",
                     help="Rendering style. 'pencil' = pencil-on-paper look "
                          "(text/dark strokes stay black, paper & mid-tones fade out)")
-    ap.add_argument("--pencil-opacity", type=float, default=0.25,
+    ap.add_argument("--pencil-strength",
+                    choices=["subtle", "normal", "extra"], default="normal",
+                    help="Pencil preset for faint text: "
+                         "'subtle' (gentle, keeps paper texture), "
+                         "'normal' (default, balanced), "
+                         "'extra' (extra-visible — aggressive darkening for very faint pencil). "
+                         "Individual --pencil-* flags override the preset.")
+    ap.add_argument("--pencil-opacity", type=float, default=None,
                     help="Pencil style: how much non-ink survives (0..1, default 0.25). "
                          "Lower = whiter paper.")
     ap.add_argument("--pencil-ink-threshold", type=int, default=110,
