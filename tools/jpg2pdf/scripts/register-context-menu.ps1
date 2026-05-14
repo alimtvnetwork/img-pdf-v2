@@ -18,6 +18,134 @@ param(
 $ErrorActionPreference = "Stop"
 if (-not (Test-Path $ExePath)) { Write-Error "Not found: $ExePath"; exit 1 }
 $exe = (Resolve-Path $ExePath).Path
+$script:SelectedLauncherPath = Join-Path (Split-Path -Parent $exe) "jpg2pdf-selected-launcher.ps1"
+
+function Write-SelectedFilesLauncher {
+    param([Parameter(Mandatory=$true)][string]$Path)
+
+    $content = @'
+[CmdletBinding()]
+param(
+    [Parameter(Mandatory=$true)][string]$ExePath,
+    [Parameter(Mandatory=$true)][ValidateSet("a4","letter","legal")][string]$Size,
+    [string]$Style = "",
+    [int]$Rotate = -1,
+    [switch]$NoAutoRotate,
+    [Parameter(Mandatory=$true, ValueFromRemainingArguments=$true)][string[]]$FilePath
+)
+
+$ErrorActionPreference = "Stop"
+
+function Get-SafeHash([string]$Text) {
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        return -join ($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($Text)) | ForEach-Object { $_.ToString("x2") })
+    } finally {
+        $sha.Dispose()
+    }
+}
+
+function Quote-CmdArg([string]$Text) {
+    return '"' + ($Text -replace '"','""') + '"'
+}
+
+$paths = @()
+foreach ($raw in $FilePath) {
+    if (-not [string]::IsNullOrWhiteSpace($raw)) {
+        try { $paths += (Resolve-Path -LiteralPath $raw).Path } catch { $paths += $raw }
+    }
+}
+$paths = $paths | Select-Object -Unique
+if (-not $paths -or -not (Test-Path -LiteralPath $ExePath)) { exit 1 }
+
+$firstDir = Split-Path -Parent $paths[0]
+$sid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+$keySource = "$sid|$firstDir|$Size|$Style|$Rotate|$([bool]$NoAutoRotate)"
+$key = Get-SafeHash $keySource
+$queueRoot = Join-Path $env:TEMP "jpg2pdf-selected-queue"
+New-Item -ItemType Directory -Force -Path $queueRoot | Out-Null
+
+$stateFile = Join-Path $queueRoot "$key.state"
+$queueFile = Join-Path $queueRoot "$key.queue"
+$mutexName = "Local\jpg2pdf-selected-$key"
+$mutex = New-Object System.Threading.Mutex($false, $mutexName)
+$leader = $false
+
+try {
+    [void]$mutex.WaitOne(10000)
+    $stale = $true
+    if (Test-Path -LiteralPath $stateFile) {
+        $age = (Get-Date) - (Get-Item -LiteralPath $stateFile).LastWriteTime
+        $stale = $age.TotalSeconds -gt 8
+    }
+    if ($stale) {
+        Set-Content -LiteralPath $stateFile -Value ([Diagnostics.Process]::GetCurrentProcess().Id) -Encoding ASCII
+        $leader = $true
+    }
+    Add-Content -LiteralPath $queueFile -Value $paths -Encoding UTF8
+} finally {
+    try { $mutex.ReleaseMutex() } catch {}
+    $mutex.Dispose()
+}
+
+if (-not $leader) { exit 0 }
+
+$deadline = (Get-Date).AddSeconds(6)
+do {
+    $before = if (Test-Path -LiteralPath $queueFile) { (Get-Item -LiteralPath $queueFile).LastWriteTimeUtc } else { Get-Date }
+    Start-Sleep -Milliseconds 900
+    $after = if (Test-Path -LiteralPath $queueFile) { (Get-Item -LiteralPath $queueFile).LastWriteTimeUtc } else { Get-Date }
+} while ($after -ne $before -and (Get-Date) -lt $deadline)
+
+$mutex = New-Object System.Threading.Mutex($false, $mutexName)
+try {
+    [void]$mutex.WaitOne(10000)
+    $all = @()
+    if (Test-Path -LiteralPath $queueFile) {
+        $all = Get-Content -LiteralPath $queueFile -Encoding UTF8 | Where-Object { $_ } | Select-Object -Unique
+    }
+    Remove-Item -LiteralPath $stateFile,$queueFile -Force -ErrorAction SilentlyContinue
+} finally {
+    try { $mutex.ReleaseMutex() } catch {}
+    $mutex.Dispose()
+}
+
+if (-not $all -or $all.Count -eq 0) { exit 0 }
+
+$listFile = Join-Path $queueRoot ("files-" + $key + "-" + [Guid]::NewGuid().ToString("N") + ".txt")
+$utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+[IO.File]::WriteAllLines($listFile, [string[]]$all, $utf8NoBom)
+
+$cmdFile = Join-Path $queueRoot ("run-" + $key + "-" + [Guid]::NewGuid().ToString("N") + ".cmd")
+$args = @("--size", $Size)
+if ($Rotate -ge 0) { $args += @("--rotate", [string]$Rotate) }
+if ($NoAutoRotate) { $args += "--no-auto-rotate" }
+if ($Style) { $args += @("--style", $Style) }
+$args += @("--files-from", $listFile)
+$quotedArgs = ($args | ForEach-Object { Quote-CmdArg ([string]$_) }) -join " "
+
+$cmd = @(
+    "@echo off",
+    "title jpg2pdf selected files",
+    "echo [jpg2pdf] Combining $($all.Count) selected image(s)...",
+    "echo [jpg2pdf] Output will be written next to the first selected image.",
+    ((Quote-CmdArg $ExePath) + " " + $quotedArgs),
+    'set "code=%ERRORLEVEL%"',
+    'if not "%code%"=="0" (',
+    '  echo.',
+    '  echo [jpg2pdf] Failed with exit code %code%.',
+    '  pause',
+    ')',
+    ('del /q ' + (Quote-CmdArg $listFile) + ' >nul 2>nul'),
+    'del /q "%~f0" >nul 2>nul',
+    'exit /b %code%'
+)
+$cmd | Set-Content -LiteralPath $cmdFile -Encoding ASCII
+Start-Process -FilePath $cmdFile -WorkingDirectory $firstDir
+'@
+
+    Set-Content -LiteralPath $Path -Value $content -Encoding UTF8
+}
 
 function New-Key($path) {
     if (-not (Test-Path $path)) { New-Item -Path $path -Force | Out-Null }
@@ -87,6 +215,7 @@ function Register-SubItems {
 }
 
 Write-Host "[ctx] Registering context menu (HKCU)..." -ForegroundColor Cyan
+Write-SelectedFilesLauncher -Path $script:SelectedLauncherPath
 
 # Build BOTH submenus into the same shared key (folder + file items live
 # together; harmless duplicates won't show because each parent links here).
@@ -103,7 +232,7 @@ function Build-Submenu {
     }
     New-Key $base
 
-    function _add($Id, $Label, $ArgsLine, [switch]$MultiSelect) {
+    function _add($Id, $Label, $ArgsLine, [switch]$MultiSelect, [switch]$RawCommand) {
         $k = "$base\$Id"
         New-Key $k
         Set-ItemProperty -Path $k -Name "(default)" -Value $Label
@@ -116,8 +245,9 @@ function Build-Submenu {
             New-ItemProperty -Path $k -Name "MultiSelectModel" -Value "Player" -PropertyType String -Force | Out-Null
         }
         New-Key "$k\command"
+        $commandLine = if ($RawCommand) { $ArgsLine } else { ('"' + $exe + '" ' + $ArgsLine) }
         Set-ItemProperty -Path "$k\command" -Name "(default)" `
-            -Value ('"' + $exe + '" ' + $ArgsLine)
+            -Value $commandLine
     }
 
     if ($Mode -eq 'Folder') {
@@ -131,17 +261,18 @@ function Build-Submenu {
         _add "08_A4_NOAR"   "Convert All to A4 (no auto-rotate)"      '--size a4 --no-auto-rotate "%V"'
         _add "09_A4_PENCIL" "Convert All to A4 (pencil / paper look)" '--size a4 --style pencil "%V"'
     } else {
-        # Explorer (with MultiSelectModel=Player) invokes the verb ONCE and
-        # appends every selected path as a separate quoted argument after %1.
-        # %* is a cmd.exe-only token and is passed literally here — never use it.
-        _add "11_A4"        "Convert Selected to A4"                       '--size a4 --files "%1"'                       -MultiSelect
-        _add "12_Letter"    "Convert Selected to Letter"                   '--size letter --files "%1"'                   -MultiSelect
-        _add "13_Legal"     "Convert Selected to Legal"                    '--size legal --files "%1"'                    -MultiSelect
-        _add "15_A4_CW"     "Convert Selected to A4 (rotate 90 CW)"        '--size a4 --rotate 270 --files "%1"'          -MultiSelect
-        _add "16_A4_CCW"    "Convert Selected to A4 (rotate 90 CCW)"       '--size a4 --rotate 90  --files "%1"'          -MultiSelect
-        _add "17_A4_180"    "Convert Selected to A4 (rotate 180)"          '--size a4 --rotate 180 --files "%1"'          -MultiSelect
-        _add "18_A4_NOAR"   "Convert Selected to A4 (no auto-rotate)"      '--size a4 --no-auto-rotate --files "%1"'      -MultiSelect
-        _add "19_A4_PENCIL" "Convert Selected to A4 (pencil / paper look)" '--size a4 --style pencil --files "%1"'        -MultiSelect
+        $launcher = 'powershell -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "' + $script:SelectedLauncherPath + '" -ExePath "' + $exe + '"'
+        # Explorer can still launch legacy per-file verbs on some file classes.
+        # Route every invocation through a tiny queueing launcher so only the
+        # first process opens a console and runs jpg2pdf once for the full batch.
+        _add "11_A4"        "Convert Selected to A4"                       ($launcher + ' -Size a4 "%1"')                             -MultiSelect -RawCommand
+        _add "12_Letter"    "Convert Selected to Letter"                   ($launcher + ' -Size letter "%1"')                         -MultiSelect -RawCommand
+        _add "13_Legal"     "Convert Selected to Legal"                    ($launcher + ' -Size legal "%1"')                          -MultiSelect -RawCommand
+        _add "15_A4_CW"     "Convert Selected to A4 (rotate 90 CW)"        ($launcher + ' -Size a4 -Rotate 270 "%1"')                 -MultiSelect -RawCommand
+        _add "16_A4_CCW"    "Convert Selected to A4 (rotate 90 CCW)"       ($launcher + ' -Size a4 -Rotate 90 "%1"')                  -MultiSelect -RawCommand
+        _add "17_A4_180"    "Convert Selected to A4 (rotate 180)"          ($launcher + ' -Size a4 -Rotate 180 "%1"')                 -MultiSelect -RawCommand
+        _add "18_A4_NOAR"   "Convert Selected to A4 (no auto-rotate)"      ($launcher + ' -Size a4 -NoAutoRotate "%1"')               -MultiSelect -RawCommand
+        _add "19_A4_PENCIL" "Convert Selected to A4 (pencil / paper look)" ($launcher + ' -Size a4 -Style pencil "%1"')               -MultiSelect -RawCommand
     }
 }
 
