@@ -53,32 +53,39 @@ def apply_pencil(im: Image.Image, opacity: float, brightness: float,
                  ink_threshold: int = 90, ink_darken: float = 0.65) -> Image.Image:
     """Make the image look like pencil writing on paper.
 
-    Two-zone level remap (per channel) so text stays readable:
-      * Dark pixels (<= ink_threshold)  -> kept (or slightly darkened) so writing is bold.
-      * Lighter pixels (> ink_threshold) -> pushed toward white by (1 - opacity)
-        so paper / background / mid-tones fade out.
+    Approach: a smooth S-curve (contrast remap) so dark strokes stay solid
+    black while paper / mid-tones / shading roll off to white. This keeps
+    anti-aliased text edges intact (a hard threshold would chop them off and
+    make small text look pixelated).
 
-    opacity:    how much of the *non-ink* pixels survives (0..1).
-                Lower = more washed out paper. Default 0.4 keeps faint shading.
-    brightness: post-process multiplier on the whole image (default 1.0 = none).
+      contrast = 1 + (1 - opacity) * 4
+      out = clamp( ((v/255 - 0.5) * contrast + 0.5) * 255 )
+
+    opacity:    overall darkness of non-ink (0..1). Lower = whiter paper.
+                Default 0.25 → contrast=4 → ink stays black, paper goes white.
+    brightness: post multiplier (default 1.0 = none).
+    ink_threshold / ink_darken: legacy knobs, kept for CLI compat. When
+        ink_threshold > 0 we additionally darken pixels at or below it by
+        `ink_darken` so very dark ink can be made even blacker on demand.
     """
-    opacity       = max(0.0, min(1.0, opacity))
-    brightness    = max(0.1, brightness)
-    ink_threshold = max(0, min(255, ink_threshold))
-    ink_darken    = max(0.1, min(1.0, ink_darken))
+    opacity    = max(0.0, min(1.0, opacity))
+    brightness = max(0.1, brightness)
+    ink_darken = max(0.1, min(1.0, ink_darken))
 
-    fade = 1.0 - opacity  # how strongly non-ink pixels are pulled toward white
-    lut_single = []
+    contrast = 1.0 + (1.0 - opacity) * 4.0
+
+    lut = []
     for v in range(256):
+        # S-curve / contrast around mid-gray.
+        t = ((v / 255.0) - 0.5) * contrast + 0.5
+        out = int(round(max(0.0, min(1.0, t)) * 255))
+        # Optional extra darken for very dark ink.
         if v <= ink_threshold:
-            # Keep ink — and darken a touch so it reads as "more black".
-            lut_single.append(max(0, int(round(v * ink_darken))))
-        else:
-            # Push toward white: out = 255 - (255 - v) * (1 - fade)
-            lut_single.append(int(round(255 - (255 - v) * (1.0 - fade))))
+            out = min(out, int(round(v * ink_darken)))
+        lut.append(out)
 
     im = im.convert("RGB")
-    im = im.point(lut_single * 3)  # apply same LUT to R, G, B
+    im = im.point(lut * 3)  # apply to R, G, B channels
     if brightness != 1.0:
         im = ImageEnhance.Brightness(im).enhance(brightness)
     return im
