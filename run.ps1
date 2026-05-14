@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   One-shot bootstrap for jpg2pdf on Windows:
     pull repo -> install Python deps -> compile jpg2pdf.exe ->
@@ -57,11 +57,39 @@ function _Log {
     $line = "{0} [{1,-5}] {2}" -f (Get-Date -Format "HH:mm:ss.fff"), $Level, $Msg
     try { Add-Content -LiteralPath $script:LogFile -Value $line -Encoding UTF8 } catch {}
 }
-function Info($m){ _Log "INFO" $m; Write-Host "[jpg2pdf] $m" -ForegroundColor Cyan }
-function Warn($m){ _Log "WARN" $m; Write-Host "[jpg2pdf] $m" -ForegroundColor Yellow }
-function Die ($m){ _Log "ERROR" $m; Write-Host "[jpg2pdf] $m" -ForegroundColor Red;
-                   Write-Host "[jpg2pdf] Full log: $script:LogFile" -ForegroundColor Red; exit 1 }
-function Verb($m){ _Log "VERB" $m; if ($script:VerboseMode) { Write-Host "[jpg2pdf]   $m" -ForegroundColor DarkGray } }
+function _Tag([string]$t,[ConsoleColor]$c){ Write-Host -NoNewline "[" -ForegroundColor DarkGray; Write-Host -NoNewline $t -ForegroundColor $c; Write-Host -NoNewline "] " -ForegroundColor DarkGray }
+function Info($m){ _Log "INFO" $m; _Tag " ok " Green;   Write-Host $m -ForegroundColor Gray }
+function Warn($m){ _Log "WARN" $m; _Tag "warn" Yellow;  Write-Host $m -ForegroundColor Yellow }
+function Die ($m){ _Log "ERROR" $m; _Tag "fail" Red;    Write-Host $m -ForegroundColor Red
+                   _Tag "fail" Red; Write-Host "Full log: $script:LogFile" -ForegroundColor DarkGray; exit 1 }
+function Verb($m){ _Log "VERB" $m; if ($script:VerboseMode) { _Tag "dbg " DarkGray; Write-Host $m -ForegroundColor DarkGray } }
+
+function Show-Banner {
+    param([string]$Version)
+    $line = ('-' * 60)
+    Write-Host ""
+    Write-Host "  $line" -ForegroundColor DarkGray
+    Write-Host "   jpg2pdf installer" -NoNewline -ForegroundColor Magenta
+    Write-Host "   v$Version" -ForegroundColor DarkGray
+    Write-Host "   images -> PDF, with Explorer right-click integration" -ForegroundColor DarkGray
+    Write-Host "  $line" -ForegroundColor DarkGray
+    Write-Host ""
+}
+function Show-Section {
+    param([int]$N,[int]$Total,[string]$Title)
+    Write-Host ""
+    Write-Host ("  [{0}/{1}] " -f $N,$Total) -NoNewline -ForegroundColor DarkCyan
+    Write-Host $Title -ForegroundColor Cyan
+    Write-Host ("  " + ('-' * (8 + $Title.Length))) -ForegroundColor DarkGray
+}
+function Show-Footer {
+    Write-Host ""
+    Write-Host ("  " + ('-' * 60)) -ForegroundColor DarkGray
+    Write-Host "   Installation complete." -ForegroundColor Green
+    Write-Host "   Open a NEW terminal so PATH changes take effect." -ForegroundColor DarkGray
+    Write-Host ("  " + ('-' * 60)) -ForegroundColor DarkGray
+    Write-Host ""
+}
 
 # Run an external command, tee stdout+stderr to the log file.
 # In verbose mode, stream live to console; otherwise show only on failure.
@@ -112,6 +140,7 @@ function Invoke-Logged {
     }
 }
 
+Show-Banner -Version $RunPs1Version
 Info "Log file: $script:LogFile"
 if ($script:VerboseMode) { Info "Verbose mode ON" }
 
@@ -245,7 +274,7 @@ if ($Unregister) {
     exit $LASTEXITCODE
 }
 
-# ---------- 1. Python ----------
+Show-Section 1 7 "Python"
 $py = Get-Python
 if (-not $py) {
     Info "Python not found. Installing via winget..."
@@ -263,7 +292,7 @@ if (-not $py) {
 Info "Python: $py"
 Invoke-Logged -Label "python --version" -FilePath $py -ArgumentList @("--version") -AllowFailure | Out-Null
 
-# ---------- 2. Git ----------
+Show-Section 2 7 "Git"
 $git = Get-Command git -ErrorAction SilentlyContinue
 if (-not $git -and (Get-Command winget -ErrorAction SilentlyContinue)) {
     Info "Git not found. Installing..."
@@ -276,7 +305,7 @@ if (-not $git -and (Get-Command winget -ErrorAction SilentlyContinue)) {
 }
 if ($git) { Verb "git: $($git.Source)" }
 
-# ---------- 3. Pull / clone repo ----------
+Show-Section 3 7 "Pull / clone repo"
 if ($localRepo) {
     Info "Using local repo at: $localRepo"
     if ($git -and (Test-Path (Join-Path $localRepo ".git"))) {
@@ -306,14 +335,14 @@ $reqsFile  = Join-Path $InstallDir "tools\jpg2pdf\requirements.txt"
 $regScript = Join-Path $InstallDir "tools\jpg2pdf\scripts\register-context-menu.ps1"
 if (-not (Test-Path $srcScript)) { Die "Missing $srcScript" }
 
-# ---------- 4. Python deps ----------
+Show-Section 4 7 "Python dependencies"
 Info "Installing Python dependencies..."
 # Drop --quiet so log captures real pip output for troubleshooting.
 $pipArgs = @("-m","pip","install","--user","--upgrade","--disable-pip-version-check","-r",$reqsFile)
 if ($script:VerboseMode) { $pipArgs += "--verbose" }
 Invoke-Logged -Label "pip install -r requirements.txt" -FilePath $py -ArgumentList $pipArgs
 
-# ---------- 5. Compile (PyInstaller) or shim ----------
+Show-Section 5 7 "Compile (PyInstaller) or shim"
 $binDir = $script:BinDir
 New-Item -ItemType Directory -Force -Path $binDir | Out-Null
 $exePath  = $script:ExePath
@@ -393,7 +422,7 @@ if ($SelfUpdate -and -not $stampChanged -and -not $Force) {
     exit 0
 }
 
-# ---------- 6. Persist on User PATH (safe update) ----------
+Show-Section 6 7 "Persist on User PATH"
 function Update-UserPath {
     param([Parameter(Mandatory=$true)][string]$Dir)
 
@@ -457,7 +486,7 @@ function Update-UserPath {
 
 [void](Update-UserPath -Dir $binDir)
 
-# ---------- 7. Register Explorer context menu ----------
+Show-Section 7 7 "Explorer context menu"
 if (-not $NoContextMenu) {
     if (-not (Test-Path $regScript)) {
         Warn "Missing $regScript - skipping context-menu registration."
@@ -468,12 +497,14 @@ if (-not $NoContextMenu) {
     }
 }
 
-Info "Done! Open a NEW terminal, then try:"
+Show-Footer
+Write-Host "  Try it:" -ForegroundColor Yellow
 Write-Host "    jpg2pdf `"C:\Photos`" --size a4" -ForegroundColor Green
 Write-Host "    jpg2pdf . --size letter --fit cover --out album.pdf" -ForegroundColor Green
 Write-Host "    jpg2pdf . --size legal --orientation landscape --recursive" -ForegroundColor Green
 Write-Host ""
-Info "Right-click a folder, folder background, or selected images:"
-Write-Host "    Images to PDF >  Convert All / Selected to A4 / Letter / Legal" -ForegroundColor Green
+Write-Host "  Right-click a folder, folder background, or selected images:" -ForegroundColor Yellow
+Write-Host "    Images to PDF  >  Convert All / Selected to A4 / Letter / Legal" -ForegroundColor Green
 Write-Host ""
-Info "Full session log: $script:LogFile"
+Write-Host ("  Full session log: {0}" -f $script:LogFile) -ForegroundColor DarkGray
+Write-Host ""
