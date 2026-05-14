@@ -19,6 +19,7 @@ $ErrorActionPreference = "Stop"
 if (-not (Test-Path $ExePath)) { Write-Error "Not found: $ExePath"; exit 1 }
 $exe = (Resolve-Path $ExePath).Path
 $script:SelectedLauncherPath = Join-Path (Split-Path -Parent $exe) "jpg2pdf-selected-launcher.ps1"
+$script:SelectedLauncherVbsPath = Join-Path (Split-Path -Parent $exe) "jpg2pdf-selected-launcher.vbs"
 
 function Write-SelectedFilesLauncher {
     param([Parameter(Mandatory=$true)][string]$Path)
@@ -154,6 +155,29 @@ Start-Process -FilePath $cmdFile -WorkingDirectory $firstDir
     Set-Content -LiteralPath $Path -Value $content -Encoding UTF8
 }
 
+function Write-SelectedFilesVbsLauncher {
+    param(
+        [Parameter(Mandatory=$true)][string]$Path,
+        [Parameter(Mandatory=$true)][string]$PowerShellLauncherPath
+    )
+
+    $escapedLauncher = $PowerShellLauncherPath.Replace('"', '""')
+    $content = @"
+Dim shell, args, i, cmd
+Set shell = CreateObject(""WScript.Shell"")
+cmd = ""powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File """"$escapedLauncher""""""
+For i = 0 To WScript.Arguments.Count - 1
+  cmd = cmd & "" "" & QuoteArg(WScript.Arguments(i))
+Next
+shell.Run cmd, 0, False
+
+Function QuoteArg(value)
+  QuoteArg = """""" & Replace(value, """""", ""\""""") & """"""
+End Function
+"@
+    Set-Content -LiteralPath $Path -Value $content -Encoding ASCII
+}
+
 function New-Key($path) {
     if (-not (Test-Path $path)) { New-Item -Path $path -Force | Out-Null }
 }
@@ -223,6 +247,7 @@ function Register-SubItems {
 
 Write-Host "[ctx] Registering context menu (HKCU)..." -ForegroundColor Cyan
 Write-SelectedFilesLauncher -Path $script:SelectedLauncherPath
+Write-SelectedFilesVbsLauncher -Path $script:SelectedLauncherVbsPath -PowerShellLauncherPath $script:SelectedLauncherPath
 
 # Build BOTH submenus into the same shared key (folder + file items live
 # together; harmless duplicates won't show because each parent links here).
@@ -268,7 +293,7 @@ function Build-Submenu {
         _add "08_A4_NOAR"   "Convert All to A4 (no auto-rotate)"      '--size a4 --no-auto-rotate "%V"'
         _add "09_A4_PENCIL" "Convert All to A4 (pencil / paper look)" '--size a4 --style pencil --ask-strength "%V"'
     } else {
-        $launcher = 'powershell -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "' + $script:SelectedLauncherPath + '" -ExePath "' + $exe + '"'
+        $launcher = 'wscript.exe //B //Nologo "' + $script:SelectedLauncherVbsPath + '" -ExePath "' + $exe + '"'
         # Explorer can still launch legacy per-file verbs on some file classes.
         # Route every invocation through a tiny queueing launcher so only the
         # first process opens a console and runs jpg2pdf once for the full batch.
