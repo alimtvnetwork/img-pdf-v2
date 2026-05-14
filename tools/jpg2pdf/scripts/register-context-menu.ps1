@@ -227,7 +227,7 @@ function Build-Submenu {
     }
     New-Key $base
 
-    function _add($Id, $Label, $ArgsLine, [switch]$MultiSelect) {
+    function _add($Id, $Label, $ArgsLine, [switch]$MultiSelect, [switch]$RawCommand) {
         $k = "$base\$Id"
         New-Key $k
         Set-ItemProperty -Path $k -Name "(default)" -Value $Label
@@ -240,8 +240,9 @@ function Build-Submenu {
             New-ItemProperty -Path $k -Name "MultiSelectModel" -Value "Player" -PropertyType String -Force | Out-Null
         }
         New-Key "$k\command"
+        $commandLine = if ($RawCommand) { $ArgsLine } else { ('"' + $exe + '" ' + $ArgsLine) }
         Set-ItemProperty -Path "$k\command" -Name "(default)" `
-            -Value ('"' + $exe + '" ' + $ArgsLine)
+            -Value $commandLine
     }
 
     if ($Mode -eq 'Folder') {
@@ -259,14 +260,14 @@ function Build-Submenu {
         # Explorer can still launch legacy per-file verbs on some file classes.
         # Route every invocation through a tiny queueing launcher so only the
         # first process opens a console and runs jpg2pdf once for the full batch.
-        _add "11_A4"        "Convert Selected to A4"                       ($launcher + ' -Size a4 "%1"')                             -MultiSelect
-        _add "12_Letter"    "Convert Selected to Letter"                   ($launcher + ' -Size letter "%1"')                         -MultiSelect
-        _add "13_Legal"     "Convert Selected to Legal"                    ($launcher + ' -Size legal "%1"')                          -MultiSelect
-        _add "15_A4_CW"     "Convert Selected to A4 (rotate 90 CW)"        ($launcher + ' -Size a4 -Rotate 270 "%1"')                 -MultiSelect
-        _add "16_A4_CCW"    "Convert Selected to A4 (rotate 90 CCW)"       ($launcher + ' -Size a4 -Rotate 90 "%1"')                  -MultiSelect
-        _add "17_A4_180"    "Convert Selected to A4 (rotate 180)"          ($launcher + ' -Size a4 -Rotate 180 "%1"')                 -MultiSelect
-        _add "18_A4_NOAR"   "Convert Selected to A4 (no auto-rotate)"      ($launcher + ' -Size a4 -NoAutoRotate "%1"')               -MultiSelect
-        _add "19_A4_PENCIL" "Convert Selected to A4 (pencil / paper look)" ($launcher + ' -Size a4 -Style pencil "%1"')               -MultiSelect
+        _add "11_A4"        "Convert Selected to A4"                       ($launcher + ' -Size a4 "%1"')                             -MultiSelect -RawCommand
+        _add "12_Letter"    "Convert Selected to Letter"                   ($launcher + ' -Size letter "%1"')                         -MultiSelect -RawCommand
+        _add "13_Legal"     "Convert Selected to Legal"                    ($launcher + ' -Size legal "%1"')                          -MultiSelect -RawCommand
+        _add "15_A4_CW"     "Convert Selected to A4 (rotate 90 CW)"        ($launcher + ' -Size a4 -Rotate 270 "%1"')                 -MultiSelect -RawCommand
+        _add "16_A4_CCW"    "Convert Selected to A4 (rotate 90 CCW)"       ($launcher + ' -Size a4 -Rotate 90 "%1"')                  -MultiSelect -RawCommand
+        _add "17_A4_180"    "Convert Selected to A4 (rotate 180)"          ($launcher + ' -Size a4 -Rotate 180 "%1"')                 -MultiSelect -RawCommand
+        _add "18_A4_NOAR"   "Convert Selected to A4 (no auto-rotate)"      ($launcher + ' -Size a4 -NoAutoRotate "%1"')               -MultiSelect -RawCommand
+        _add "19_A4_PENCIL" "Convert Selected to A4 (pencil / paper look)" ($launcher + ' -Size a4 -Style pencil "%1"')               -MultiSelect -RawCommand
     }
 }
 
