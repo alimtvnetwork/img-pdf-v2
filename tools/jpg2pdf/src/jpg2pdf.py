@@ -92,10 +92,12 @@ def apply_pencil(im: Image.Image, opacity: float, brightness: float,
     # so the LUT below has more room to darken the actual strokes.
     bg_blur = gray.filter(ImageFilter.GaussianBlur(radius=max(gray.size) / 30))
     from PIL import ImageMath
-    _eval = getattr(ImageMath, "unsafe_eval", None) or ImageMath.eval  # Pillow ≥10.3 renamed it
+    _eval = getattr(ImageMath, "unsafe_eval", None) or ImageMath.eval
+    # Avoid div-by-zero by lifting bg floor to 1 via point().
+    bg_safe = bg_blur.point(lambda v: max(v, 1))
     gray = _eval(
-        "convert(min(255, (a * 255) / max(b, 1)), 'L')",
-        a=gray, b=bg_blur,
+        "convert(float(a) * 255.0 / float(b), 'L')",  # convert('L') saturates to 0..255
+        a=gray, b=bg_safe,
     )
 
     # 2b. Auto-level (stretch 1%..99% to 0..255) so dingy scans go truly white.
