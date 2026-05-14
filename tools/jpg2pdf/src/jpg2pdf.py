@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 
-__version__ = "0.6.0"
+__version__ = "0.6.1"
 
 PAGE_SIZES = {  # points (1/72 inch)
     "a4":     (595.28, 841.89),
@@ -50,7 +50,7 @@ def collect_from_list(paths):
 
 
 def apply_pencil(im: Image.Image, opacity: float, brightness: float,
-                 ink_threshold: int = 90, ink_darken: float = 0.65) -> Image.Image:
+                 ink_threshold: int = 110, ink_darken: float = 0.45) -> Image.Image:
     """Render the image as crisp pencil writing on clean paper.
 
     Pipeline:
@@ -86,11 +86,31 @@ def apply_pencil(im: Image.Image, opacity: float, brightness: float,
         im = bg
     gray = im.convert("L")
 
-    # 2. Auto-level (stretch 1%..99% to 0..255) so dingy scans go truly white.
+    # 2a. Background flattening — divide by a heavily-blurred copy of the page
+    # to remove uneven lighting / shadow gradients from phone photos. This is
+    # the key trick that makes faint pencil pop: paper goes uniformly white,
+    # so the LUT below has more room to darken the actual strokes.
+    bg_blur = gray.filter(ImageFilter.GaussianBlur(radius=max(gray.size) / 30))
+    from PIL import ImageMath
+    _eval = getattr(ImageMath, "unsafe_eval", None) or ImageMath.eval
+    # Avoid div-by-zero by lifting bg floor to 1 via point().
+    bg_safe = bg_blur.point(lambda v: max(v, 1))
+    gray = _eval(
+        "convert(float(a) * 255.0 / float(b), 'L')",  # convert('L') saturates to 0..255
+        a=gray, b=bg_safe,
+    )
+
+    # 2b. Auto-level (stretch 1%..99% to 0..255) so dingy scans go truly white.
     gray = ImageOps.autocontrast(gray, cutoff=(1, 1))
 
     # 3. Edge sharpening — recovers crisp pencil-stroke contours.
-    gray = gray.filter(ImageFilter.UnsharpMask(radius=1.2, percent=140, threshold=2))
+    gray = gray.filter(ImageFilter.UnsharpMask(radius=1.4, percent=180, threshold=2))
+
+    # 3b. Gamma < 1 darkens midtones — pulls grey graphite toward black without
+    # crushing paper (paper is already at 255 from the flatten step).
+    gamma = 0.65
+    gamma_lut = [int(round(((v / 255.0) ** gamma) * 255)) for v in range(256)]
+    gray = gray.point(gamma_lut)
 
     # 4. Smoothstep LUT.
     dark_point  = max(0,   min(200, ink_threshold - 20))   # full-ink boundary
@@ -221,10 +241,10 @@ def main():
     ap.add_argument("--pencil-opacity", type=float, default=0.25,
                     help="Pencil style: how much non-ink survives (0..1, default 0.25). "
                          "Lower = whiter paper.")
-    ap.add_argument("--pencil-ink-threshold", type=int, default=90,
+    ap.add_argument("--pencil-ink-threshold", type=int, default=110,
                     help="Pencil style: pixel value (0..255) below which a pixel is "
                          "treated as ink and kept dark (default 90).")
-    ap.add_argument("--pencil-ink-darken", type=float, default=0.55,
+    ap.add_argument("--pencil-ink-darken", type=float, default=0.45,
                     help="Pencil style: ink multiplier (<1 makes ink blacker, default 0.65).")
     ap.add_argument("--pencil-brightness", type=float, default=1.0,
                     help="Pencil style: post-process brightness multiplier (default 1.0).")
