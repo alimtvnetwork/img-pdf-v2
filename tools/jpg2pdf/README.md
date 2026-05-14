@@ -7,7 +7,7 @@ See [`spec/SPEC.md`](spec/SPEC.md) for the full specification.
 
 ## Install — one-liner (prebuilt binaries from GitHub Releases)
 
-Replace `alimtvnetwork/img-pdf` with this repo's GitHub path.
+Override the repo at any time with `JPG2PDF_REPO=other-user/other-repo` (env var).
 
 ### Windows (PowerShell)
 
