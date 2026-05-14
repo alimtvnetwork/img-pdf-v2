@@ -42,9 +42,15 @@ Drops `jpg2pdf` into `$HOME/.local/bin` (override with `JPG2PDF_PREFIX`).
 The script tells you the exact `export PATH=...` line to add if that
 folder isn't on `PATH` yet.
 
+> **macOS note:** binaries are **ad-hoc signed** (not Apple-notarized).
+> The installer auto-strips `com.apple.quarantine`, so the CLI works
+> straight after `curl | sh`. If you download the `.zip` from the
+> Releases page manually, run once:
+> `xattr -dr com.apple.quarantine ~/.local/bin/jpg2pdf`
+
 Prebuilt assets published by `.github/workflows/release.yml`:
-`jpg2pdf-windows-x64.exe`, `jpg2pdf-linux-x64`, `jpg2pdf-macos-x64`,
-`jpg2pdf-macos-arm64`, plus `SHA256SUMS.txt`.
+`jpg2pdf-windows-x64.exe`, `jpg2pdf-linux-x64`, `jpg2pdf-linux-arm64`,
+`jpg2pdf-macos-x64`, `jpg2pdf-macos-arm64`, plus `SHA256SUMS.txt`.
 
 ## Use
 
