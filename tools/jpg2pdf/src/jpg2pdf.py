@@ -87,15 +87,18 @@ def apply_pencil(im: Image.Image, opacity: float, brightness: float,
 def make_page(img_path: Path, page_w_pt: float, page_h_pt: float,
               fit: str, dpi: int, auto_rotate: str, rotate: int,
               style: str = "none",
-              pencil_opacity: float = 0.4,
-              pencil_brightness: float = 1.25) -> Image.Image:
+              pencil_opacity: float = 0.25,
+              pencil_brightness: float = 1.0,
+              pencil_ink_threshold: int = 90,
+              pencil_ink_darken: float = 0.65) -> Image.Image:
     """Render one PDF page at `dpi` DPI.
 
     rotate:      extra rotation applied to every image (0/90/180/270, CCW).
     auto_rotate: 'cw'  -> rotate landscape images 90° clockwise to fit portrait page
                  'ccw' -> rotate 90° counter-clockwise
                  'off' -> never auto-rotate
-    style:       'none' (default) or 'pencil' (faint pencil-on-paper look).
+    style:       'none' (default) or 'pencil' (text/dark strokes stay black,
+                 paper & mid-tones fade out).
     """
     with Image.open(img_path) as im:
         im = im.convert("RGB")
@@ -114,7 +117,9 @@ def make_page(img_path: Path, page_w_pt: float, page_h_pt: float,
                 iw, ih = im.size
 
         if style == "pencil":
-            im = apply_pencil(im, pencil_opacity, pencil_brightness)
+            im = apply_pencil(im, pencil_opacity, pencil_brightness,
+                              ink_threshold=pencil_ink_threshold,
+                              ink_darken=pencil_ink_darken)
 
         scale = dpi / 72.0
         canvas_w = max(1, int(round(page_w_pt * scale)))
