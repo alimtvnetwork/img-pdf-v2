@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 
-__version__ = "0.6.0"
+__version__ = "0.6.1"
 
 PAGE_SIZES = {  # points (1/72 inch)
     "a4":     (595.28, 841.89),
@@ -238,10 +238,10 @@ def main():
     ap.add_argument("--pencil-opacity", type=float, default=0.25,
                     help="Pencil style: how much non-ink survives (0..1, default 0.25). "
                          "Lower = whiter paper.")
-    ap.add_argument("--pencil-ink-threshold", type=int, default=90,
+    ap.add_argument("--pencil-ink-threshold", type=int, default=110,
                     help="Pencil style: pixel value (0..255) below which a pixel is "
                          "treated as ink and kept dark (default 90).")
-    ap.add_argument("--pencil-ink-darken", type=float, default=0.55,
+    ap.add_argument("--pencil-ink-darken", type=float, default=0.45,
                     help="Pencil style: ink multiplier (<1 makes ink blacker, default 0.65).")
     ap.add_argument("--pencil-brightness", type=float, default=1.0,
                     help="Pencil style: post-process brightness multiplier (default 1.0).")
