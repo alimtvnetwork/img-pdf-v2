@@ -45,10 +45,10 @@ case "$uname_m" in
 esac
 
 # Linux arm64 is not currently published — fall through with a clear error.
+# Asset names match the GitHub Release uploads.
 asset="jpg2pdf-${os}-${arch}"
 case "$asset" in
   jpg2pdf-windows-*) die "Use install.ps1 on Windows." ;;
-  jpg2pdf-linux-arm64) die "No prebuilt binary for linux/arm64. Build from source: see README." ;;
 esac
 
 # --- pick a downloader -----------------------------------------------------
