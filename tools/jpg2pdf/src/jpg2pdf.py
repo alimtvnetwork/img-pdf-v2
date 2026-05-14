@@ -49,18 +49,39 @@ def collect_from_list(paths):
     return out
 
 
-def apply_pencil(im: Image.Image, opacity: float, brightness: float) -> Image.Image:
-    """Make the image look like a faint pencil sketch on paper.
+def apply_pencil(im: Image.Image, opacity: float, brightness: float,
+                 ink_threshold: int = 90, ink_darken: float = 0.65) -> Image.Image:
+    """Make the image look like pencil writing on paper.
 
-    - Reduce opacity: blend the image toward a white background
-      (final = white*(1-opacity) + image*opacity).
-    - Increase brightness: lighten the remaining ink.
+    Two-zone level remap (per channel) so text stays readable:
+      * Dark pixels (<= ink_threshold)  -> kept (or slightly darkened) so writing is bold.
+      * Lighter pixels (> ink_threshold) -> pushed toward white by (1 - opacity)
+        so paper / background / mid-tones fade out.
+
+    opacity:    how much of the *non-ink* pixels survives (0..1).
+                Lower = more washed out paper. Default 0.4 keeps faint shading.
+    brightness: post-process multiplier on the whole image (default 1.0 = none).
     """
-    opacity    = max(0.0, min(1.0, opacity))
-    brightness = max(0.1, brightness)
-    white = Image.new("RGB", im.size, "white")
-    faded = Image.blend(white, im, opacity)
-    return ImageEnhance.Brightness(faded).enhance(brightness)
+    opacity       = max(0.0, min(1.0, opacity))
+    brightness    = max(0.1, brightness)
+    ink_threshold = max(0, min(255, ink_threshold))
+    ink_darken    = max(0.1, min(1.0, ink_darken))
+
+    fade = 1.0 - opacity  # how strongly non-ink pixels are pulled toward white
+    lut_single = []
+    for v in range(256):
+        if v <= ink_threshold:
+            # Keep ink — and darken a touch so it reads as "more black".
+            lut_single.append(max(0, int(round(v * ink_darken))))
+        else:
+            # Push toward white: out = 255 - (255 - v) * (1 - fade)
+            lut_single.append(int(round(255 - (255 - v) * (1.0 - fade))))
+
+    im = im.convert("RGB")
+    im = im.point(lut_single * 3)  # apply same LUT to R, G, B
+    if brightness != 1.0:
+        im = ImageEnhance.Brightness(im).enhance(brightness)
+    return im
 
 
 def make_page(img_path: Path, page_w_pt: float, page_h_pt: float,
