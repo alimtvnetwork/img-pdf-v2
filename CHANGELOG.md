@@ -4,6 +4,14 @@ All notable changes to `jpg2pdf` are documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.5] - 2026-05-15
+
+### Fixed
+- Windows installer: guarded session PATH updates so a missing `$env:Path` cannot crash after a release or main-branch artifact download succeeds.
+
+### Changed
+- Root and tool README pinned-version install snippets now reference `v1.2.5`.
+
 ## [1.2.4] - 2026-05-15
 
 ### Fixed
