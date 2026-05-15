@@ -195,6 +195,13 @@ if [ -n "$VERSION" ]; then
   if download_release_asset "$VERSION" "$target"; then
     installed_from="release $VERSION"
   fi
+  if [ -z "$installed_from" ]; then
+    warn "Release asset was not available. Falling back to the latest successful main-branch artifact."
+    if download_main_artifact "$target"; then
+      installed_from="latest main-branch artifact"
+      VERSION=""
+    fi
+  fi
 else
   info "Resolving latest release of $REPO ..."
   if api_json="$(try_get "Latest release lookup" "$GITHUB_API/repos/$REPO/releases/latest")"; then

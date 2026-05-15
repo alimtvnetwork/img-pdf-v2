@@ -110,6 +110,13 @@ try {
     if ($Version) {
         Info "Installing jpg2pdf $Version"
         if (Download-ReleaseAsset $Repo $Version $asset $exePath) { $installedFrom = "release $Version" }
+        if (-not $installedFrom) {
+            Warn "Release asset was not available. Falling back to the latest successful main-branch artifact."
+            if (Download-MainArtifact $Repo $asset $exePath) {
+                $installedFrom = "latest main-branch artifact"
+                $Version = ""
+            }
+        }
     } else {
         Info "Resolving latest release of $Repo ..."
         $rel = Get-GitHubJson "https://api.github.com/repos/$Repo/releases/latest" "Latest release lookup"
