@@ -137,25 +137,13 @@ function Save-SafeUrl($Description, $Uri, $OutFile) {
 
     function Get-GitHubJson($Uri, $Description) {
         Debug2 "GET $Uri ($Description)"
-        try {
-            return Invoke-RestMethod -Headers $headers -Uri $Uri -UseBasicParsing
-        } catch {
-            Warn "$Description failed: $_"
-            Debug2 "Exception: $($_.Exception.GetType().FullName): $($_.Exception.Message)"
-            return $null
-        }
+        return Invoke-Safe $Description { Invoke-RestMethod -Headers $headers -Uri $Uri -UseBasicParsing -ErrorAction Stop } $null
     }
 
     function Download-ReleaseAsset($Repo, $Version, $Asset, $OutFile) {
         $dlUrl = "https://github.com/$Repo/releases/download/$Version/$Asset"
         Info "Downloading $dlUrl"
-        try {
-            Invoke-WebRequest -Headers $headers -Uri $dlUrl -OutFile $OutFile -UseBasicParsing
-            return $true
-        } catch {
-            Warn "Release download failed: $_"
-            return $false
-        }
+        return Save-SafeUrl "Release download" $dlUrl $OutFile
     }
 
     function Get-SafeTempDir() {
@@ -183,23 +171,23 @@ function Save-SafeUrl($Description, $Uri, $OutFile) {
             $tmpRoot = $null
             try {
                 $tempBase = Get-SafeTempDir
-                $tmpRoot = Join-Path $tempBase ("jpg2pdf-artifact-" + [guid]::NewGuid().ToString("N"))
-                $zipFile = Join-Path $tmpRoot "artifact.zip"
-                $extractDir = Join-Path $tmpRoot "unzipped"
-                New-Item -ItemType Directory -Force -Path $tmpRoot | Out-Null
+                $tmpRoot = Join-SafePath $tempBase ("jpg2pdf-artifact-" + [guid]::NewGuid().ToString("N"))
+                $zipFile = Join-SafePath $tmpRoot "artifact.zip"
+                $extractDir = Join-SafePath $tmpRoot "unzipped"
+                if (-not (Invoke-SafeBool "Temp directory creation" { New-Item -ItemType Directory -Force -Path $tmpRoot -ErrorAction Stop | Out-Null })) { continue }
                 Info "Downloading main-branch artifact from run $($run.id)"
-                Invoke-WebRequest -Headers $headers -Uri $artifact.archive_download_url -OutFile $zipFile -UseBasicParsing
-                Expand-Archive -Path $zipFile -DestinationPath $extractDir -Force
-                $candidate = Join-Path $extractDir $Asset
-                if (-not (Test-Path -LiteralPath $candidate)) {
-                    $candidate = Get-ChildItem -LiteralPath $extractDir -Recurse -File | Where-Object { $_.Name -eq $Asset } | Select-Object -First 1
+                if (-not (Save-SafeUrl "Main-branch artifact download" $artifact.archive_download_url $zipFile)) { continue }
+                if (-not (Invoke-SafeBool "Main-branch artifact extraction" { Expand-Archive -Path $zipFile -DestinationPath $extractDir -Force -ErrorAction Stop })) { continue }
+                $candidate = Join-SafePath $extractDir $Asset
+                if (-not (Test-SafePath $candidate)) {
+                    $candidate = Invoke-Safe "Artifact file lookup" { Get-ChildItem -LiteralPath $extractDir -Recurse -File -ErrorAction Stop | Where-Object { $_.Name -eq $Asset } | Select-Object -First 1 } $null
                     if ($candidate) { $candidate = $candidate.FullName }
                 }
-                if (-not $candidate -or -not (Test-Path -LiteralPath $candidate)) {
+                if (-not $candidate -or -not (Test-SafePath $candidate)) {
                     Warn "Artifact archive did not contain $Asset."
                     continue
                 }
-                Copy-Item -LiteralPath $candidate -Destination $OutFile -Force
+                if (-not (Invoke-SafeBool "Artifact copy" { Copy-Item -LiteralPath $candidate -Destination $OutFile -Force -ErrorAction Stop })) { continue }
                 return $true
             } catch {
                 Warn "Main-branch artifact download failed: $_"
