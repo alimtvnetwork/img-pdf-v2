@@ -26,11 +26,18 @@ if [ ! -d "$TMP_DIR" ]; then TMP_DIR="/tmp"; fi
 if [ ! -d "$TMP_DIR" ]; then TMP_DIR="$PWD_SAFE"; fi
 HOME_DIR="${HOME:-$PWD_SAFE}"
 DEBUG="${JPG2PDF_DEBUG:-0}"
+SHOW_HELP=0
 for _arg in "$@"; do
   case "$_arg" in
     --debug|--verbose|-d|-v) DEBUG=1 ;;
+    --help|-h) SHOW_HELP=1 ;;
   esac
 done
+if [ "$SHOW_HELP" = "1" ]; then
+  printf '%s\n' 'Usage: install.sh [--debug] [--help]'
+  printf '%s\n' 'Env: JPG2PDF_VERSION=vX.Y.Z JPG2PDF_PREFIX=$HOME/bin JPG2PDF_REPO=owner/repo'
+  exit 0
+fi
 
 LOG_FILE="${JPG2PDF_LOG:-$TMP_DIR/jpg2pdf-install-$(date +%Y%m%d-%H%M%S)-$$.log}"
 : > "$LOG_FILE" 2>/dev/null || LOG_FILE=""
@@ -474,7 +481,7 @@ else
   warn "Binary saved from $installed_from but --version failed; the file may be corrupt."
 fi
 
-case ":$PATH:" in
+case ":${PATH:-}:" in
   *":$PREFIX:"*) info "$PREFIX is already on PATH." ;;
   *)
     warn "$PREFIX is not on your PATH."
