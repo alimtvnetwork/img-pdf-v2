@@ -51,26 +51,31 @@ try {
     $NoContextMenu = $false
     $DebugLog = $false
 
-    for ($i = 0; $i -lt $args.Count; $i++) {
-        $arg = [string]$args[$i]
-        switch -Regex ($arg) {
-            '^(--repo|-Repo)$' {
-                $i++
-                if ($i -ge $args.Count) { throw "Missing value for $arg" }
-                $Repo = [string]$args[$i]
-                continue
+    try {
+        for ($i = 0; $i -lt $InstallerArgs.Count; $i++) {
+            $arg = [string]$InstallerArgs[$i]
+            switch -Regex ($arg) {
+                '^(--repo|-Repo)$' {
+                    $i++
+                    if ($i -ge $InstallerArgs.Count) { throw "Missing value for $arg" }
+                    $Repo = [string]$InstallerArgs[$i]
+                    continue
+                }
+                '^(--version|-Version)$' {
+                    $i++
+                    if ($i -ge $InstallerArgs.Count) { throw "Missing value for $arg" }
+                    $Version = [string]$InstallerArgs[$i]
+                    continue
+                }
+                '^(--no-context-menu|-NoContextMenu)$' { $NoContextMenu = $true; continue }
+                '^(--debug|--verbose|-DebugLog|-Verbose|-Verbose2|-d|-v)$' { $DebugLog = $true; continue }
+                default { throw "Unknown installer option: $arg" }
             }
-            '^(--version|-Version)$' {
-                $i++
-                if ($i -ge $args.Count) { throw "Missing value for $arg" }
-                $Version = [string]$args[$i]
-                continue
-            }
-            '^(--no-context-menu|-NoContextMenu)$' { $NoContextMenu = $true; continue }
-            '^(--debug|--verbose|-DebugLog|-Verbose|-Verbose2|-d|-v)$' { $DebugLog = $true; continue }
-            default { throw "Unknown installer option: $arg" }
         }
+    } catch {
+        try { Write-Host "[jpg2pdf] Argument parsing failed safely: $_" -ForegroundColor Yellow } catch { }
     }
+
 
 $script:DebugMode = $false
 if ($DebugLog) { $script:DebugMode = $true }
