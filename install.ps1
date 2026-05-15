@@ -230,8 +230,8 @@ function Convert-SafeJson($Description, $Raw) {
         try {
             $tmp = [System.IO.Path]::GetTempPath()
             if ($tmp) { return $tmp }
-        } catch { }
-        try { return (Get-Location).Path } catch { return "." }
+        } catch { Add-CrashReport "temp path" "Get-SafeTempDir" "current directory" $_ }
+        try { return (Get-Location).Path } catch { Add-CrashReport "Get-Location" "Get-SafeTempDir" "." $_; return "." }
     }
 
     function Download-MainArtifact($Repo, $Asset, $OutFile) {
@@ -277,9 +277,10 @@ function Convert-SafeJson($Description, $Raw) {
                 if (-not (Invoke-SafeBool "Artifact copy" { Copy-Item -LiteralPath $candidate -Destination $OutFile -Force -ErrorAction Stop })) { continue }
                 return $true
             } catch {
+                Add-CrashReport "main artifact:$Asset" "Download-MainArtifact run $($run.id)" "try next workflow run" $_
                 Warn "Main-branch artifact download failed: $_"
             } finally {
-                if ($tmpRoot) { Remove-Item -LiteralPath $tmpRoot -Recurse -Force -ErrorAction SilentlyContinue }
+                if ($tmpRoot) { Invoke-SafeBool "Temp artifact cleanup" { Remove-Item -LiteralPath $tmpRoot -Recurse -Force -ErrorAction Stop } | Out-Null }
             }
         }
         return $false
