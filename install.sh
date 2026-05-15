@@ -5,7 +5,7 @@
 #   curl -fsSL https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.sh | sh
 #
 #   # Pin a specific version:
-#   curl -fsSL https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.sh | JPG2PDF_VERSION=v0.5.0 sh
+#   curl -fsSL https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.sh | JPG2PDF_VERSION=v1.2.2 sh
 #
 #   # Install elsewhere (default: $HOME/.local/bin):
 #   curl -fsSL https://.../install.sh | JPG2PDF_PREFIX=$HOME/bin sh
@@ -13,14 +13,16 @@
 # What it does:
 #   1. Detects OS + arch.
 #   2. Resolves the latest GitHub Release (or $JPG2PDF_VERSION).
-#   3. Downloads the matching binary into $JPG2PDF_PREFIX (default $HOME/.local/bin).
-#   4. chmod +x and reports next steps.
+#   3. If no release is available, falls back to the latest successful main-branch artifact.
+#   4. Downloads the matching binary into $JPG2PDF_PREFIX (default $HOME/.local/bin).
+#   5. chmod +x and reports next steps.
 
 set -eu
 
 REPO="${JPG2PDF_REPO:-alimtvnetwork/img-pdf}"
 VERSION="${JPG2PDF_VERSION:-}"
 PREFIX="${JPG2PDF_PREFIX:-$HOME/.local/bin}"
+GITHUB_API="https://api.github.com"
 
 info() { printf '\033[36m[jpg2pdf]\033[0m %s\n' "$*"; }
 warn() { printf '\033[33m[jpg2pdf]\033[0m %s\n' "$*" >&2; }
@@ -30,7 +32,6 @@ if [ -z "$REPO" ]; then
   die "Set the repo: JPG2PDF_REPO=your-user/your-repo curl ... | sh"
 fi
 
-# --- detect platform -------------------------------------------------------
 uname_s="$(uname -s)"
 uname_m="$(uname -m)"
 case "$uname_s" in
@@ -44,57 +45,200 @@ case "$uname_m" in
   *) die "Unsupported architecture: $uname_m" ;;
 esac
 
-# Linux arm64 is not currently published — fall through with a clear error.
-# Asset names match the GitHub Release uploads.
 asset="jpg2pdf-${os}-${arch}"
 case "$asset" in
   jpg2pdf-windows-*) die "Use install.ps1 on Windows." ;;
 esac
 
-# --- pick a downloader -----------------------------------------------------
 if command -v curl >/dev/null 2>&1; then
-  DL() { curl -fsSL "$1" -o "$2"; }
-  GET() { curl -fsSL "$1"; }
+  GET() {
+    if [ -n "${GITHUB_TOKEN:-}" ]; then
+      curl -fsSL -H "User-Agent: jpg2pdf-installer" -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" "$1"
+    else
+      curl -fsSL -H "User-Agent: jpg2pdf-installer" -H "Accept: application/vnd.github+json" "$1"
+    fi
+  }
+  DL() {
+    if [ -n "${GITHUB_TOKEN:-}" ]; then
+      curl -fL -H "User-Agent: jpg2pdf-installer" -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" "$1" -o "$2"
+    else
+      curl -fL -H "User-Agent: jpg2pdf-installer" -H "Accept: application/vnd.github+json" "$1" -o "$2"
+    fi
+  }
 elif command -v wget >/dev/null 2>&1; then
-  DL() { wget -qO "$2" "$1"; }
-  GET() { wget -qO- "$1"; }
+  GET() {
+    if [ -n "${GITHUB_TOKEN:-}" ]; then
+      wget -qO- --header="User-Agent: jpg2pdf-installer" --header="Accept: application/vnd.github+json" --header="Authorization: Bearer $GITHUB_TOKEN" "$1"
+    else
+      wget -qO- --header="User-Agent: jpg2pdf-installer" --header="Accept: application/vnd.github+json" "$1"
+    fi
+  }
+  DL() {
+    if [ -n "${GITHUB_TOKEN:-}" ]; then
+      wget -O "$2" --header="User-Agent: jpg2pdf-installer" --header="Accept: application/vnd.github+json" --header="Authorization: Bearer $GITHUB_TOKEN" "$1"
+    else
+      wget -O "$2" --header="User-Agent: jpg2pdf-installer" --header="Accept: application/vnd.github+json" "$1"
+    fi
+  }
 else
   die "Need curl or wget to download."
 fi
 
-# --- resolve version -------------------------------------------------------
-if [ -z "$VERSION" ]; then
-  info "Resolving latest release of $REPO ..."
-  api_json="$(GET "https://api.github.com/repos/$REPO/releases/latest")" \
-    || die "Could not query GitHub releases."
-  VERSION="$(printf '%s' "$api_json" \
-    | sed -n 's/.*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p' \
-    | head -n1)"
-  [ -n "$VERSION" ] || die "Could not parse latest tag from GitHub API."
-fi
-info "Installing jpg2pdf $VERSION ($os/$arch)"
+try_get() {
+  desc="$1"
+  url="$2"
+  err_file="${TMPDIR:-/tmp}/jpg2pdf-installer-get-$$.err"
+  if out="$(GET "$url" 2>"$err_file")"; then
+    rm -f "$err_file"
+    printf '%s' "$out"
+    return 0
+  fi
+  err="$(cat "$err_file" 2>/dev/null || true)"
+  rm -f "$err_file"
+  warn "$desc failed: $err"
+  return 1
+}
 
-# --- download --------------------------------------------------------------
-url="https://github.com/$REPO/releases/download/$VERSION/$asset"
+try_download() {
+  desc="$1"
+  url="$2"
+  out="$3"
+  if DL "$url" "$out"; then
+    return 0
+  fi
+  warn "$desc failed: $url"
+  return 1
+}
+
+json_value() {
+  key="$1"
+  sed -n 's/.*"'"$key"'"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n1
+}
+
+download_release_asset() {
+  tag="$1"
+  out="$2"
+  url="https://github.com/$REPO/releases/download/$tag/$asset"
+  info "Downloading $url"
+  try_download "Release download" "$url" "$out"
+}
+
+unpack_artifact() {
+  zip_file="$1"
+  extract_dir="$2"
+  mkdir -p "$extract_dir"
+  if command -v unzip >/dev/null 2>&1; then
+    unzip -q "$zip_file" -d "$extract_dir"
+    return 0
+  fi
+  if command -v python3 >/dev/null 2>&1; then
+    python3 - "$zip_file" "$extract_dir" <<'PYC'
+import sys, zipfile
+with zipfile.ZipFile(sys.argv[1]) as zf:
+    zf.extractall(sys.argv[2])
+PYC
+    return 0
+  fi
+  if [ "$os" = "macos" ] && command -v ditto >/dev/null 2>&1; then
+    ditto -x -k "$zip_file" "$extract_dir"
+    return 0
+  fi
+  return 1
+}
+
+download_main_artifact() {
+  out="$1"
+  info "Looking for latest main-branch artifact named $asset ..."
+  runs_json="$(try_get "Main-branch workflow lookup" "$GITHUB_API/repos/$REPO/actions/workflows/release.yml/runs?branch=main&status=success&per_page=10")" || return 1
+  artifacts_urls="$(printf '%s' "$runs_json" | grep -o '"artifacts_url"[[:space:]]*:[[:space:]]*"[^"]*"' | sed -n 's/.*"artifacts_url":[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 10)"
+  [ -n "$artifacts_urls" ] || return 1
+
+  for artifacts_url in $artifacts_urls; do
+    artifacts_json="$(try_get "Artifact lookup" "$artifacts_url?per_page=100")" || continue
+    artifact_line="$(printf '%s\n' "$artifacts_json" | tr '{' '\n' | grep '"name"[[:space:]]*:[[:space:]]*"'"$asset"'"' | grep -v '"expired"[[:space:]]*:[[:space:]]*true' | head -n 1 || true)"
+    [ -n "$artifact_line" ] || continue
+    archive_url="$(printf '%s' "$artifact_line" | json_value archive_download_url)"
+    [ -n "$archive_url" ] || continue
+
+    tmp_root="${TMPDIR:-/tmp}/jpg2pdf-artifact-$$"
+    zip_file="$tmp_root/artifact.zip"
+    extract_dir="$tmp_root/unzipped"
+    rm -rf "$tmp_root"
+    mkdir -p "$tmp_root"
+    if try_download "Main-branch artifact download" "$archive_url" "$zip_file"; then
+      if unpack_artifact "$zip_file" "$extract_dir"; then
+        candidate="$extract_dir/$asset"
+        if [ ! -f "$candidate" ]; then
+          candidate="$(find "$extract_dir" -type f -name "$asset" | head -n 1 || true)"
+        fi
+        if [ -n "$candidate" ] && [ -f "$candidate" ]; then
+          cp "$candidate" "$out"
+          rm -rf "$tmp_root"
+          return 0
+        fi
+        warn "Artifact archive did not contain $asset."
+      else
+        warn "Could not unpack artifact archive. Install unzip, python3, or ditto."
+      fi
+    fi
+    rm -rf "$tmp_root"
+  done
+  return 1
+}
+
 mkdir -p "$PREFIX"
 target="$PREFIX/jpg2pdf"
-info "Downloading $url"
-DL "$url" "$target" || die "Download failed: $url"
+installed_from=""
+
+if [ -n "$VERSION" ]; then
+  info "Installing jpg2pdf $VERSION ($os/$arch)"
+  if download_release_asset "$VERSION" "$target"; then
+    installed_from="release $VERSION"
+  fi
+  if [ -z "$installed_from" ]; then
+    warn "Release asset was not available. Falling back to the latest successful main-branch artifact."
+    if download_main_artifact "$target"; then
+      installed_from="latest main-branch artifact"
+      VERSION=""
+    fi
+  fi
+else
+  info "Resolving latest release of $REPO ..."
+  if api_json="$(try_get "Latest release lookup" "$GITHUB_API/repos/$REPO/releases/latest")"; then
+    VERSION="$(printf '%s' "$api_json" | json_value tag_name)"
+    if [ -n "$VERSION" ]; then
+      info "Installing jpg2pdf $VERSION ($os/$arch)"
+      if download_release_asset "$VERSION" "$target"; then
+        installed_from="release $VERSION"
+      fi
+    fi
+  else
+    warn "No GitHub Release found. Falling back to the latest successful main-branch artifact."
+  fi
+
+  if [ -z "$installed_from" ]; then
+    if download_main_artifact "$target"; then
+      installed_from="latest main-branch artifact"
+    fi
+  fi
+fi
+
+if [ -z "$installed_from" ]; then
+  die "Could not install jpg2pdf. Publish a release, run the main-branch build, or set GITHUB_TOKEN if artifact access requires it."
+fi
+
 chmod +x "$target"
 
-# --- macOS: strip quarantine flag (binary is ad-hoc signed, not notarized) -
 if [ "$os" = "macos" ] && command -v xattr >/dev/null 2>&1; then
   xattr -dr com.apple.quarantine "$target" 2>/dev/null || true
 fi
 
-# --- smoke test ------------------------------------------------------------
 if "$target" --version >/dev/null 2>&1; then
-  info "Installed: $("$target" --version) -> $target"
+  info "Installed from $installed_from: $("$target" --version) -> $target"
 else
-  warn "Binary saved but --version failed; the file may be corrupt."
+  warn "Binary saved from $installed_from but --version failed; the file may be corrupt."
 fi
 
-# --- PATH hint -------------------------------------------------------------
 case ":$PATH:" in
   *":$PREFIX:"*) info "$PREFIX is already on PATH." ;;
   *)

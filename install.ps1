@@ -6,16 +6,17 @@
   irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.ps1 | iex
 
   # Pin a specific version:
-  $env:JPG2PDF_VERSION = "v0.5.0"; irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.ps1 | iex
+  $env:JPG2PDF_VERSION = "v1.2.2"; irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.ps1 | iex
 
   # Skip Explorer context-menu registration:
   $env:JPG2PDF_NO_CONTEXT_MENU = "1"; irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.ps1 | iex
 
 .WHAT IT DOES
   1. Resolves the latest GitHub Release (or $env:JPG2PDF_VERSION).
-  2. Downloads jpg2pdf-windows-x64.exe to $HOME\Tools\bin\jpg2pdf.exe.
-  3. Adds that folder to your User PATH (persistent, no admin).
-  4. Downloads + runs register-context-menu.ps1 from the same tag (unless disabled).
+  2. If no release is available, falls back to the latest successful main-branch artifact.
+  3. Downloads jpg2pdf-windows-x64.exe to $HOME\Tools\bin\jpg2pdf.exe.
+  4. Adds that folder to your User PATH (persistent, no admin).
+  5. Downloads + runs register-context-menu.ps1 from the same tag or main (unless disabled).
 #>
 [CmdletBinding()]
 param(
@@ -29,76 +30,152 @@ function Info($m) { Write-Host "[jpg2pdf] $m" -ForegroundColor Cyan }
 function Warn($m) { Write-Host "[jpg2pdf] $m" -ForegroundColor Yellow }
 function Die ($m) { Write-Host "[jpg2pdf] $m" -ForegroundColor Red; exit 1 }
 
-if ($env:JPG2PDF_NO_CONTEXT_MENU -eq "1") { $NoContextMenu = $true }
-if (-not $Repo) {
-    Die "Set the repo: `$env:JPG2PDF_REPO = 'your-user/your-repo'  (or pass -Repo)."
-}
-
-# Resolve tag (latest release if none specified).
-[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-$headers = @{ "User-Agent" = "jpg2pdf-installer" }
-if ($env:GITHUB_TOKEN) { $headers["Authorization"] = "Bearer $env:GITHUB_TOKEN" }
-
-if (-not $Version) {
-    Info "Resolving latest release of $Repo ..."
-    try {
-        $rel = Invoke-RestMethod -Headers $headers -Uri "https://api.github.com/repos/$Repo/releases/latest"
-        $Version = $rel.tag_name
-    } catch {
-        Die "Could not query GitHub releases for $Repo : $_"
-    }
-}
-Info "Installing jpg2pdf $Version"
-
-$asset   = "jpg2pdf-windows-x64.exe"
-$dlUrl   = "https://github.com/$Repo/releases/download/$Version/$asset"
-$binDir  = Join-Path $HOME "Tools\bin"
-$exePath = Join-Path $binDir "jpg2pdf.exe"
-New-Item -ItemType Directory -Force -Path $binDir | Out-Null
-
-Info "Downloading $dlUrl"
 try {
-    Invoke-WebRequest -Headers $headers -Uri $dlUrl -OutFile $exePath -UseBasicParsing
-} catch {
-    Die "Download failed: $_"
-}
-
-# Sanity check
-try {
-    $verLine = & $exePath --version 2>&1
-    Info "Installed: $verLine -> $exePath"
-} catch {
-    Warn "Binary downloaded but --version failed: $_"
-}
-
-# Persist on User PATH
-$current = [Environment]::GetEnvironmentVariable("Path", "User")
-if (-not $current) { $current = "" }
-$entries = $current.Split(';') | ForEach-Object { $_.Trim().TrimEnd('\') } | Where-Object { $_ }
-$resolved = (Resolve-Path $binDir).Path.TrimEnd('\')
-if ($entries -notcontains $resolved) {
-    [Environment]::SetEnvironmentVariable("Path", (($entries + $resolved) -join ';'), "User")
-    Info "Added $resolved to User PATH (open a new terminal to pick it up)."
-} else {
-    Info "$resolved already on User PATH."
-}
-if (($env:Path.Split(';') | ForEach-Object { $_.Trim().TrimEnd('\') }) -notcontains $resolved) {
-    $env:Path = "$($env:Path.TrimEnd(';'));$resolved"
-}
-
-# Optional: Explorer context menu (download + run the script from the same tag)
-if (-not $NoContextMenu) {
-    $ctxUrl  = "https://raw.githubusercontent.com/$Repo/$Version/tools/jpg2pdf/scripts/register-context-menu.ps1"
-    $ctxFile = Join-Path $env:TEMP "jpg2pdf-register-context-menu.ps1"
-    try {
-        Info "Fetching context-menu registrar from $ctxUrl"
-        Invoke-WebRequest -Headers $headers -Uri $ctxUrl -OutFile $ctxFile -UseBasicParsing
-        & powershell -NoProfile -ExecutionPolicy Bypass -File $ctxFile -ExePath $exePath
-    } catch {
-        Warn "Skipped context-menu registration: $_"
+    if ($env:JPG2PDF_NO_CONTEXT_MENU -eq "1") { $NoContextMenu = $true }
+    if (-not $Repo) {
+        Die "Set the repo: `$env:JPG2PDF_REPO = 'your-user/your-repo'  (or pass -Repo)."
     }
-}
 
-Info "Done. Open a NEW terminal and try:"
-Write-Host "    jpg2pdf `"C:\Photos`" --size a4" -ForegroundColor Green
-Write-Host "    jpg2pdf . --size a4 --style pencil" -ForegroundColor Green
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+    $headers = @{ "User-Agent" = "jpg2pdf-installer"; "Accept" = "application/vnd.github+json" }
+    if ($env:GITHUB_TOKEN) { $headers["Authorization"] = "Bearer $env:GITHUB_TOKEN" }
+
+    function Get-GitHubJson($Uri, $Description) {
+        try {
+            return Invoke-RestMethod -Headers $headers -Uri $Uri -UseBasicParsing
+        } catch {
+            Warn "$Description failed: $_"
+            return $null
+        }
+    }
+
+    function Download-ReleaseAsset($Repo, $Version, $Asset, $OutFile) {
+        $dlUrl = "https://github.com/$Repo/releases/download/$Version/$Asset"
+        Info "Downloading $dlUrl"
+        try {
+            Invoke-WebRequest -Headers $headers -Uri $dlUrl -OutFile $OutFile -UseBasicParsing
+            return $true
+        } catch {
+            Warn "Release download failed: $_"
+            return $false
+        }
+    }
+
+    function Download-MainArtifact($Repo, $Asset, $OutFile) {
+        Info "Looking for latest main-branch artifact named $Asset ..."
+        $runsUrl = "https://api.github.com/repos/$Repo/actions/workflows/release.yml/runs?branch=main&status=success&per_page=10"
+        $runs = Get-GitHubJson $runsUrl "Main-branch workflow lookup"
+        if (-not $runs -or -not $runs.workflow_runs) { return $false }
+
+        foreach ($run in $runs.workflow_runs) {
+            $artifacts = Get-GitHubJson $run.artifacts_url "Artifact lookup for run $($run.id)"
+            if (-not $artifacts -or -not $artifacts.artifacts) { continue }
+            $artifact = $artifacts.artifacts | Where-Object { $_.name -eq $Asset -and -not $_.expired } | Select-Object -First 1
+            if (-not $artifact) { continue }
+
+            $tmpRoot = Join-Path $env:TEMP ("jpg2pdf-artifact-" + [guid]::NewGuid().ToString("N"))
+            $zipFile = Join-Path $tmpRoot "artifact.zip"
+            $extractDir = Join-Path $tmpRoot "unzipped"
+            New-Item -ItemType Directory -Force -Path $tmpRoot | Out-Null
+            try {
+                Info "Downloading main-branch artifact from run $($run.id)"
+                Invoke-WebRequest -Headers $headers -Uri $artifact.archive_download_url -OutFile $zipFile -UseBasicParsing
+                Expand-Archive -Path $zipFile -DestinationPath $extractDir -Force
+                $candidate = Join-Path $extractDir $Asset
+                if (-not (Test-Path -LiteralPath $candidate)) {
+                    $candidate = Get-ChildItem -LiteralPath $extractDir -Recurse -File | Where-Object { $_.Name -eq $Asset } | Select-Object -First 1
+                    if ($candidate) { $candidate = $candidate.FullName }
+                }
+                if (-not $candidate -or -not (Test-Path -LiteralPath $candidate)) {
+                    Warn "Artifact archive did not contain $Asset."
+                    continue
+                }
+                Copy-Item -LiteralPath $candidate -Destination $OutFile -Force
+                return $true
+            } catch {
+                Warn "Main-branch artifact download failed: $_"
+            } finally {
+                Remove-Item -LiteralPath $tmpRoot -Recurse -Force -ErrorAction SilentlyContinue
+            }
+        }
+        return $false
+    }
+
+    $asset   = "jpg2pdf-windows-x64.exe"
+    $binDir  = Join-Path $HOME "Tools\bin"
+    $exePath = Join-Path $binDir "jpg2pdf.exe"
+    New-Item -ItemType Directory -Force -Path $binDir | Out-Null
+
+    $installedFrom = $null
+    if ($Version) {
+        Info "Installing jpg2pdf $Version"
+        if (Download-ReleaseAsset $Repo $Version $asset $exePath) { $installedFrom = "release $Version" }
+        if (-not $installedFrom) {
+            Warn "Release asset was not available. Falling back to the latest successful main-branch artifact."
+            if (Download-MainArtifact $Repo $asset $exePath) {
+                $installedFrom = "latest main-branch artifact"
+                $Version = ""
+            }
+        }
+    } else {
+        Info "Resolving latest release of $Repo ..."
+        $rel = Get-GitHubJson "https://api.github.com/repos/$Repo/releases/latest" "Latest release lookup"
+        if ($rel -and $rel.tag_name) {
+            $Version = $rel.tag_name
+            Info "Installing jpg2pdf $Version"
+            if (Download-ReleaseAsset $Repo $Version $asset $exePath) { $installedFrom = "release $Version" }
+        } else {
+            Warn "No GitHub Release found. Falling back to the latest successful main-branch artifact."
+        }
+
+        if (-not $installedFrom) {
+            if (Download-MainArtifact $Repo $asset $exePath) {
+                $installedFrom = "latest main-branch artifact"
+            }
+        }
+    }
+
+    if (-not $installedFrom) {
+        Die "Could not install jpg2pdf. Publish a release, run the main-branch build, or set GITHUB_TOKEN if artifact access requires it."
+    }
+
+    try {
+        $verLine = & $exePath --version 2>&1
+        Info "Installed from ${installedFrom}: $verLine -> $exePath"
+    } catch {
+        Warn "Binary downloaded from $installedFrom but --version failed: $_"
+    }
+
+    $current = [Environment]::GetEnvironmentVariable("Path", "User")
+    if (-not $current) { $current = "" }
+    $entries = $current.Split(';') | ForEach-Object { $_.Trim().TrimEnd('\') } | Where-Object { $_ }
+    $resolved = (Resolve-Path $binDir).Path.TrimEnd('\')
+    if ($entries -notcontains $resolved) {
+        [Environment]::SetEnvironmentVariable("Path", (($entries + $resolved) -join ';'), "User")
+        Info "Added $resolved to User PATH (open a new terminal to pick it up)."
+    } else {
+        Info "$resolved already on User PATH."
+    }
+    if (($env:Path.Split(';') | ForEach-Object { $_.Trim().TrimEnd('\') }) -notcontains $resolved) {
+        $env:Path = "$($env:Path.TrimEnd(';'));$resolved"
+    }
+
+    if (-not $NoContextMenu) {
+        $ctxRef = $(if ($Version) { $Version } else { "main" })
+        $ctxUrl  = "https://raw.githubusercontent.com/$Repo/$ctxRef/tools/jpg2pdf/scripts/register-context-menu.ps1"
+        $ctxFile = Join-Path $env:TEMP "jpg2pdf-register-context-menu.ps1"
+        try {
+            Info "Fetching context-menu registrar from $ctxUrl"
+            Invoke-WebRequest -Headers $headers -Uri $ctxUrl -OutFile $ctxFile -UseBasicParsing
+            & powershell -NoProfile -ExecutionPolicy Bypass -File $ctxFile -ExePath $exePath
+        } catch {
+            Warn "Skipped context-menu registration: $_"
+        }
+    }
+
+    Info "Done. Open a NEW terminal and try:"
+    Write-Host "    jpg2pdf `"C:\Photos`" --size a4" -ForegroundColor Green
+    Write-Host "    jpg2pdf . --size a4 --style pencil" -ForegroundColor Green
+} catch {
+    Die "Installer failed safely: $_"
+}
