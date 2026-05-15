@@ -197,7 +197,10 @@ download_release_asset() {
 unpack_artifact() {
   zip_file="$1"
   extract_dir="$2"
-  mkdir -p "$extract_dir"
+  if ! mkdir -p "$extract_dir"; then
+    add_crash_report "extract_dir" "Artifact extraction setup" "try source fallback later" "$extract_dir"
+    return 1
+  fi
   if command -v unzip >/dev/null 2>&1; then
     unzip -q "$zip_file" -d "$extract_dir"
     return 0
@@ -222,7 +225,10 @@ download_main_artifact() {
   info "Looking for latest main-branch artifact named $asset ..."
   runs_json="$(try_get "Main-branch workflow lookup" "$GITHUB_API/repos/$REPO/actions/workflows/release.yml/runs?branch=main&status=success&per_page=10")" || return 1
   artifacts_urls="$(printf '%s' "$runs_json" | grep -o '"artifacts_url"[[:space:]]*:[[:space:]]*"[^"]*"' | sed -n 's/.*"artifacts_url":[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 10)"
-  [ -n "$artifacts_urls" ] || return 1
+  if [ -z "$artifacts_urls" ]; then
+    add_crash_report "artifacts_url" "Main-branch artifact lookup" "source/Python fallback" "no successful main runs with artifacts"
+    return 1
+  fi
 
   for artifacts_url in $artifacts_urls; do
     artifacts_json="$(try_get "Artifact lookup" "$artifacts_url?per_page=100")" || continue
@@ -236,7 +242,10 @@ download_main_artifact() {
     zip_file="$tmp_root/artifact.zip"
     extract_dir="$tmp_root/unzipped"
     rm -rf "$tmp_root"
-    mkdir -p "$tmp_root"
+    if ! mkdir -p "$tmp_root"; then
+      add_crash_report "artifact temp" "Main-branch artifact temp setup" "try next fallback" "$tmp_root"
+      continue
+    fi
     if try_download "Main-branch artifact download" "$archive_url" "$zip_file"; then
       if unpack_artifact "$zip_file" "$extract_dir"; then
         candidate="$extract_dir/$asset"
