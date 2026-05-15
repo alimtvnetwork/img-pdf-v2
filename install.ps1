@@ -184,24 +184,30 @@ function Convert-SafeJson($Description, $Raw) {
     }
 }
 
-    if (-not $Repo) { $Repo = Get-SafeEnv "JPG2PDF_REPO" "alimtvnetwork/img-pdf" }
-    if (-not $Version) { $Version = Get-SafeEnv "JPG2PDF_VERSION" }
-    if ((Get-SafeEnv "JPG2PDF_NO_CONTEXT_MENU") -eq "1") { $NoContextMenu = $true }
-    if (-not $Repo) {
-        Die "Set the repo: `$env:JPG2PDF_REPO = 'your-user/your-repo'  (or pass -Repo)."
-    }
+    Invoke-InstallerStep "Resolve installer settings" {
+        if (-not $Repo) { $Repo = Get-SafeEnv "JPG2PDF_REPO" "alimtvnetwork/img-pdf" }
+        if (-not $Version) { $Version = Get-SafeEnv "JPG2PDF_VERSION" }
+        if ((Get-SafeEnv "JPG2PDF_NO_CONTEXT_MENU") -eq "1") { $NoContextMenu = $true }
+        if (-not $Repo) {
+            Die "Set the repo: `$env:JPG2PDF_REPO = 'your-user/your-repo'  (or pass -Repo)."
+        }
+    } "default repo and no pinned version" -Required | Out-Null
 
-    if ($script:DebugMode) {
-        Info "Debug mode enabled. Log: $(if ($script:LogFile) { $script:LogFile } else { '<unavailable>' })"
-        Debug2 "PSVersion: $($PSVersionTable.PSVersion)  OS: $($PSVersionTable.OS)"
-        Debug2 "Repo=$Repo  Version=$Version  NoContextMenu=$NoContextMenu"
-        Debug2 "USERPROFILE=$(Get-SafeEnv 'USERPROFILE')  TEMP=$(Get-SafeEnv 'TEMP')"
-    }
+    Invoke-InstallerStep "Emit debug environment" {
+        if ($script:DebugMode) {
+            Info "Debug mode enabled. Log: $(if ($script:LogFile) { $script:LogFile } else { '<unavailable>' })"
+            Debug2 "PSVersion: $($PSVersionTable.PSVersion)  OS: $($PSVersionTable.OS)"
+            Debug2 "Repo=$Repo  Version=$Version  NoContextMenu=$NoContextMenu"
+            Debug2 "USERPROFILE=$(Get-SafeEnv 'USERPROFILE')  TEMP=$(Get-SafeEnv 'TEMP')"
+        }
+    } "skip debug environment output" | Out-Null
 
-    try { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 } catch { Warn "Could not force TLS 1.2 safely: $_" }
-    $headers = @{ "User-Agent" = "jpg2pdf-installer"; "Accept" = "application/vnd.github+json" }
-    $token = Get-SafeEnv "GITHUB_TOKEN"
-    if ($token) { $headers["Authorization"] = "Bearer $token" }
+    Invoke-InstallerStep "Configure GitHub HTTP headers" {
+        try { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 } catch { Add-CrashReport "SecurityProtocol" "TLS setup" "continue with host default TLS" $_; Warn "Could not force TLS 1.2 safely: $_" }
+        $headers = @{ "User-Agent" = "jpg2pdf-installer"; "Accept" = "application/vnd.github+json" }
+        $token = Get-SafeEnv "GITHUB_TOKEN"
+        if ($token) { $headers["Authorization"] = "Bearer $token" }
+    } "anonymous GitHub requests" -Required | Out-Null
 
     function Get-GitHubJson($Uri, $Description) {
         Debug2 "GET $Uri ($Description)"
