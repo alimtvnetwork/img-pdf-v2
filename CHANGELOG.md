@@ -4,6 +4,15 @@ All notable changes to `jpg2pdf` are documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.6] - 2026-05-15
+
+### Added
+- Installers (`install.sh`, `install.ps1`) now support a `--debug` / `--verbose` flag (and `JPG2PDF_DEBUG=1` env var) that enables verbose tracing, environment diagnostics, and writes a full timestamped log to a temp file. Override the path with `JPG2PDF_LOG`.
+- Every installer error and warning now points at the saved log file so crash output can be captured and shared.
+
+### Changed
+- Root and tool README pinned-version install snippets now reference `v1.2.6`.
+
 ## [1.2.5] - 2026-05-15
 
 ### Fixed
