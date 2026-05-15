@@ -143,7 +143,7 @@ function Save-SafeUrl($Description, $Uri, $OutFile) {
         Debug2 "USERPROFILE=$(Get-SafeEnv 'USERPROFILE')  TEMP=$(Get-SafeEnv 'TEMP')"
     }
 
-    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+    try { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 } catch { Warn "Could not force TLS 1.2 safely: $_" }
     $headers = @{ "User-Agent" = "jpg2pdf-installer"; "Accept" = "application/vnd.github+json" }
     $token = Get-SafeEnv "GITHUB_TOKEN"
     if ($token) { $headers["Authorization"] = "Bearer $token" }
