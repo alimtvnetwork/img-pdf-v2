@@ -204,7 +204,7 @@ try_download() {
 
 json_value() {
   key="$1"
-  sed -n 's/.*"'"$key"'"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n1
+  sed -n 's/.*"'"$key"'"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n1 || true
 }
 
 download_release_asset() {
@@ -245,7 +245,7 @@ download_main_artifact() {
   out="$1"
   info "Looking for latest main-branch artifact named $asset ..."
   runs_json="$(try_get "Main-branch workflow lookup" "$GITHUB_API/repos/$REPO/actions/workflows/release.yml/runs?branch=main&status=success&per_page=10")" || return 1
-  artifacts_urls="$(printf '%s' "$runs_json" | grep -o '"artifacts_url"[[:space:]]*:[[:space:]]*"[^"]*"' | sed -n 's/.*"artifacts_url":[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 10)"
+  artifacts_urls="$(printf '%s' "$runs_json" | grep -o '"artifacts_url"[[:space:]]*:[[:space:]]*"[^"]*"' | sed -n 's/.*"artifacts_url":[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 10 || true)"
   if [ -z "$artifacts_urls" ]; then
     add_crash_report "artifacts_url" "Main-branch artifact lookup" "source/Python fallback" "no successful main runs with artifacts"
     return 1
@@ -271,7 +271,7 @@ download_main_artifact() {
       if unpack_artifact "$zip_file" "$extract_dir"; then
         candidate="$extract_dir/$asset"
         if [ ! -f "$candidate" ]; then
-          candidate="$(find "$extract_dir" -type f -name "$asset" | head -n 1 || true)"
+          candidate="$(find "$extract_dir" -type f -name "$asset" 2>/dev/null | head -n 1 || true)"
         fi
         if [ -n "$candidate" ] && [ -f "$candidate" ]; then
           cp "$candidate" "$out"
@@ -338,7 +338,7 @@ install_source_from_ref() {
     return 1
   fi
 
-  src_root="$(find "$extract_dir" -type f -path '*/tools/jpg2pdf/src/jpg2pdf.py' -print 2>/dev/null | sed 's#/tools/jpg2pdf/src/jpg2pdf.py$##' | head -n 1)"
+  src_root="$(find "$extract_dir" -type f -path '*/tools/jpg2pdf/src/jpg2pdf.py' -print 2>/dev/null | sed 's#/tools/jpg2pdf/src/jpg2pdf.py$##' | head -n 1 || true)"
   if [ -z "$src_root" ]; then
     add_crash_report "source tree" "Source fallback lookup" "try next fallback" "tools/jpg2pdf/src/jpg2pdf.py not found"
     rm -rf "$tmp_root" 2>/dev/null || true
