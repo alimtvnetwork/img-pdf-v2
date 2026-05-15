@@ -134,7 +134,7 @@ try {
 
     try {
         $verLine = & $exePath --version 2>&1
-        Info "Installed from $installedFrom: $verLine -> $exePath"
+        Info "Installed from ${installedFrom}: $verLine -> $exePath"
     } catch {
         Warn "Binary downloaded from $installedFrom but --version failed: $_"
     }
