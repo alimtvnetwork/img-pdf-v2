@@ -76,11 +76,13 @@ try {
             $artifact = $artifacts.artifacts | Where-Object { $_.name -eq $Asset -and -not $_.expired } | Select-Object -First 1
             if (-not $artifact) { continue }
 
-            $tmpRoot = Join-Path $env:TEMP ("jpg2pdf-artifact-" + [guid]::NewGuid().ToString("N"))
-            $zipFile = Join-Path $tmpRoot "artifact.zip"
-            $extractDir = Join-Path $tmpRoot "unzipped"
-            New-Item -ItemType Directory -Force -Path $tmpRoot | Out-Null
+            $tmpRoot = $null
             try {
+                $tempBase = if ($env:TEMP) { $env:TEMP } else { [System.IO.Path]::GetTempPath() }
+                $tmpRoot = Join-Path $tempBase ("jpg2pdf-artifact-" + [guid]::NewGuid().ToString("N"))
+                $zipFile = Join-Path $tmpRoot "artifact.zip"
+                $extractDir = Join-Path $tmpRoot "unzipped"
+                New-Item -ItemType Directory -Force -Path $tmpRoot | Out-Null
                 Info "Downloading main-branch artifact from run $($run.id)"
                 Invoke-WebRequest -Headers $headers -Uri $artifact.archive_download_url -OutFile $zipFile -UseBasicParsing
                 Expand-Archive -Path $zipFile -DestinationPath $extractDir -Force
@@ -98,7 +100,7 @@ try {
             } catch {
                 Warn "Main-branch artifact download failed: $_"
             } finally {
-                Remove-Item -LiteralPath $tmpRoot -Recurse -Force -ErrorAction SilentlyContinue
+                if ($tmpRoot) { Remove-Item -LiteralPath $tmpRoot -Recurse -Force -ErrorAction SilentlyContinue }
             }
         }
         return $false
