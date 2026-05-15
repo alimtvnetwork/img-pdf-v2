@@ -6,7 +6,7 @@
   irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.ps1 | iex
 
   # Pin a specific version:
-  $env:JPG2PDF_VERSION = "v1.2.3"; irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.ps1 | iex
+  $env:JPG2PDF_VERSION = "v1.2.5"; irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.ps1 | iex
 
   # Skip Explorer context-menu registration:
   $env:JPG2PDF_NO_CONTEXT_MENU = "1"; irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.ps1 | iex
@@ -64,6 +64,15 @@ try {
         }
     }
 
+    function Get-SafeTempDir() {
+        if ($env:TEMP) { return $env:TEMP }
+        try {
+            $tmp = [System.IO.Path]::GetTempPath()
+            if ($tmp) { return $tmp }
+        } catch { }
+        return (Get-Location).Path
+    }
+
     function Download-MainArtifact($Repo, $Asset, $OutFile) {
         Info "Looking for latest main-branch artifact named $Asset ..."
         $runsUrl = "https://api.github.com/repos/$Repo/actions/workflows/release.yml/runs?branch=main&status=success&per_page=10"
@@ -78,7 +87,7 @@ try {
 
             $tmpRoot = $null
             try {
-                $tempBase = if ($env:TEMP) { $env:TEMP } else { [System.IO.Path]::GetTempPath() }
+                $tempBase = Get-SafeTempDir
                 $tmpRoot = Join-Path $tempBase ("jpg2pdf-artifact-" + [guid]::NewGuid().ToString("N"))
                 $zipFile = Join-Path $tmpRoot "artifact.zip"
                 $extractDir = Join-Path $tmpRoot "unzipped"
@@ -106,8 +115,9 @@ try {
         return $false
     }
 
-    $asset   = "jpg2pdf-windows-x64.exe"
-    $binDir  = Join-Path $HOME "Tools\bin"
+    $asset = "jpg2pdf-windows-x64.exe"
+    $homeDir = $(if ($HOME) { $HOME } elseif ($env:USERPROFILE) { $env:USERPROFILE } else { (Get-Location).Path })
+    $binDir  = Join-Path $homeDir "Tools\bin"
     $exePath = Join-Path $binDir "jpg2pdf.exe"
     New-Item -ItemType Directory -Force -Path $binDir | Out-Null
 
@@ -161,14 +171,15 @@ try {
     } else {
         Info "$resolved already on User PATH."
     }
-    if (($env:Path.Split(';') | ForEach-Object { $_.Trim().TrimEnd('\') }) -notcontains $resolved) {
-        $env:Path = "$($env:Path.TrimEnd(';'));$resolved"
+    $sessionPath = $(if ($env:Path) { $env:Path } else { "" })
+    if (($sessionPath.Split(';') | ForEach-Object { $_.Trim().TrimEnd('\') }) -notcontains $resolved) {
+        $env:Path = $(if ($sessionPath) { "$($sessionPath.TrimEnd(';'));$resolved" } else { $resolved })
     }
 
     if (-not $NoContextMenu) {
         $ctxRef = $(if ($Version) { $Version } else { "main" })
         $ctxUrl  = "https://raw.githubusercontent.com/$Repo/$ctxRef/tools/jpg2pdf/scripts/register-context-menu.ps1"
-        $ctxFile = Join-Path $env:TEMP "jpg2pdf-register-context-menu.ps1"
+        $ctxFile = Join-Path (Get-SafeTempDir) "jpg2pdf-register-context-menu.ps1"
         try {
             Info "Fetching context-menu registrar from $ctxUrl"
             Invoke-WebRequest -Headers $headers -Uri $ctxUrl -OutFile $ctxFile -UseBasicParsing
