@@ -6,7 +6,7 @@
   irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.ps1 | iex
 
   # Pin a specific version:
-  $env:JPG2PDF_VERSION = "v1.3.0"; irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.ps1 | iex
+  $env:JPG2PDF_VERSION = "v1.3.1"; irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.ps1 | iex
 
   # Skip Explorer context-menu registration:
   $env:JPG2PDF_NO_CONTEXT_MENU = "1"; irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.ps1 | iex
@@ -128,6 +128,15 @@ function Save-SafeUrl($Description, $Uri, $OutFile) {
     Debug2 "GET $Uri ($Description)"
     return Invoke-SafeBool $Description { Invoke-WebRequest -Headers $headers -Uri $Uri -OutFile $OutFile -UseBasicParsing -ErrorAction Stop }
 }
+function Convert-SafeJson($Description, $Raw) {
+    try {
+        if (-not $Raw) { return $null }
+        return ($Raw | ConvertFrom-Json -ErrorAction Stop)
+    } catch {
+        Warn "$Description JSON parse failed safely: $_"
+        return $null
+    }
+}
 
     if (-not $Repo) { $Repo = Get-SafeEnv "JPG2PDF_REPO" "alimtvnetwork/img-pdf" }
     if (-not $Version) { $Version = Get-SafeEnv "JPG2PDF_VERSION" }
@@ -150,7 +159,10 @@ function Save-SafeUrl($Description, $Uri, $OutFile) {
 
     function Get-GitHubJson($Uri, $Description) {
         Debug2 "GET $Uri ($Description)"
-        return Invoke-Safe $Description { Invoke-RestMethod -Headers $headers -Uri $Uri -UseBasicParsing -ErrorAction Stop } $null
+        $response = Invoke-Safe "$Description HTTP read" { Invoke-WebRequest -Headers $headers -Uri $Uri -UseBasicParsing -ErrorAction Stop } $null
+        if (-not $response) { return $null }
+        $content = Invoke-Safe "$Description response content read" { [string]$response.Content } ""
+        return Convert-SafeJson $Description $content
     }
 
     function Download-ReleaseAsset($Repo, $Version, $Asset, $OutFile) {
