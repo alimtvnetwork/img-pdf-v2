@@ -297,6 +297,7 @@ function Convert-SafeJson($Description, $Raw) {
             Info "Installing jpg2pdf $Version"
             if (Download-ReleaseAsset $Repo $Version $asset $exePath) { $installedFrom = "release $Version" }
         } else {
+            Add-CrashReport "latest release" "release resolution" "latest main-branch artifact" "no GitHub Release found"
             Warn "No GitHub Release found. Falling back to the latest successful main-branch artifact."
         }
 
@@ -352,8 +353,10 @@ function Convert-SafeJson($Description, $Raw) {
     }
 
     Info "Done. Open a NEW terminal and try:"
+    Write-CrashReportSection "installer completed"
     Write-Host "    jpg2pdf `"C:\Photos`" --size a4" -ForegroundColor Green
     Write-Host "    jpg2pdf . --size a4 --style pencil" -ForegroundColor Green
 } catch {
+    try { Write-CrashReportSection "top-level catch: $_" } catch { }
     try { Die "Installer failed safely: $_" } catch { Stop-Safely "Installer failed safely before logging was initialized: $_" }
 }
