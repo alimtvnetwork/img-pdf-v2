@@ -6,7 +6,7 @@
   irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.ps1 | iex
 
   # Pin a specific version:
-  $env:JPG2PDF_VERSION = "v1.2.3"; irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.ps1 | iex
+  $env:JPG2PDF_VERSION = "v1.2.4"; irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.ps1 | iex
 
   # Skip Explorer context-menu registration:
   $env:JPG2PDF_NO_CONTEXT_MENU = "1"; irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.ps1 | iex
@@ -64,6 +64,15 @@ try {
         }
     }
 
+    function Get-SafeTempDir() {
+        if ($env:TEMP) { return $env:TEMP }
+        try {
+            $tmp = [System.IO.Path]::GetTempPath()
+            if ($tmp) { return $tmp }
+        } catch { }
+        return (Get-Location).Path
+    }
+
     function Download-MainArtifact($Repo, $Asset, $OutFile) {
         Info "Looking for latest main-branch artifact named $Asset ..."
         $runsUrl = "https://api.github.com/repos/$Repo/actions/workflows/release.yml/runs?branch=main&status=success&per_page=10"
@@ -78,7 +87,7 @@ try {
 
             $tmpRoot = $null
             try {
-                $tempBase = if ($env:TEMP) { $env:TEMP } else { [System.IO.Path]::GetTempPath() }
+                $tempBase = Get-SafeTempDir
                 $tmpRoot = Join-Path $tempBase ("jpg2pdf-artifact-" + [guid]::NewGuid().ToString("N"))
                 $zipFile = Join-Path $tmpRoot "artifact.zip"
                 $extractDir = Join-Path $tmpRoot "unzipped"
