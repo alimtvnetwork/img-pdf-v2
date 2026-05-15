@@ -30,7 +30,7 @@ opening 30 images one-by-one, "Print to PDF", merging, repeat.
 | 📐 **Smart sizing** | `a4`, `letter`, `legal` — with `fit cover/contain` and `--orientation`. |
 | ✏️  **Pencil mode** | Faint pencil-on-paper styling with **subtle / normal / extra-visible** depth. |
 | 🪟 **Windows context-menu** | Right-click any folder → *"Combine into PDF"*. One terminal, all files. |
-| 🍎 **macOS / Linux** | Single static binary, ad-hoc signed, drops into `~/.local/bin`. |
+| 🍎 **macOS / Linux** | Drops into `~/.local/bin`; macOS falls back to Python source while binary runners are disabled. |
 | 🔁 **Recursive** | `--recursive` walks subfolders in natural sort order. |
 
 ---
@@ -64,7 +64,7 @@ $env:JPG2PDF_VERSION = "v1.3.5"; irm https://raw.githubusercontent.com/alimtvnet
 curl -fsSL https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.sh | bash
 ```
 
-Drops `jpg2pdf` into `~/.local/bin` (override with `JPG2PDF_PREFIX=$HOME/bin`).
+Drops `jpg2pdf` into `~/.local/bin` (override with `JPG2PDF_PREFIX=$HOME/bin`). If no macOS binary exists, the installer downloads the Python source, installs dependencies best-effort, and writes a `jpg2pdf` wrapper instead of failing.
 
 ### 🐧 macOS · Linux · Bash · pin a specific version
 
