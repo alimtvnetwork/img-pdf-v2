@@ -14,8 +14,8 @@
 #   1. Detects OS + arch.
 #   2. Resolves the latest GitHub Release (or $JPG2PDF_VERSION).
 #   3. If no release is available, falls back to the latest successful main-branch artifact.
-#   4. Downloads the matching binary into $JPG2PDF_PREFIX (default $HOME/.local/bin).
-#   5. chmod +x and reports next steps.
+#   4. If no binary exists, falls back to a Python source install.
+#   5. Installs into $JPG2PDF_PREFIX (default $HOME/.local/bin), chmod +x, and reports next steps.
 
 DEBUG="${JPG2PDF_DEBUG:-0}"
 for _arg in "$@"; do
@@ -308,7 +308,7 @@ install_source_from_ref() {
     return 1
   fi
 
-  src_root="$(find "$extract_dir" -maxdepth 2 -type f -path '*/tools/jpg2pdf/src/jpg2pdf.py' -print 2>/dev/null | sed 's#/tools/jpg2pdf/src/jpg2pdf.py$##' | head -n 1)"
+  src_root="$(find "$extract_dir" -type f -path '*/tools/jpg2pdf/src/jpg2pdf.py' -print 2>/dev/null | sed 's#/tools/jpg2pdf/src/jpg2pdf.py$##' | head -n 1)"
   if [ -z "$src_root" ]; then
     add_crash_report "source tree" "Source fallback lookup" "try next fallback" "tools/jpg2pdf/src/jpg2pdf.py not found"
     rm -rf "$tmp_root" 2>/dev/null || true
@@ -327,7 +327,14 @@ install_source_from_ref() {
 
   req_file="$install_root/tools/jpg2pdf/requirements.txt"
   if [ -f "$req_file" ]; then
-    if ! "$py_cmd" -m pip install --user -r "$req_file" >> "$LOG_FILE" 2>&1; then
+    if [ -n "$LOG_FILE" ]; then
+      "$py_cmd" -m pip install --user -r "$req_file" >> "$LOG_FILE" 2>&1
+      pip_code=$?
+    else
+      "$py_cmd" -m pip install --user -r "$req_file" >/dev/null 2>&1
+      pip_code=$?
+    fi
+    if [ "$pip_code" -ne 0 ]; then
       add_crash_report "pip requirements" "Source fallback dependencies" "write wrapper anyway" "pip install failed"
       warn "Python dependency install failed; writing wrapper anyway. Check the log for pip output."
     fi
