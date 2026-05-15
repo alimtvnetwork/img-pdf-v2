@@ -38,11 +38,26 @@ try {
     $InstallerArgs = @()
     try { if ($null -ne $args) { $InstallerArgs = @($args) } } catch { $InstallerArgs = @() }
 
+    $script:CrashReports = @()
+    $script:CrashReportWritten = $false
+
+    function Add-CrashReport($Variable, $Where, $Fallback, $ErrorText) {
+        try {
+            $script:CrashReports += [pscustomobject]@{
+                Time = (Get-Date -Format 'HH:mm:ss')
+                Variable = [string]$Variable
+                Where = [string]$Where
+                Fallback = [string]$Fallback
+                Error = [string]$ErrorText
+            }
+        } catch { }
+    }
+
     function Get-SafeEnv($Name, $Default = "") {
         try {
             $value = [Environment]::GetEnvironmentVariable($Name)
             if ($null -ne $value -and [string]$value -ne "") { return [string]$value }
-        } catch { }
+        } catch { Add-CrashReport "env:$Name" "Get-SafeEnv" "default: $Default" $_ }
         return $Default
     }
 
@@ -74,6 +89,7 @@ try {
         }
     } catch {
         try { Write-Host "[jpg2pdf] Argument parsing failed safely: $_" -ForegroundColor Yellow } catch { }
+        Add-CrashReport "InstallerArgs" "argument parsing" "ignore invalid installer option" $_
     }
 
 
