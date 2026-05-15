@@ -26,12 +26,14 @@ done
 
 LOG_FILE="${JPG2PDF_LOG:-${TMPDIR:-/tmp}/jpg2pdf-install-$(date +%Y%m%d-%H%M%S)-$$.log}"
 : > "$LOG_FILE" 2>/dev/null || LOG_FILE=""
+SAFE_DIE_MARKER="${TMPDIR:-/tmp}/jpg2pdf-install-die-$$.flag"
+rm -f "$SAFE_DIE_MARKER" 2>/dev/null || true
 
 _log() { [ -n "$LOG_FILE" ] && printf '%s %s\n' "$(date +%H:%M:%S)" "$*" >> "$LOG_FILE" 2>/dev/null || true; }
 info() { _log "INFO  $*"; printf '\033[36m[jpg2pdf]\033[0m %s\n' "$*"; }
 warn() { _log "WARN  $*"; printf '\033[33m[jpg2pdf]\033[0m %s\n' "$*" >&2; }
 debug(){ _log "DEBUG $*"; [ "$DEBUG" = "1" ] && printf '\033[35m[jpg2pdf:debug]\033[0m %s\n' "$*" >&2 || true; }
-die()  { _log "ERROR $*"; printf '\033[31m[jpg2pdf]\033[0m %s\n' "$*" >&2; [ -n "$LOG_FILE" ] && printf '\033[31m[jpg2pdf]\033[0m Full log: %s\n' "$LOG_FILE" >&2; exit 1; }
+die()  { _log "ERROR $*"; : > "$SAFE_DIE_MARKER" 2>/dev/null || true; printf '\033[31m[jpg2pdf]\033[0m %s\n' "$*" >&2; [ -n "$LOG_FILE" ] && printf '\033[31m[jpg2pdf]\033[0m Full log: %s\n' "$LOG_FILE" >&2; exit 1; }
 on_exit() {
   code=$?
   if [ "$code" -ne 0 ]; then
@@ -295,5 +297,9 @@ printf '    jpg2pdf . --size a4 --style pencil\n'
 }
 
 if ! ( set -eu; main "$@" ); then
+  if [ -f "$SAFE_DIE_MARKER" ]; then
+    rm -f "$SAFE_DIE_MARKER" 2>/dev/null || true
+    exit 1
+  fi
   die "Installer failed safely before completion. Re-run with --debug for details."
 fi
