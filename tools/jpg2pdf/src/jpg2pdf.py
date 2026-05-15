@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 from PIL import Image, ImageChops, ImageEnhance, ImageFilter, ImageOps
 
-__version__ = "0.12.2"
+__version__ = "1.1.0"
 
 # Pencil presets — tuned for faint handwritten text.
 # Module-scope so prompt_pencil_strength() can render the live preview with
@@ -103,7 +103,7 @@ def format_pdf_name(pattern: str, *, folder_name: str, first_image: Path,
 
 
 
-def prompt_pencil_strength(default: str = "normal", sample_path=None) -> str:
+def prompt_pencil_strength(default: str = "subtle", sample_path=None) -> str:
     """Show a Tk dropdown to pick pencil strength, with a LIVE preview.
 
     When `sample_path` points to a real image, a thumbnail of that image is
@@ -130,8 +130,8 @@ def prompt_pencil_strength(default: str = "normal", sample_path=None) -> str:
 
     choices = ["subtle", "normal", "extra"]
     descriptions = {
-        "subtle": "Subtle  — gentle, keeps paper texture",
-        "normal": "Normal  — balanced (default)",
+        "subtle": "Subtle  — gentle, keeps paper texture (default)",
+        "normal": "Normal  — balanced ink + paper grain",
         "extra":  "Extra visible — aggressive darkening for very faint pencil",
     }
     result = {"value": default}
