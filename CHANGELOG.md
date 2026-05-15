@@ -4,6 +4,12 @@ All notable changes to `jpg2pdf` are documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.4] - 2026-05-15
+
+### Changed
+- CI/CD: dropped the macOS build matrix entries (`macos-13` x64 and `macos-14` arm64). GitHub-hosted macOS runners were stuck queued for hours and blocking every release. The matrix now ships Windows x64 and Linux x64/arm64 only; macOS users can build from source until macOS runners are restored.
+- Release job no longer publishes `jpg2pdf-macos-x64` / `jpg2pdf-macos-arm64` assets.
+
 ## [1.3.1] - 2026-05-15
 
 ### Fixed
