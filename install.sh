@@ -17,15 +17,41 @@
 #   4. Downloads the matching binary into $JPG2PDF_PREFIX (default $HOME/.local/bin).
 #   5. chmod +x and reports next steps.
 
-info() { printf '\033[36m[jpg2pdf]\033[0m %s\n' "$*"; }
-warn() { printf '\033[33m[jpg2pdf]\033[0m %s\n' "$*" >&2; }
-die()  { printf '\033[31m[jpg2pdf]\033[0m %s\n' "$*" >&2; exit 1; }
-on_exit() { code=$?; [ "$code" -eq 0 ] || warn "Installer failed safely before completion (exit $code)."; }
+DEBUG="${JPG2PDF_DEBUG:-0}"
+for _arg in "$@"; do
+  case "$_arg" in
+    --debug|--verbose|-d|-v) DEBUG=1 ;;
+  esac
+done
+
+LOG_FILE="${JPG2PDF_LOG:-${TMPDIR:-/tmp}/jpg2pdf-install-$(date +%Y%m%d-%H%M%S)-$$.log}"
+: > "$LOG_FILE" 2>/dev/null || LOG_FILE=""
+
+_log() { [ -n "$LOG_FILE" ] && printf '%s %s\n' "$(date +%H:%M:%S)" "$*" >> "$LOG_FILE" 2>/dev/null || true; }
+info() { _log "INFO  $*"; printf '\033[36m[jpg2pdf]\033[0m %s\n' "$*"; }
+warn() { _log "WARN  $*"; printf '\033[33m[jpg2pdf]\033[0m %s\n' "$*" >&2; }
+debug(){ _log "DEBUG $*"; [ "$DEBUG" = "1" ] && printf '\033[35m[jpg2pdf:debug]\033[0m %s\n' "$*" >&2 || true; }
+die()  { _log "ERROR $*"; printf '\033[31m[jpg2pdf]\033[0m %s\n' "$*" >&2; [ -n "$LOG_FILE" ] && printf '\033[31m[jpg2pdf]\033[0m Full log: %s\n' "$LOG_FILE" >&2; exit 1; }
+on_exit() {
+  code=$?
+  if [ "$code" -ne 0 ]; then
+    warn "Installer failed safely before completion (exit $code)."
+    [ -n "$LOG_FILE" ] && warn "Detailed log: $LOG_FILE"
+  fi
+}
 on_signal() { warn "Installer interrupted safely before completion."; exit 1; }
 trap on_exit 0
 trap on_signal HUP INT TERM
 
 set -eu
+
+if [ "$DEBUG" = "1" ]; then
+  info "Debug mode enabled. Log: ${LOG_FILE:-<unavailable>}"
+  debug "uname: $(uname -a 2>/dev/null || echo unknown)"
+  debug "shell: ${SHELL:-unknown}  user: $(id -un 2>/dev/null || echo unknown)"
+  debug "PATH: ${PATH:-}"
+  set -x
+fi
 
 DEFAULT_PREFIX="${HOME:-}/.local/bin"
 if [ -z "${HOME:-}" ] && [ -z "${JPG2PDF_PREFIX:-}" ]; then
