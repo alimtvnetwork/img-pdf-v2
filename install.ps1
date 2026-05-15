@@ -114,10 +114,28 @@ function Write-Log($Level, $Message) {
         try { Add-Content -LiteralPath $script:LogFile -Value ("{0} {1} {2}" -f (Get-Date -Format 'HH:mm:ss'), $Level, $Message) -ErrorAction SilentlyContinue } catch { }
     }
 }
+function Write-CrashReportSection($Reason) {
+    if (-not $script:LogFile -or $script:CrashReportWritten) { return }
+    try {
+        $script:CrashReportWritten = $true
+        Add-Content -LiteralPath $script:LogFile -Value "" -ErrorAction SilentlyContinue
+        Add-Content -LiteralPath $script:LogFile -Value "===== Installer crash report =====" -ErrorAction SilentlyContinue
+        Add-Content -LiteralPath $script:LogFile -Value ("Reason: {0}" -f $Reason) -ErrorAction SilentlyContinue
+        if ($script:CrashReports -and $script:CrashReports.Count -gt 0) {
+            foreach ($item in $script:CrashReports) {
+                Add-Content -LiteralPath $script:LogFile -Value ("{0} variable={1} where={2} fallback={3} error={4}" -f $item.Time, $item.Variable, $item.Where, $item.Fallback, $item.Error) -ErrorAction SilentlyContinue
+            }
+        } else {
+            Add-Content -LiteralPath $script:LogFile -Value "No guarded read failures were recorded before exit." -ErrorAction SilentlyContinue
+        }
+        Add-Content -LiteralPath $script:LogFile -Value "===== End installer crash report =====" -ErrorAction SilentlyContinue
+    } catch { }
+}
 function Info($m)  { Write-Log "INFO " $m; Write-Host "[jpg2pdf] $m" -ForegroundColor Cyan }
 function Warn($m)  { Write-Log "WARN " $m; Write-Host "[jpg2pdf] $m" -ForegroundColor Yellow }
 function Debug2($m){ Write-Log "DEBUG" $m; if ($script:DebugMode) { Write-Host "[jpg2pdf:debug] $m" -ForegroundColor Magenta } }
 function Die ($m)  {
+    Write-CrashReportSection $m
     Write-Log "ERROR" $m
     Write-Host "[jpg2pdf] $m" -ForegroundColor Red
     if ($script:LogFile) { Write-Host "[jpg2pdf] Full log: $script:LogFile" -ForegroundColor Red }
