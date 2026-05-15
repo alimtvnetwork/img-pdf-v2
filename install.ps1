@@ -211,14 +211,14 @@ function Convert-SafeJson($Description, $Raw) {
 
     Invoke-InstallerStep "Configure GitHub HTTP headers" {
         try { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 } catch { Add-CrashReport "SecurityProtocol" "TLS setup" "continue with host default TLS" $_; Warn "Could not force TLS 1.2 safely: $_" }
-        $headers = @{ "User-Agent" = "jpg2pdf-installer"; "Accept" = "application/vnd.github+json" }
+        $script:headers = @{ "User-Agent" = "jpg2pdf-installer"; "Accept" = "application/vnd.github+json" }
         $token = Get-SafeEnv "GITHUB_TOKEN"
-        if ($token) { $headers["Authorization"] = "Bearer $token" }
+        if ($token) { $script:headers["Authorization"] = "Bearer $token" }
     } "anonymous GitHub requests" -Required | Out-Null
 
     function Get-GitHubJson($Uri, $Description) {
         Debug2 "GET $Uri ($Description)"
-        $response = Invoke-Safe "$Description HTTP read" { Invoke-WebRequest -Headers $headers -Uri $Uri -UseBasicParsing -ErrorAction Stop } $null
+        $response = Invoke-Safe "$Description HTTP read" { Invoke-WebRequest -Headers $script:headers -Uri $Uri -UseBasicParsing -ErrorAction Stop } $null
         if (-not $response) { return $null }
         $content = Invoke-Safe "$Description response content read" { [string]$response.Content } ""
         if (-not $content) { Add-CrashReport "response.Content" $Description "null JSON result" "empty response content" }
