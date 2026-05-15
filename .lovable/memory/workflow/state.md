@@ -13,15 +13,15 @@
 - Installer specs/memory require release -> main artifact -> Python source fallback with reference-style guarded crash logging.
 
 ## 🔄 In Progress
-- Harden `install.ps1` and `install.sh` so every installer step logs failures and falls back without crashing.
+- *(none — awaiting user-side install smoke test)*
 
-## ⏳ Pending (Windows-only, user must do)
+## ⏳ Pending
 1. Capture real `context-menu.png` + `demo.gif` and replace placeholders.
-2. Run `.\run.ps1 -Force -ShowVerbose` and smoke-test mixed selection.
-3. `git tag v1.1.0 && git push origin v1.1.0` once smoke test passes.
+2. Smoke-test the v1.3.6 installers on Windows/macOS/Linux with debug logging.
+3. `git tag v1.3.6 && git push origin v1.3.6` once smoke tests pass.
 
 ## 🚫 Blocked
 - *(none)*
 
 ## Next logical step
-User runs `.\run.ps1 -Force -ShowVerbose` on Windows. If it succeeds, tag `v1.1.0`. If it crashes, share `jpg2pdf-crash.log`.
+User runs the v1.3.6 installer with debug logging on the failing machine. If it crashes, share the printed `jpg2pdf-install-*.log`.
