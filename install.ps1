@@ -178,7 +178,7 @@ function Resolve-SafePath($Path) {
 }
 function Save-SafeUrl($Description, $Uri, $OutFile) {
     Debug2 "GET $Uri ($Description)"
-    return Invoke-SafeBool $Description { Invoke-WebRequest -Headers $headers -Uri $Uri -OutFile $OutFile -UseBasicParsing -ErrorAction Stop }
+    return Invoke-SafeBool $Description { Invoke-WebRequest -Headers $script:headers -Uri $Uri -OutFile $OutFile -UseBasicParsing -ErrorAction Stop }
 }
 function Convert-SafeJson($Description, $Raw) {
     try {
@@ -360,7 +360,7 @@ function Convert-SafeJson($Description, $Raw) {
     } "install under current directory" -Required | Out-Null
 
     Invoke-InstallerStep "Create install directory" {
-        if (-not (Invoke-SafeBool "Install directory creation" { New-Item -ItemType Directory -Force -Path $binDir -ErrorAction Stop | Out-Null })) {
+        if (-not (Invoke-SafeBool "Install directory creation" { New-Item -ItemType Directory -Force -Path $script:binDir -ErrorAction Stop | Out-Null })) {
             Die "Could not create install directory safely."
         }
     } "abort install" -Required | Out-Null
@@ -437,7 +437,7 @@ function Convert-SafeJson($Description, $Raw) {
 
     Invoke-InstallerStep "Register context menu" {
         if (-not $script:NoContextMenu) {
-            $ctxRef = $(if ($script:Version) { $Version } else { "main" })
+            $ctxRef = $(if ($script:Version) { $script:Version } else { "main" })
             $ctxUrl  = "https://raw.githubusercontent.com/$script:Repo/$ctxRef/tools/jpg2pdf/scripts/register-context-menu.ps1"
             $ctxFile = Join-SafePath (Get-SafeTempDir) "jpg2pdf-register-context-menu.ps1"
             Info "Fetching context-menu registrar from $ctxUrl"
