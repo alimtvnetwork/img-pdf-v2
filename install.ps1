@@ -190,7 +190,9 @@ function Die ($m)  {
     }
 
     $asset = "jpg2pdf-windows-x64.exe"
-    $homeDir = $(if ($HOME) { $HOME } elseif ($env:USERPROFILE) { $env:USERPROFILE } else { (Get-Location).Path })
+    $homeDir = Get-SafeEnv "USERPROFILE"
+    if (-not $homeDir) { try { if ($HOME) { $homeDir = [string]$HOME } } catch { } }
+    if (-not $homeDir) { try { $homeDir = (Get-Location).Path } catch { $homeDir = "." } }
     $binDir  = Join-Path $homeDir "Tools\bin"
     $exePath = Join-Path $binDir "jpg2pdf.exe"
     New-Item -ItemType Directory -Force -Path $binDir | Out-Null
@@ -235,19 +237,23 @@ function Die ($m)  {
         Warn "Binary downloaded from $installedFrom but --version failed: $_"
     }
 
-    $current = [Environment]::GetEnvironmentVariable("Path", "User")
-    if (-not $current) { $current = "" }
-    $entries = $current.Split(';') | ForEach-Object { $_.Trim().TrimEnd('\') } | Where-Object { $_ }
-    $resolved = (Resolve-Path $binDir).Path.TrimEnd('\')
-    if ($entries -notcontains $resolved) {
-        [Environment]::SetEnvironmentVariable("Path", (($entries + $resolved) -join ';'), "User")
-        Info "Added $resolved to User PATH (open a new terminal to pick it up)."
-    } else {
-        Info "$resolved already on User PATH."
-    }
-    $sessionPath = $(if ($env:Path) { $env:Path } else { "" })
-    if (($sessionPath.Split(';') | ForEach-Object { $_.Trim().TrimEnd('\') }) -notcontains $resolved) {
-        $env:Path = $(if ($sessionPath) { "$($sessionPath.TrimEnd(';'));$resolved" } else { $resolved })
+    try {
+        $current = [Environment]::GetEnvironmentVariable("Path", "User")
+        if (-not $current) { $current = "" }
+        $entries = $current.Split(';') | ForEach-Object { $_.Trim().TrimEnd('\') } | Where-Object { $_ }
+        $resolved = (Resolve-Path $binDir).Path.TrimEnd('\')
+        if ($entries -notcontains $resolved) {
+            [Environment]::SetEnvironmentVariable("Path", (($entries + $resolved) -join ';'), "User")
+            Info "Added $resolved to User PATH (open a new terminal to pick it up)."
+        } else {
+            Info "$resolved already on User PATH."
+        }
+        $sessionPath = Get-SafeEnv "Path"
+        if (($sessionPath.Split(';') | ForEach-Object { $_.Trim().TrimEnd('\') }) -notcontains $resolved) {
+            $env:Path = $(if ($sessionPath) { "$($sessionPath.TrimEnd(';'));$resolved" } else { $resolved })
+        }
+    } catch {
+        Warn "Installed binary, but PATH update failed safely: $_"
     }
 
     if (-not $NoContextMenu) {
