@@ -143,20 +143,20 @@ function Die ($m)  {
 }
 
 function Invoke-Safe($Description, [scriptblock]$Action, $Default = $null) {
-    try { return & $Action } catch { Warn "$Description failed safely: $_"; return $Default }
+    try { return & $Action } catch { Add-CrashReport $Description $Description "default: $Default" $_; Warn "$Description failed safely: $_"; return $Default }
 }
 function Invoke-SafeBool($Description, [scriptblock]$Action) {
-    try { $null = & $Action; return $true } catch { Warn "$Description failed safely: $_"; return $false }
+    try { $null = & $Action; return $true } catch { Add-CrashReport $Description $Description "false" $_; Warn "$Description failed safely: $_"; return $false }
 }
 function Join-SafePath($Base, $Child) {
-    try { if ($Base) { return (Join-Path $Base $Child -ErrorAction Stop) } } catch { Warn "Path join failed safely: $_" }
+    try { if ($Base) { return (Join-Path $Base $Child -ErrorAction Stop) } } catch { Add-CrashReport "path:$Base + $Child" "Join-SafePath" "child only: $Child" $_; Warn "Path join failed safely: $_" }
     return $Child
 }
 function Test-SafePath($Path) {
-    try { return (Test-Path -LiteralPath $Path -ErrorAction Stop) } catch { Warn "Path test failed safely: $_"; return $false }
+    try { return (Test-Path -LiteralPath $Path -ErrorAction Stop) } catch { Add-CrashReport "path:$Path" "Test-SafePath" "false" $_; Warn "Path test failed safely: $_"; return $false }
 }
 function Resolve-SafePath($Path) {
-    try { return (Resolve-Path -LiteralPath $Path -ErrorAction Stop).Path } catch { Warn "Path resolve failed safely: $_"; return $Path }
+    try { return (Resolve-Path -LiteralPath $Path -ErrorAction Stop).Path } catch { Add-CrashReport "path:$Path" "Resolve-SafePath" "original path" $_; Warn "Path resolve failed safely: $_"; return $Path }
 }
 function Save-SafeUrl($Description, $Uri, $OutFile) {
     Debug2 "GET $Uri ($Description)"
@@ -167,6 +167,7 @@ function Convert-SafeJson($Description, $Raw) {
         if (-not $Raw) { return $null }
         return ($Raw | ConvertFrom-Json -ErrorAction Stop)
     } catch {
+        Add-CrashReport $Description "Convert-SafeJson" "null" $_
         Warn "$Description JSON parse failed safely: $_"
         return $null
     }
