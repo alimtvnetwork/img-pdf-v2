@@ -1,0 +1,16 @@
+{
+  "version": "1.3.4",
+  "branch": "release/v1.3.4",
+  "sourceBranch": "main",
+  "commit": "7930b069115bde6bf3ee3f4a15871e2fc2cef78e",
+  "tag": "v1.3.4",
+  "assets": [],
+  "changelog": [
+    "CI/CD: dropped the macOS build matrix entries (`macos-13` x64 and `macos-14` arm64). GitHub-hosted macOS runners were stuck queued for hours and blocking every release. The matrix now ships Windows x64 and Linux x64/arm64 only; macOS users can build from source until macOS runners are restored.",
+    "Release job no longer publishes `jpg2pdf-macos-x64` / `jpg2pdf-macos-arm64` assets."
+  ],
+  "isDraft": false,
+  "isPreRelease": false,
+  "createdAt": "2026-05-15T12:19:48Z",
+  "isLatest": false
+}
