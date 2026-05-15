@@ -17,7 +17,8 @@
 #   4. If no binary exists, falls back to a Python source install.
 #   5. Installs into $JPG2PDF_PREFIX (default $HOME/.local/bin), chmod +x, and reports next steps.
 
-set -eo pipefail
+if (set -o pipefail) 2>/dev/null; then set -o pipefail; fi
+set -e
 
 PWD_SAFE="$(pwd 2>/dev/null || printf /tmp)"
 TMP_DIR="${TMPDIR:-/tmp}"
@@ -35,6 +36,8 @@ LOG_FILE="${JPG2PDF_LOG:-$TMP_DIR/jpg2pdf-install-$(date +%Y%m%d-%H%M%S)-$$.log}
 : > "$LOG_FILE" 2>/dev/null || LOG_FILE=""
 SAFE_DIE_MARKER="$TMP_DIR/jpg2pdf-install-die-$$.flag"
 rm -f "$SAFE_DIE_MARKER" 2>/dev/null || true
+CRASH_REPORTS=""
+CRASH_REPORT_WRITTEN=0
 
 _log() { [ -n "$LOG_FILE" ] && printf '%s %s\n' "$(date +%H:%M:%S)" "$*" >> "$LOG_FILE" 2>/dev/null || true; }
 info() { _log "INFO  $*"; printf '\033[36m[jpg2pdf]\033[0m %s\n' "$*"; }
@@ -46,14 +49,22 @@ add_crash_report() {
   cr_fallback="$3"
   cr_error="$4"
   _log "CRASH variable=$cr_var where=$cr_where fallback=$cr_fallback error=$cr_error"
+  CRASH_REPORTS="${CRASH_REPORTS}
+variable=$cr_var where=$cr_where fallback=$cr_fallback error=$cr_error"
 }
 write_crash_report_section() {
   cr_reason="$1"
   [ -n "$LOG_FILE" ] || return 0
+  [ "$CRASH_REPORT_WRITTEN" = "0" ] || return 0
+  CRASH_REPORT_WRITTEN=1
   {
     printf '\n===== Installer crash report =====\n'
     printf 'Reason: %s\n' "$cr_reason"
-    printf 'Recent guarded failures and fallbacks are listed as CRASH lines above.\n'
+    if [ -n "$CRASH_REPORTS" ]; then
+      printf '%s\n' "$CRASH_REPORTS" | sed '/^$/d'
+    else
+      printf 'No guarded read failures were recorded before exit.\n'
+    fi
     printf 'Last fallback: %s\n' "${LAST_FALLBACK:-none}"
     printf '===== End installer crash report =====\n'
   } >> "$LOG_FILE" 2>/dev/null || true
