@@ -6,7 +6,7 @@
   irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.ps1 | iex
 
   # Pin a specific version:
-  $env:JPG2PDF_VERSION = "v1.2.5"; irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.ps1 | iex
+  $env:JPG2PDF_VERSION = "v1.2.6"; irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.ps1 | iex
 
   # Skip Explorer context-menu registration:
   $env:JPG2PDF_NO_CONTEXT_MENU = "1"; irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.ps1 | iex
@@ -22,13 +22,40 @@
 param(
     [string]$Repo,
     [string]$Version,
-    [switch]$NoContextMenu
+    [switch]$NoContextMenu,
+    [Alias('Verbose2','d')][switch]$DebugLog
 )
 
 $ErrorActionPreference = "Stop"
-function Info($m) { Write-Host "[jpg2pdf] $m" -ForegroundColor Cyan }
-function Warn($m) { Write-Host "[jpg2pdf] $m" -ForegroundColor Yellow }
-function Die ($m) { Write-Host "[jpg2pdf] $m" -ForegroundColor Red; exit 1 }
+
+$script:DebugMode = $false
+if ($DebugLog) { $script:DebugMode = $true }
+if ($env:JPG2PDF_DEBUG -eq "1") { $script:DebugMode = $true }
+
+$script:LogFile = $null
+try {
+    $logBase = if ($env:JPG2PDF_LOG) { $env:JPG2PDF_LOG } else {
+        $tmp = if ($env:TEMP) { $env:TEMP } else { [System.IO.Path]::GetTempPath() }
+        Join-Path $tmp ("jpg2pdf-install-{0}-{1}.log" -f (Get-Date -Format 'yyyyMMdd-HHmmss'), $PID)
+    }
+    New-Item -ItemType File -Force -Path $logBase | Out-Null
+    $script:LogFile = $logBase
+} catch { $script:LogFile = $null }
+
+function Write-Log($Level, $Message) {
+    if ($script:LogFile) {
+        try { Add-Content -LiteralPath $script:LogFile -Value ("{0} {1} {2}" -f (Get-Date -Format 'HH:mm:ss'), $Level, $Message) -ErrorAction SilentlyContinue } catch { }
+    }
+}
+function Info($m)  { Write-Log "INFO " $m; Write-Host "[jpg2pdf] $m" -ForegroundColor Cyan }
+function Warn($m)  { Write-Log "WARN " $m; Write-Host "[jpg2pdf] $m" -ForegroundColor Yellow }
+function Debug2($m){ Write-Log "DEBUG" $m; if ($script:DebugMode) { Write-Host "[jpg2pdf:debug] $m" -ForegroundColor Magenta } }
+function Die ($m)  {
+    Write-Log "ERROR" $m
+    Write-Host "[jpg2pdf] $m" -ForegroundColor Red
+    if ($script:LogFile) { Write-Host "[jpg2pdf] Full log: $script:LogFile" -ForegroundColor Red }
+    exit 1
+}
 trap { Die "Installer failed safely before completion: $_" }
 
 try {
@@ -39,15 +66,24 @@ try {
         Die "Set the repo: `$env:JPG2PDF_REPO = 'your-user/your-repo'  (or pass -Repo)."
     }
 
+    if ($script:DebugMode) {
+        Info "Debug mode enabled. Log: $(if ($script:LogFile) { $script:LogFile } else { '<unavailable>' })"
+        Debug2 "PSVersion: $($PSVersionTable.PSVersion)  OS: $($PSVersionTable.OS)"
+        Debug2 "Repo=$Repo  Version=$Version  NoContextMenu=$NoContextMenu"
+        Debug2 "USERPROFILE=$env:USERPROFILE  TEMP=$env:TEMP"
+    }
+
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     $headers = @{ "User-Agent" = "jpg2pdf-installer"; "Accept" = "application/vnd.github+json" }
     if ($env:GITHUB_TOKEN) { $headers["Authorization"] = "Bearer $env:GITHUB_TOKEN" }
 
     function Get-GitHubJson($Uri, $Description) {
+        Debug2 "GET $Uri ($Description)"
         try {
             return Invoke-RestMethod -Headers $headers -Uri $Uri -UseBasicParsing
         } catch {
             Warn "$Description failed: $_"
+            Debug2 "Exception: $($_.Exception.GetType().FullName): $($_.Exception.Message)"
             return $null
         }
     }
