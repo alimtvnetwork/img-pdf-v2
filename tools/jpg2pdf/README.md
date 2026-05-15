@@ -35,7 +35,7 @@ Options via env vars:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.sh \
-  | JPG2PDF_VERSION=v1.3.6 JPG2PDF_PREFIX=$HOME/bin sh
+  | JPG2PDF_VERSION=v1.3.6 JPG2PDF_PREFIX=$HOME/bin bash
 ```
 
 Drops `jpg2pdf` into `$HOME/.local/bin` (override with `JPG2PDF_PREFIX`).
