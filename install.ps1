@@ -319,12 +319,13 @@ function Convert-SafeJson($Description, $Raw) {
             if (-not $scriptFile) { Add-CrashReport "source tree" "Install-SourceFromRef" "try next fallback" "tools/jpg2pdf/src/jpg2pdf.py not found"; return $null }
             $sourceRoot = $scriptFile.FullName -replace "[\\/]tools[\\/]jpg2pdf[\\/]src[\\/]jpg2pdf\.py$", ""
             $installRoot = Join-SafePath $BinDir "jpg2pdf-source"
-            Invoke-SafeBool "Existing source fallback cleanup" { Remove-Item -LiteralPath $installRoot -Recurse -Force -ErrorAction Stop } | Out-Null
+            if (Test-SafePath $installRoot) { Invoke-SafeBool "Existing source fallback cleanup" { Remove-Item -LiteralPath $installRoot -Recurse -Force -ErrorAction Stop } | Out-Null }
             if (-not (Invoke-SafeBool "Source fallback copy" { Copy-Item -LiteralPath $sourceRoot -Destination $installRoot -Recurse -Force -ErrorAction Stop })) { return $null }
             $requirements = Join-SafePath $installRoot "tools\jpg2pdf\requirements.txt"
             if (Test-SafePath $requirements) {
                 $pipOutput = Invoke-Safe "Source fallback dependency install" { & $python -m pip install --user -r $requirements 2>&1 } $null
                 Log-ExternalOutput "PIP  " $pipOutput
+                if ($LASTEXITCODE -ne 0) { Add-CrashReport "pip requirements" "Install-SourceFromRef" "write wrapper anyway" "pip exit $LASTEXITCODE"; Warn "Python dependency install failed; writing wrapper anyway. Check the log for pip output." }
             } else { Add-CrashReport "requirements.txt" "Install-SourceFromRef" "write wrapper without pip" "requirements file missing" }
             $installedScript = Join-SafePath $installRoot "tools\jpg2pdf\src\jpg2pdf.py"
             $wrapper = @("@echo off", "`"$python`" `"$installedScript`" %*")
@@ -400,6 +401,7 @@ function Convert-SafeJson($Description, $Raw) {
 
     if (-not $installedFrom) {
         Warn "No usable binary was available. Falling back to source/Python install."
+        Invoke-SafeBool "Remove incomplete binary before source fallback" { Remove-Item -LiteralPath $exePath -Force -ErrorAction Stop } | Out-Null
         $sourceFrom = Install-SourceFallback $Repo $Version $cmdPath $binDir
         if ($sourceFrom) {
             $installedFrom = $sourceFrom
