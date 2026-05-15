@@ -181,12 +181,18 @@ jobs:
           echo "----- rendered release notes -----"
           cat dist/RELEASE_NOTES.md
 
+      - name: Stage installer scripts
+        run: |
+          cp install.ps1 dist/install.ps1
+          cp install.sh  dist/install.sh
+          chmod +x dist/install.sh
+
       - name: Create / update GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.tag.outputs.name }}
           name: jpg2pdf ${{ steps.tag.outputs.name }}
-          generate_release_notes: true
+          body_path: dist/RELEASE_NOTES.md
           files: |
             dist/jpg2pdf-windows-x64.exe
             dist/jpg2pdf-linux-x64
@@ -194,3 +200,5 @@ jobs:
             dist/jpg2pdf-macos-x64
             dist/jpg2pdf-macos-arm64
             dist/SHA256SUMS.txt
+            dist/install.ps1
+            dist/install.sh
