@@ -6,7 +6,7 @@
   irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.ps1 | iex
 
   # Pin a specific version:
-  $env:JPG2PDF_VERSION = "v1.2.8"; irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.ps1 | iex
+  $env:JPG2PDF_VERSION = "v1.2.9"; irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.ps1 | iex
 
   # Skip Explorer context-menu registration:
   $env:JPG2PDF_NO_CONTEXT_MENU = "1"; irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.ps1 | iex
@@ -95,6 +95,27 @@ function Die ($m)  {
     exit 1
 }
 
+function Invoke-Safe($Description, [scriptblock]$Action, $Default = $null) {
+    try { return & $Action } catch { Warn "$Description failed safely: $_"; return $Default }
+}
+function Invoke-SafeBool($Description, [scriptblock]$Action) {
+    try { $null = & $Action; return $true } catch { Warn "$Description failed safely: $_"; return $false }
+}
+function Join-SafePath($Base, $Child) {
+    try { if ($Base) { return (Join-Path $Base $Child -ErrorAction Stop) } } catch { Warn "Path join failed safely: $_" }
+    return $Child
+}
+function Test-SafePath($Path) {
+    try { return (Test-Path -LiteralPath $Path -ErrorAction Stop) } catch { Warn "Path test failed safely: $_"; return $false }
+}
+function Resolve-SafePath($Path) {
+    try { return (Resolve-Path -LiteralPath $Path -ErrorAction Stop).Path } catch { Warn "Path resolve failed safely: $_"; return $Path }
+}
+function Save-SafeUrl($Description, $Uri, $OutFile) {
+    Debug2 "GET $Uri ($Description)"
+    return Invoke-SafeBool $Description { Invoke-WebRequest -Headers $headers -Uri $Uri -OutFile $OutFile -UseBasicParsing -ErrorAction Stop }
+}
+
     if (-not $Repo) { $Repo = Get-SafeEnv "JPG2PDF_REPO" "alimtvnetwork/img-pdf" }
     if (-not $Version) { $Version = Get-SafeEnv "JPG2PDF_VERSION" }
     if ((Get-SafeEnv "JPG2PDF_NO_CONTEXT_MENU") -eq "1") { $NoContextMenu = $true }
@@ -116,25 +137,13 @@ function Die ($m)  {
 
     function Get-GitHubJson($Uri, $Description) {
         Debug2 "GET $Uri ($Description)"
-        try {
-            return Invoke-RestMethod -Headers $headers -Uri $Uri -UseBasicParsing
-        } catch {
-            Warn "$Description failed: $_"
-            Debug2 "Exception: $($_.Exception.GetType().FullName): $($_.Exception.Message)"
-            return $null
-        }
+        return Invoke-Safe $Description { Invoke-RestMethod -Headers $headers -Uri $Uri -UseBasicParsing -ErrorAction Stop } $null
     }
 
     function Download-ReleaseAsset($Repo, $Version, $Asset, $OutFile) {
         $dlUrl = "https://github.com/$Repo/releases/download/$Version/$Asset"
         Info "Downloading $dlUrl"
-        try {
-            Invoke-WebRequest -Headers $headers -Uri $dlUrl -OutFile $OutFile -UseBasicParsing
-            return $true
-        } catch {
-            Warn "Release download failed: $_"
-            return $false
-        }
+        return Save-SafeUrl "Release download" $dlUrl $OutFile
     }
 
     function Get-SafeTempDir() {
@@ -162,23 +171,23 @@ function Die ($m)  {
             $tmpRoot = $null
             try {
                 $tempBase = Get-SafeTempDir
-                $tmpRoot = Join-Path $tempBase ("jpg2pdf-artifact-" + [guid]::NewGuid().ToString("N"))
-                $zipFile = Join-Path $tmpRoot "artifact.zip"
-                $extractDir = Join-Path $tmpRoot "unzipped"
-                New-Item -ItemType Directory -Force -Path $tmpRoot | Out-Null
+                $tmpRoot = Join-SafePath $tempBase ("jpg2pdf-artifact-" + [guid]::NewGuid().ToString("N"))
+                $zipFile = Join-SafePath $tmpRoot "artifact.zip"
+                $extractDir = Join-SafePath $tmpRoot "unzipped"
+                if (-not (Invoke-SafeBool "Temp directory creation" { New-Item -ItemType Directory -Force -Path $tmpRoot -ErrorAction Stop | Out-Null })) { continue }
                 Info "Downloading main-branch artifact from run $($run.id)"
-                Invoke-WebRequest -Headers $headers -Uri $artifact.archive_download_url -OutFile $zipFile -UseBasicParsing
-                Expand-Archive -Path $zipFile -DestinationPath $extractDir -Force
-                $candidate = Join-Path $extractDir $Asset
-                if (-not (Test-Path -LiteralPath $candidate)) {
-                    $candidate = Get-ChildItem -LiteralPath $extractDir -Recurse -File | Where-Object { $_.Name -eq $Asset } | Select-Object -First 1
+                if (-not (Save-SafeUrl "Main-branch artifact download" $artifact.archive_download_url $zipFile)) { continue }
+                if (-not (Invoke-SafeBool "Main-branch artifact extraction" { Expand-Archive -Path $zipFile -DestinationPath $extractDir -Force -ErrorAction Stop })) { continue }
+                $candidate = Join-SafePath $extractDir $Asset
+                if (-not (Test-SafePath $candidate)) {
+                    $candidate = Invoke-Safe "Artifact file lookup" { Get-ChildItem -LiteralPath $extractDir -Recurse -File -ErrorAction Stop | Where-Object { $_.Name -eq $Asset } | Select-Object -First 1 } $null
                     if ($candidate) { $candidate = $candidate.FullName }
                 }
-                if (-not $candidate -or -not (Test-Path -LiteralPath $candidate)) {
+                if (-not $candidate -or -not (Test-SafePath $candidate)) {
                     Warn "Artifact archive did not contain $Asset."
                     continue
                 }
-                Copy-Item -LiteralPath $candidate -Destination $OutFile -Force
+                if (-not (Invoke-SafeBool "Artifact copy" { Copy-Item -LiteralPath $candidate -Destination $OutFile -Force -ErrorAction Stop })) { continue }
                 return $true
             } catch {
                 Warn "Main-branch artifact download failed: $_"
@@ -193,9 +202,11 @@ function Die ($m)  {
     $homeDir = Get-SafeEnv "USERPROFILE"
     if (-not $homeDir) { try { if ($HOME) { $homeDir = [string]$HOME } } catch { } }
     if (-not $homeDir) { try { $homeDir = (Get-Location).Path } catch { $homeDir = "." } }
-    $binDir  = Join-Path $homeDir "Tools\bin"
-    $exePath = Join-Path $binDir "jpg2pdf.exe"
-    New-Item -ItemType Directory -Force -Path $binDir | Out-Null
+    $binDir  = Join-SafePath $homeDir "Tools\bin"
+    $exePath = Join-SafePath $binDir "jpg2pdf.exe"
+    if (-not (Invoke-SafeBool "Install directory creation" { New-Item -ItemType Directory -Force -Path $binDir -ErrorAction Stop | Out-Null })) {
+        Die "Could not create install directory safely."
+    }
 
     $installedFrom = $null
     if ($Version) {
@@ -241,7 +252,7 @@ function Die ($m)  {
         $current = [Environment]::GetEnvironmentVariable("Path", "User")
         if (-not $current) { $current = "" }
         $entries = $current.Split(';') | ForEach-Object { $_.Trim().TrimEnd('\') } | Where-Object { $_ }
-        $resolved = (Resolve-Path $binDir).Path.TrimEnd('\')
+        $resolved = (Resolve-SafePath $binDir).TrimEnd('\')
         if ($entries -notcontains $resolved) {
             [Environment]::SetEnvironmentVariable("Path", (($entries + $resolved) -join ';'), "User")
             Info "Added $resolved to User PATH (open a new terminal to pick it up)."
@@ -259,11 +270,12 @@ function Die ($m)  {
     if (-not $NoContextMenu) {
         $ctxRef = $(if ($Version) { $Version } else { "main" })
         $ctxUrl  = "https://raw.githubusercontent.com/$Repo/$ctxRef/tools/jpg2pdf/scripts/register-context-menu.ps1"
-        $ctxFile = Join-Path (Get-SafeTempDir) "jpg2pdf-register-context-menu.ps1"
+        $ctxFile = Join-SafePath (Get-SafeTempDir) "jpg2pdf-register-context-menu.ps1"
         try {
             Info "Fetching context-menu registrar from $ctxUrl"
-            Invoke-WebRequest -Headers $headers -Uri $ctxUrl -OutFile $ctxFile -UseBasicParsing
-            & powershell -NoProfile -ExecutionPolicy Bypass -File $ctxFile -ExePath $exePath
+            if (Save-SafeUrl "Context-menu registrar download" $ctxUrl $ctxFile) {
+                $null = Invoke-Safe "Context-menu registrar execution" { & powershell -NoProfile -ExecutionPolicy Bypass -File $ctxFile -ExePath $exePath } $null
+            }
         } catch {
             Warn "Skipped context-menu registration: $_"
         }
