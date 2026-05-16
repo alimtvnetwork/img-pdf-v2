@@ -248,7 +248,7 @@ jobs:
               "PYTHON_VERSION": os.environ["PYTHON_VERSION"],
               "REPO": os.environ["REPO"],
               "CHECKSUMS": os.environ["CHECKSUMS"],
-              "CHANGELOG": os.environ["CHANGELOG"],
+              "CHANGELOG": os.environ["CHANGELOG_BODY"],
           }
           for k, v in mapping.items():
               tpl = tpl.replace("{{" + k + "}}", v)
