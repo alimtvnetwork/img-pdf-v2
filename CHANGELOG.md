@@ -4,6 +4,13 @@ All notable changes to `jpg2pdf` are documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.7] - 2026-05-16
+
+### Fixed
+- Release-hosted installers now download binaries from the same repository that published the release instead of falling back to the old `alimtvnetwork/img-pdf` repository. Root cause: the install scripts had a hardcoded default repo, so running the installer from `img-pdf-v2` still looked for `v1.4.6` assets under `img-pdf`, got `404 Not Found`, then repeatedly tried unauthenticated GitHub Actions artifact downloads. The release workflow now stamps the release repo/tag into packaged installers, the release notes pass `JPG2PDF_REPO`, and installers skip the main-artifact fallback unless `GITHUB_TOKEN` is available.
+
+See the full history in [CHANGELOG.md](./CHANGELOG.md).
+
 ## [1.4.6] - 2026-05-16
 
 ### Fixed
