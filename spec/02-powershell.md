@@ -106,6 +106,11 @@ best-effort dependency install. Every source download, extraction, Python
 probe, dependency install, and wrapper write must be inside try/catch and must
 append to the installer crash report on failure.
 
+If the source/Python wrapper is written but `jpg2pdf --version` fails because
+Python dependencies are still missing, the installer must not crash or remove
+the wrapper. It must log the failed verification, print the exact log path, and
+leave the source install in place so the user can fix Python/pip separately.
+
 ## Reference installer hardening pattern
 
 Follow the defensive style used by `alimtvnetwork/coding-guidelines-v20/install.ps1`:
@@ -121,6 +126,9 @@ Follow the defensive style used by `alimtvnetwork/coding-guidelines-v20/install.
 - The verbose log must always end with a dedicated crash report section listing
   the failed variable/step, where it failed, and which fallback was used, even
   when the installer eventually succeeds via source/Python fallback.
+- `Die`/fatal handling must be reserved for cases where no release, artifact,
+  or source wrapper could be installed. Post-install verification, PATH update,
+  and context-menu registration are non-fatal guarded steps.
 
 ## Debug/verbose flag
 
