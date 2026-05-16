@@ -217,6 +217,13 @@ jobs:
 
       - name: Render release notes
         shell: bash
+        env:
+          # Pass the multi-line changelog body through the env block so real
+          # newlines are preserved. Do NOT use `export CHANGELOG=${{ toJSON(...) }}`
+          # inline — toJSON emits a JSON-escaped string with literal `\n`
+          # sequences, which then render as the text "\n### Changed\n- ..."
+          # in the release body instead of actual line breaks.
+          CHANGELOG_BODY: ${{ steps.changelog.outputs.body }}
         run: |
           TAG="${{ steps.tag.outputs.name }}"
           COMMIT_FULL="${{ github.sha }}"
@@ -227,8 +234,7 @@ jobs:
           REPO="${{ github.repository }}"
           CHECKSUMS="$(cat dist/SHA256SUMS.txt)"
 
-          export TAG COMMIT_FULL COMMIT_SHORT BUILD_DATE_UTC PYTHON_VERSION BRANCH REPO CHECKSUMS
-          export CHANGELOG=${{ toJSON(steps.changelog.outputs.body) }}
+          export TAG COMMIT_FULL COMMIT_SHORT BUILD_DATE_UTC PYTHON_VERSION BRANCH REPO CHECKSUMS CHANGELOG_BODY
 
           python3 - <<'PY' > dist/RELEASE_NOTES.md
           import os, pathlib
@@ -242,7 +248,7 @@ jobs:
               "PYTHON_VERSION": os.environ["PYTHON_VERSION"],
               "REPO": os.environ["REPO"],
               "CHECKSUMS": os.environ["CHECKSUMS"],
-              "CHANGELOG": os.environ["CHANGELOG"],
+              "CHANGELOG": os.environ["CHANGELOG_BODY"],
           }
           for k, v in mapping.items():
               tpl = tpl.replace("{{" + k + "}}", v)
