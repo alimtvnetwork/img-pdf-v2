@@ -1,20 +1,21 @@
-# 02 — PowerShell Spec (`install.ps1`, `uninstall.ps1`, `run.ps1`)
+# 02 - PowerShell Spec (`install.ps1`, `uninstall.ps1`, `run.ps1`)
 
 This is the spec that has been violated most often. Read it in full before
-editing any `.ps1` file.
+editing any `.ps1` file. Installer edits must follow the defensive reference
+pattern from `alimtvnetwork/coding-guidelines-v20/install.ps1`: guarded startup,
+guarded steps, a top-level failure handler, and a final diagnostic section.
 
 ## Target runtime
 
 - **Windows PowerShell 5.1** (default on Windows 10/11) AND **PowerShell 7+**.
-- 5.1 has the most quirks — design for it, 7+ will keep working.
+- 5.1 has the most quirks - design for it, 7+ will keep working.
 
 ## Encoding rule (R4 from AI-INSTRUCTIONS)
 
-ASCII only. No em-dashes (`—`), no smart quotes (`' '`), no arrows (`→`),
-no emoji. If you must include UTF-8, save the file with a BOM — but
-prefer ASCII.
+ASCII only. No em-dashes, smart quotes, arrows, or emoji. If you must include
+UTF-8, save the file with a BOM - but prefer ASCII.
 
-## Bulletproof startup (CRITICAL — this is the bug we keep hitting)
+## Bulletproof startup (CRITICAL - this is the bug we keep hitting)
 
 The install script must NEVER crash before it can print a useful error.
 The first ~30 lines of `install.ps1` MUST follow this template:
@@ -105,6 +106,11 @@ best-effort dependency install. Every source download, extraction, Python
 probe, dependency install, and wrapper write must be inside try/catch and must
 append to the installer crash report on failure.
 
+If the source/Python wrapper is written but `jpg2pdf --version` fails because
+Python dependencies are still missing, the installer must not crash or remove
+the wrapper. It must log the failed verification, print the exact log path, and
+leave the source install in place so the user can fix Python/pip separately.
+
 ## Reference installer hardening pattern
 
 Follow the defensive style used by `alimtvnetwork/coding-guidelines-v20/install.ps1`:
@@ -120,6 +126,9 @@ Follow the defensive style used by `alimtvnetwork/coding-guidelines-v20/install.
 - The verbose log must always end with a dedicated crash report section listing
   the failed variable/step, where it failed, and which fallback was used, even
   when the installer eventually succeeds via source/Python fallback.
+- `Die`/fatal handling must be reserved for cases where no release, artifact,
+  or source wrapper could be installed. Post-install verification, PATH update,
+  and context-menu registration are non-fatal guarded steps.
 
 ## Debug/verbose flag
 

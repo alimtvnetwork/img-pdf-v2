@@ -5,7 +5,7 @@
 #   curl -fsSL https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.sh | bash
 #
 #   # Pin a specific version:
-#   curl -fsSL https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.sh | JPG2PDF_VERSION=v1.3.6 bash
+#   curl -fsSL https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.sh | JPG2PDF_VERSION=v1.3.7 bash
 #
 #   # Install elsewhere (default: $HOME/.local/bin):
 #   curl -fsSL https://.../install.sh | JPG2PDF_PREFIX=$HOME/bin bash
@@ -44,6 +44,8 @@ LOG_FILE="${JPG2PDF_LOG:-$TMP_DIR/jpg2pdf-install-$(date +%Y%m%d-%H%M%S)-$$.log}
 SAFE_DIE_MARKER="$TMP_DIR/jpg2pdf-install-die-$$.flag"
 rm -f "$SAFE_DIE_MARKER" 2>/dev/null || true
 CRASH_REPORTS=""
+CRASH_REPORT_FILE="$TMP_DIR/jpg2pdf-install-crash-$$.log"
+rm -f "$CRASH_REPORT_FILE" 2>/dev/null || true
 CRASH_REPORT_WRITTEN=0
 
 _log() { [ -n "$LOG_FILE" ] && printf '%s %s\n' "$(date +%H:%M:%S)" "$*" >> "$LOG_FILE" 2>/dev/null || true; }
@@ -56,6 +58,7 @@ add_crash_report() {
   cr_fallback="$3"
   cr_error="$4"
   _log "CRASH variable=$cr_var where=$cr_where fallback=$cr_fallback error=$cr_error"
+  printf 'variable=%s where=%s fallback=%s error=%s\n' "$cr_var" "$cr_where" "$cr_fallback" "$cr_error" >> "$CRASH_REPORT_FILE" 2>/dev/null || true
   CRASH_REPORTS="${CRASH_REPORTS}
 variable=$cr_var where=$cr_where fallback=$cr_fallback error=$cr_error"
 }
@@ -67,7 +70,9 @@ write_crash_report_section() {
   {
     printf '\n===== Installer crash report =====\n'
     printf 'Reason: %s\n' "$cr_reason"
-    if [ -n "$CRASH_REPORTS" ]; then
+    if [ -s "$CRASH_REPORT_FILE" ]; then
+      sed '/^$/d' "$CRASH_REPORT_FILE" 2>/dev/null || true
+    elif [ -n "$CRASH_REPORTS" ]; then
       printf '%s\n' "$CRASH_REPORTS" | sed '/^$/d'
     else
       printf 'No guarded read failures were recorded before exit.\n'
@@ -366,21 +371,23 @@ install_source_from_ref() {
   fi
 
   req_file="$install_root/tools/jpg2pdf/requirements.txt"
+  vendor_dir="$install_root/vendor"
   if [ -f "$req_file" ]; then
-    if [ -n "$LOG_FILE" ]; then
-      set +e
-      "$py_cmd" -m pip install --user -r "$req_file" >> "$LOG_FILE" 2>&1
-      pip_code=$?
-      set -e
-    else
-      set +e
-      "$py_cmd" -m pip install --user -r "$req_file" >/dev/null 2>&1
-      pip_code=$?
-      set -e
-    fi
+    mkdir -p "$vendor_dir" 2>/dev/null || add_crash_report "vendor_dir" "Source fallback dependencies" "try user-site pip install" "$vendor_dir"
+    set +e
+    "$py_cmd" -m pip install --target "$vendor_dir" -r "$req_file" >> "${LOG_FILE:-/dev/null}" 2>&1
+    pip_code=$?
+    set -e
     if [ "$pip_code" -ne 0 ]; then
-      add_crash_report "pip requirements" "Source fallback dependencies" "write wrapper anyway" "pip install failed"
-      warn "Python dependency install failed; writing wrapper anyway. Check the log for pip output."
+      add_crash_report "pip vendor requirements" "Source fallback dependencies" "try user-site pip install" "pip install failed"
+      set +e
+      "$py_cmd" -m pip install --user -r "$req_file" >> "${LOG_FILE:-/dev/null}" 2>&1
+      pip_code=$?
+      set -e
+      if [ "$pip_code" -ne 0 ]; then
+        add_crash_report "pip user requirements" "Source fallback dependencies" "write wrapper anyway" "pip install failed"
+        warn "Python dependency install failed; writing wrapper anyway. Check the log for pip output."
+      fi
     fi
   else
     add_crash_report "requirements.txt" "Source fallback dependencies" "write wrapper without pip" "requirements file missing"
@@ -389,6 +396,10 @@ install_source_from_ref() {
   script_path="$install_root/tools/jpg2pdf/src/jpg2pdf.py"
   if ! cat > "$is_out" <<EOF
 #!/usr/bin/env sh
+if [ -d "$vendor_dir" ]; then
+  PYTHONPATH="$vendor_dir\${PYTHONPATH:+:\$PYTHONPATH}"
+  export PYTHONPATH
+fi
 exec "$py_cmd" "$script_path" "\$@"
 EOF
   then
@@ -475,10 +486,15 @@ if [ "$os" = "macos" ] && command -v xattr >/dev/null 2>&1; then
   xattr -dr com.apple.quarantine "$target" 2>/dev/null || true
 fi
 
-if "$target" --version >/dev/null 2>&1; then
-  info "Installed from $installed_from: $("$target" --version) -> $target"
+set +e
+version_output="$("$target" --version 2>&1)"
+version_code=$?
+set -e
+if [ "$version_code" -eq 0 ]; then
+  info "Installed from $installed_from: $version_output -> $target"
 else
-  warn "Binary saved from $installed_from but --version failed; the file may be corrupt."
+  add_crash_report "installed binary verification" "Verify installed binary" "leave installed file in place" "--version exit $version_code: $version_output"
+  warn "Installed from $installed_from, but --version did not run cleanly. The installer left the file in place; check the log for missing Python dependencies or a corrupt binary."
 fi
 
 case ":${PATH:-}:" in
@@ -496,6 +512,9 @@ case ":${PATH:-}:" in
 esac
 
 write_crash_report_section "installer completed"
+if [ -s "$CRASH_REPORT_FILE" ] && [ -n "$LOG_FILE" ]; then
+  warn "Diagnostic log: $LOG_FILE"
+fi
 info "Done. Try:"
 printf '    jpg2pdf ~/Pictures --size a4\n'
 printf '    jpg2pdf . --size a4 --style pencil\n'

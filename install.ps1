@@ -6,7 +6,7 @@
   irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.ps1 | iex
 
   # Pin a specific version:
-  $env:JPG2PDF_VERSION = "v1.3.6"; irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.ps1 | iex
+  $env:JPG2PDF_VERSION = "v1.3.7"; irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.ps1 | iex
 
   # Skip Explorer context-menu registration:
   $env:JPG2PDF_NO_CONTEXT_MENU = "1"; irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.ps1 | iex
@@ -322,13 +322,23 @@ function Convert-SafeJson($Description, $Raw) {
             if (Test-SafePath $installRoot) { Invoke-SafeBool "Existing source fallback cleanup" { Remove-Item -LiteralPath $installRoot -Recurse -Force -ErrorAction Stop } | Out-Null }
             if (-not (Invoke-SafeBool "Source fallback copy" { Copy-Item -LiteralPath $sourceRoot -Destination $installRoot -Recurse -Force -ErrorAction Stop })) { return $null }
             $requirements = Join-SafePath $installRoot "tools\jpg2pdf\requirements.txt"
+            $vendorDir = Join-SafePath $installRoot "vendor"
+            $pipOk = $false
             if (Test-SafePath $requirements) {
-                $pipOutput = Invoke-Safe "Source fallback dependency install" { & $python -m pip install --user -r $requirements 2>&1 } $null
+                Invoke-SafeBool "Source fallback vendor directory creation" { New-Item -ItemType Directory -Force -Path $vendorDir -ErrorAction Stop | Out-Null } | Out-Null
+                $pipOutput = Invoke-Safe "Source fallback dependency install to vendor" { & $python -m pip install --target $vendorDir -r $requirements 2>&1 } $null
+                $pipCode = $LASTEXITCODE
                 Log-ExternalOutput "PIP  " $pipOutput
-                if ($LASTEXITCODE -ne 0) { Add-CrashReport "pip requirements" "Install-SourceFromRef" "write wrapper anyway" "pip exit $LASTEXITCODE"; Warn "Python dependency install failed; writing wrapper anyway. Check the log for pip output." }
+                if ($pipCode -eq 0) { $pipOk = $true } else { Add-CrashReport "pip vendor requirements" "Install-SourceFromRef" "try user-site pip install" "pip exit $pipCode" }
+                if (-not $pipOk) {
+                    $pipOutput = Invoke-Safe "Source fallback dependency install to user site" { & $python -m pip install --user -r $requirements 2>&1 } $null
+                    $pipCode = $LASTEXITCODE
+                    Log-ExternalOutput "PIP  " $pipOutput
+                    if ($pipCode -ne 0) { Add-CrashReport "pip user requirements" "Install-SourceFromRef" "write wrapper anyway" "pip exit $pipCode"; Warn "Python dependency install failed; writing wrapper anyway. Check the log for pip output." }
+                }
             } else { Add-CrashReport "requirements.txt" "Install-SourceFromRef" "write wrapper without pip" "requirements file missing" }
             $installedScript = Join-SafePath $installRoot "tools\jpg2pdf\src\jpg2pdf.py"
-            $wrapper = @("@echo off", "`"$python`" `"$installedScript`" %*")
+            $wrapper = @("@echo off", "if exist `"$vendorDir`" set `"PYTHONPATH=$vendorDir;%PYTHONPATH%`"", "`"$python`" `"$installedScript`" %*")
             if (-not (Invoke-SafeBool "Source fallback wrapper write" { Set-Content -LiteralPath $OutFile -Value $wrapper -Encoding ASCII -ErrorAction Stop })) { return $null }
             return "source fallback $Ref"
         } catch {
@@ -414,9 +424,16 @@ function Convert-SafeJson($Description, $Raw) {
     }
 
     Invoke-InstallerStep "Verify installed binary" {
-        $verLine = & $script:exePath --version 2>&1
-        Info "Installed from ${script:installedFrom}: $verLine -> $script:exePath"
-    } "continue after successful download" | Out-Null
+        $verOutput = Invoke-Safe "Installed binary version check" { & $script:exePath --version 2>&1 } $null
+        $verCode = $LASTEXITCODE
+        Log-ExternalOutput "VERIFY" $verOutput
+        if ($verCode -eq 0 -and $verOutput) {
+            Info "Installed from ${script:installedFrom}: $verOutput -> $script:exePath"
+        } else {
+            Add-CrashReport "installed binary verification" "Verify installed binary" "leave installed file in place" "--version exit $verCode"
+            Warn "Installed from ${script:installedFrom}, but --version did not run cleanly. The installer left the file in place; check the log for missing Python dependencies or a corrupt binary."
+        }
+    } "leave installed file in place" | Out-Null
 
     Invoke-InstallerStep "Update PATH" {
         $current = [Environment]::GetEnvironmentVariable("Path", "User")
@@ -450,6 +467,7 @@ function Convert-SafeJson($Description, $Raw) {
     Invoke-InstallerStep "Print completion instructions" {
         Info "Done. Open a NEW terminal and try:"
         Write-CrashReportSection "installer completed"
+        if ($script:CrashReports -and $script:CrashReports.Count -gt 0 -and $script:LogFile) { Warn "Diagnostic log: $script:LogFile" }
         Write-Host "    jpg2pdf `"C:\Photos`" --size a4" -ForegroundColor Green
         Write-Host "    jpg2pdf . --size a4 --style pencil" -ForegroundColor Green
     } "installer completed without final instructions" | Out-Null

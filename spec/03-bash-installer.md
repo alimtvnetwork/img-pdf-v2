@@ -1,7 +1,10 @@
-# 03 — Bash Installer Spec (`install.sh`)
+# 03 - Bash Installer Spec (`install.sh`)
 
 Target shells: `bash` 3.2+ (macOS default) and `bash` 5.x (Linux).
-Stick to POSIX-friendly bash — no `[[ =~ ]]` features that 3.2 lacks if avoidable.
+Stick to POSIX-friendly bash - no `[[ =~ ]]` features that 3.2 lacks if avoidable.
+Installer edits must follow the defensive reference pattern from
+`alimtvnetwork/coding-guidelines-v20/install.ps1`: guarded startup, guarded
+steps, a top-level failure handler, and a final diagnostic section.
 
 ## Bulletproof startup
 
@@ -13,7 +16,7 @@ set -eo pipefail
 # Provide fallbacks for every env var we read.
 HOME_DIR="${HOME:-$PWD}"
 TMP_DIR="${TMPDIR:-/tmp}"
-JPG2PDF_VERSION="${JPG2PDF_VERSION:-v1.2.7}"
+JPG2PDF_VERSION="${JPG2PDF_VERSION:-v1.3.7}"
 JPG2PDF_REPO="${JPG2PDF_REPO:-owner/jpg2pdf}"
 JPG2PDF_DEBUG="${JPG2PDF_DEBUG:-0}"
 
@@ -36,7 +39,7 @@ trap 'on_error' INT TERM
 
 - `set -euo pipefail` on line 1 before fallbacks are in place.
 - Reading `$HOME`, `$TMPDIR`, `$XDG_*` without a `${VAR:-default}` fallback.
-- Unguarded `curl ... | bash` — always check exit status and fall back.
+- Unguarded `curl ... | bash` - always check exit status and fall back.
 
 ### Required
 
@@ -71,6 +74,11 @@ and writes an executable wrapper at `$JPG2PDF_PREFIX/jpg2pdf`. Each network,
 archive, Python, pip, copy, and wrapper step must be guarded with `if ...; then`
 style handling and must log the exact fallback used.
 
+If the source/Python wrapper is written but `jpg2pdf --version` fails because
+Python dependencies are still missing, the installer must not exit non-zero only
+for that verification failure. It must log the failed verification, print the
+log path, and leave the wrapper installed so the user can fix Python/pip.
+
 ## Reference installer hardening pattern
 
 Match the operational behavior of `alimtvnetwork/coding-guidelines-v20/install.ps1`:
@@ -83,6 +91,9 @@ Match the operational behavior of `alimtvnetwork/coding-guidelines-v20/install.p
   source install, then a wrapper at `$JPG2PDF_PREFIX/jpg2pdf`.
 - The log must contain a dedicated final crash report section with failed
   variable/step, location, fallback used, and final fallback/result.
+- Fatal `die` handling is only for the case where no release, artifact, or
+  source wrapper could be installed. Post-install verification, PATH guidance,
+  quarantine stripping, chmod, and cleanup are non-fatal guarded steps.
 
 ## Debug/verbose flag
 

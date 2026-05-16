@@ -19,8 +19,8 @@ Independent of `jpg2pdf` itself. Currently `RunPs1Version = "0.3.0"`. Bump when 
 - Pushing a tag triggers `.github/workflows/release.yml` to build and publish binaries.
 - Pinned-version examples in root `README.md` reference the latest tag — update them on each release.
 
-## Current state (2026-05-15)
+## Current state (2026-05-16)
 
-- jpg2pdf: `1.1.0` (not yet tagged; pending Windows smoke test).
+- jpg2pdf: `1.3.7` (not yet tagged; pending installer smoke tests).
 - run.ps1: `0.3.0`.
-- Last published tag: `v0.12.4` (per `.gitmap/release/`).
+- Last published tag in release map: `v1.3.4` (per `.gitmap/release/`).
