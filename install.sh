@@ -44,6 +44,8 @@ LOG_FILE="${JPG2PDF_LOG:-$TMP_DIR/jpg2pdf-install-$(date +%Y%m%d-%H%M%S)-$$.log}
 SAFE_DIE_MARKER="$TMP_DIR/jpg2pdf-install-die-$$.flag"
 rm -f "$SAFE_DIE_MARKER" 2>/dev/null || true
 CRASH_REPORTS=""
+CRASH_REPORT_FILE="$TMP_DIR/jpg2pdf-install-crash-$$.log"
+rm -f "$CRASH_REPORT_FILE" 2>/dev/null || true
 CRASH_REPORT_WRITTEN=0
 
 _log() { [ -n "$LOG_FILE" ] && printf '%s %s\n' "$(date +%H:%M:%S)" "$*" >> "$LOG_FILE" 2>/dev/null || true; }
@@ -56,6 +58,7 @@ add_crash_report() {
   cr_fallback="$3"
   cr_error="$4"
   _log "CRASH variable=$cr_var where=$cr_where fallback=$cr_fallback error=$cr_error"
+  printf 'variable=%s where=%s fallback=%s error=%s\n' "$cr_var" "$cr_where" "$cr_fallback" "$cr_error" >> "$CRASH_REPORT_FILE" 2>/dev/null || true
   CRASH_REPORTS="${CRASH_REPORTS}
 variable=$cr_var where=$cr_where fallback=$cr_fallback error=$cr_error"
 }
@@ -67,7 +70,9 @@ write_crash_report_section() {
   {
     printf '\n===== Installer crash report =====\n'
     printf 'Reason: %s\n' "$cr_reason"
-    if [ -n "$CRASH_REPORTS" ]; then
+    if [ -s "$CRASH_REPORT_FILE" ]; then
+      sed '/^$/d' "$CRASH_REPORT_FILE" 2>/dev/null || true
+    elif [ -n "$CRASH_REPORTS" ]; then
       printf '%s\n' "$CRASH_REPORTS" | sed '/^$/d'
     else
       printf 'No guarded read failures were recorded before exit.\n'
