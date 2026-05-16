@@ -7,14 +7,13 @@
 
 .NOTES
   HKCU only - no admin required.
-  Selected-files verbs use shipped per-verb .cmd launchers (next to the exe)
-  for maximum reliability:
-    * No nested registry quoting fragility.
+  Selected-files verbs use direct visible cmd.exe commands for maximum
+  reliability:
+    * No hidden VBS/PowerShell launcher chain.
     * MultiSelectModel=Player on each leaf so Explorer invokes ONCE with
       all selected files appended as %1..%N.
-    * Each launcher logs to %LOCALAPPDATA%\jpg2pdf\context.log and PAUSES on
-      non-zero exit so users can read errors instead of seeing a flashed
-      console.
+    * Each command logs to %LOCALAPPDATA%\jpg2pdf\context.log and PAUSES on
+      non-zero exit so users can read errors instead of seeing nothing.
 #>
 [CmdletBinding()]
 param(
@@ -41,51 +40,43 @@ $verbs = @(
 )
 
 # ---------------------------------------------------------------
-# Write a launcher .cmd per verb into the install dir.
-# Logs invocation + exit code to %LOCALAPPDATA%\jpg2pdf\context.log
-# Pauses on non-zero exit so the user can actually read what went wrong.
+# Build a direct selected-files command for the registry default value.
+# IMPORTANT: Explorer only runs the unnamed/default value under `command`.
+# Do not write a literal "(default)" named value; use Set-Item -Value.
 # ---------------------------------------------------------------
-function Write-VerbLauncher {
+function New-SelectedFilesCommand {
     param(
-        [Parameter(Mandatory=$true)][string]$Path,
         [Parameter(Mandatory=$true)][string]$ExePath,
         [Parameter(Mandatory=$true)][string]$VerbArgs,
         [Parameter(Mandatory=$true)][string]$Label
     )
 
-    # Quote exe path for cmd.exe.
     $quotedExe = '"' + $ExePath + '"'
+    $logDir = '%LOCALAPPDATA%\jpg2pdf'
+    $logFile = '%LOCALAPPDATA%\jpg2pdf\context.log'
+    $body = 'title jpg2pdf - ' + $Label +
+        ' & if not exist "' + $logDir + '" mkdir "' + $logDir + '" >nul 2>nul' +
+        ' & echo. >> "' + $logFile + '"' +
+        ' & echo [%DATE% %TIME%] verb=' + $Label + ' args=' + $VerbArgs + ' files=%* >> "' + $logFile + '"' +
+        ' & echo [jpg2pdf] ' + $Label +
+        ' & echo [jpg2pdf] Files: %*' +
+        ' & echo.' +
+        ' & ' + $quotedExe + ' ' + $VerbArgs + ' --files %*' +
+        ' & set "JPG2PDF_CODE=!ERRORLEVEL!"' +
+        ' & echo [%DATE% %TIME%] exit=!JPG2PDF_CODE! >> "' + $logFile + '"' +
+        ' & if not "!JPG2PDF_CODE!"=="0" ( echo. & echo [jpg2pdf] FAILED with exit code !JPG2PDF_CODE!. & echo [jpg2pdf] Log: "' + $logFile + '" & pause )' +
+        ' & exit /b !JPG2PDF_CODE!'
 
-    $lines = @(
-        '@echo off',
-        'setlocal EnableExtensions',
-        'title jpg2pdf - ' + $Label,
-        'set "JPG2PDF_LOGDIR=%LOCALAPPDATA%\jpg2pdf"',
-        'if not exist "%JPG2PDF_LOGDIR%" mkdir "%JPG2PDF_LOGDIR%" >nul 2>nul',
-        'set "JPG2PDF_LOG=%JPG2PDF_LOGDIR%\context.log"',
-        'echo. >> "%JPG2PDF_LOG%"',
-        'echo [%DATE% %TIME%] verb=' + $Label + ' args=' + $VerbArgs + ' files=%* >> "%JPG2PDF_LOG%"',
-        'echo [jpg2pdf] ' + $Label,
-        'echo [jpg2pdf] Files: %*',
-        'echo.',
-        $quotedExe + ' ' + $VerbArgs + ' --files %*',
-        'set "JPG2PDF_CODE=%ERRORLEVEL%"',
-        'echo [%DATE% %TIME%] exit=%JPG2PDF_CODE% >> "%JPG2PDF_LOG%"',
-        'if not "%JPG2PDF_CODE%"=="0" (',
-        '  echo.',
-        '  echo [jpg2pdf] FAILED with exit code %JPG2PDF_CODE%.',
-        '  echo [jpg2pdf] Log: %JPG2PDF_LOG%',
-        '  pause',
-        ')',
-        'endlocal & exit /b %JPG2PDF_CODE%'
-    )
-
-    # ASCII to keep PS 5.1 / Win cmd happy regardless of code page.
-    Set-Content -LiteralPath $Path -Value $lines -Encoding ASCII
+    return 'cmd.exe /v:on /d /c "' + $body + '"'
 }
 
 function New-Key($path) {
     if (-not (Test-Path $path)) { New-Item -Path $path -Force | Out-Null }
+}
+
+function Set-DefaultValue($path, $value) {
+    Remove-ItemProperty -Path $path -Name "(default)" -ErrorAction SilentlyContinue
+    Set-Item -Path $path -Value $value
 }
 
 # ---------------------------------------------------------------
