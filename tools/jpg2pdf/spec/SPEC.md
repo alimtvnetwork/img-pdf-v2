@@ -84,8 +84,11 @@ Registered under HKCU (no admin). Three roots:
    single invocation, in selection order.
 
 Each menu entry calls `jpg2pdf.exe` with the appropriate `--size` and either
-the folder path or `--files <selected paths>`. Output is written next to the
-folder / first selected file. A console window briefly shows progress.
+the folder path or `--files <selected paths>`. Explorer command keys must store
+the real unnamed/default registry value via `Set-Item -Value`, never a literal
+`(default)` property. Selected-file verbs run through a direct visible `cmd.exe`
+command, log to `%LOCALAPPDATA%\jpg2pdf\context.log`, and pause on failure.
+Output is written next to the folder / first selected file.
 
 ## File layout
 ```

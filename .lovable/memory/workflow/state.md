@@ -1,6 +1,6 @@
 # Workflow State
 
-**Last updated:** 2026-05-15
+**Last updated:** 2026-05-16
 
 ## ✅ Done
 - Mixed-input merge (images + PDF + HTML + Word) shipped.
@@ -12,17 +12,18 @@
 - Memory system bootstrapped under `.lovable/`.
 - Installer specs/memory require release -> main artifact -> Python source fallback with reference-style guarded crash logging.
 - Installer specs/memory require source-wrapper verification failures to be logged as non-fatal so macOS/Linux Python fallback stays installed for diagnosis.
+- Selected-files Explorer verbs fixed for v1.4.4: registry command defaults use the real unnamed value, selected-files verbs run direct visible `cmd.exe`, and failures log to `%LOCALAPPDATA%\jpg2pdf\context.log`.
 
 ## 🔄 In Progress
 - *(none — awaiting user-side install smoke test)*
 
 ## ⏳ Pending
 1. Capture real `context-menu.png` + `demo.gif` and replace placeholders.
-2. Smoke-test the v1.3.7 installers on Windows/macOS/Linux with debug logging.
-3. `git tag v1.3.7 && git push origin v1.3.7` once smoke tests pass.
+2. Smoke-test the v1.4.4 installers on Windows/macOS/Linux with debug logging.
+3. `git tag v1.4.4 && git push origin v1.4.4` once smoke tests pass.
 
 ## 🚫 Blocked
 - *(none)*
 
 ## Next logical step
-User runs the v1.3.7 installer with debug logging on the failing machine. If it crashes, share the printed `jpg2pdf-install-*.log`.
+User installs v1.4.4 on Windows, right-clicks selected files, and checks `%LOCALAPPDATA%\jpg2pdf\context.log` if anything still fails.

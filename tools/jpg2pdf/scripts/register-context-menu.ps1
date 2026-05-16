@@ -7,14 +7,13 @@
 
 .NOTES
   HKCU only - no admin required.
-  Selected-files verbs use shipped per-verb .cmd launchers (next to the exe)
-  for maximum reliability:
-    * No nested registry quoting fragility.
+  Selected-files verbs use direct visible cmd.exe commands for maximum
+  reliability:
+    * No hidden VBS/PowerShell launcher chain.
     * MultiSelectModel=Player on each leaf so Explorer invokes ONCE with
       all selected files appended as %1..%N.
-    * Each launcher logs to %LOCALAPPDATA%\jpg2pdf\context.log and PAUSES on
-      non-zero exit so users can read errors instead of seeing a flashed
-      console.
+    * Each command logs to %LOCALAPPDATA%\jpg2pdf\context.log and PAUSES on
+      non-zero exit so users can read errors instead of seeing nothing.
 #>
 [CmdletBinding()]
 param(
@@ -41,51 +40,44 @@ $verbs = @(
 )
 
 # ---------------------------------------------------------------
-# Write a launcher .cmd per verb into the install dir.
-# Logs invocation + exit code to %LOCALAPPDATA%\jpg2pdf\context.log
-# Pauses on non-zero exit so the user can actually read what went wrong.
+# Build a direct selected-files command for the registry default value.
+# IMPORTANT: Explorer only runs the unnamed/default value under `command`.
+# Do not write a literal "(default)" named value; use Set-Item -Value.
 # ---------------------------------------------------------------
-function Write-VerbLauncher {
+function New-SelectedFilesCommand {
     param(
-        [Parameter(Mandatory=$true)][string]$Path,
         [Parameter(Mandatory=$true)][string]$ExePath,
         [Parameter(Mandatory=$true)][string]$VerbArgs,
         [Parameter(Mandatory=$true)][string]$Label
     )
 
-    # Quote exe path for cmd.exe.
-    $quotedExe = '"' + $ExePath + '"'
+    $safeExe = $ExePath.Replace('"', '')
+    $logDir = '%LOCALAPPDATA%\jpg2pdf'
+    $logFile = '%LOCALAPPDATA%\jpg2pdf\context.log'
+    $body = 'title jpg2pdf - ' + $Label +
+        ' & set "JPG2PDF_EXE=' + $safeExe + '"' +
+        ' & if not exist "' + $logDir + '" mkdir "' + $logDir + '" >nul 2>nul' +
+        ' & echo. >> "' + $logFile + '"' +
+        ' & echo [%DATE% %TIME%] verb=' + $Label + ' args=' + $VerbArgs + ' files=%* >> "' + $logFile + '"' +
+        ' & echo [jpg2pdf] ' + $Label +
+        ' & echo [jpg2pdf] Files: %*' +
+        ' & echo.' +
+        ' & call "%JPG2PDF_EXE%" ' + $VerbArgs + ' --files %*' +
+        ' & set "JPG2PDF_CODE=!ERRORLEVEL!"' +
+        ' & echo [%DATE% %TIME%] exit=!JPG2PDF_CODE! >> "' + $logFile + '"' +
+        ' & if not "!JPG2PDF_CODE!"=="0" ( echo. & echo [jpg2pdf] FAILED with exit code !JPG2PDF_CODE!. & echo [jpg2pdf] Log: "' + $logFile + '" & pause )' +
+        ' & exit /b !JPG2PDF_CODE!'
 
-    $lines = @(
-        '@echo off',
-        'setlocal EnableExtensions',
-        'title jpg2pdf - ' + $Label,
-        'set "JPG2PDF_LOGDIR=%LOCALAPPDATA%\jpg2pdf"',
-        'if not exist "%JPG2PDF_LOGDIR%" mkdir "%JPG2PDF_LOGDIR%" >nul 2>nul',
-        'set "JPG2PDF_LOG=%JPG2PDF_LOGDIR%\context.log"',
-        'echo. >> "%JPG2PDF_LOG%"',
-        'echo [%DATE% %TIME%] verb=' + $Label + ' args=' + $VerbArgs + ' files=%* >> "%JPG2PDF_LOG%"',
-        'echo [jpg2pdf] ' + $Label,
-        'echo [jpg2pdf] Files: %*',
-        'echo.',
-        $quotedExe + ' ' + $VerbArgs + ' --files %*',
-        'set "JPG2PDF_CODE=%ERRORLEVEL%"',
-        'echo [%DATE% %TIME%] exit=%JPG2PDF_CODE% >> "%JPG2PDF_LOG%"',
-        'if not "%JPG2PDF_CODE%"=="0" (',
-        '  echo.',
-        '  echo [jpg2pdf] FAILED with exit code %JPG2PDF_CODE%.',
-        '  echo [jpg2pdf] Log: %JPG2PDF_LOG%',
-        '  pause',
-        ')',
-        'endlocal & exit /b %JPG2PDF_CODE%'
-    )
-
-    # ASCII to keep PS 5.1 / Win cmd happy regardless of code page.
-    Set-Content -LiteralPath $Path -Value $lines -Encoding ASCII
+    return 'cmd.exe /v:on /d /c "' + $body + '"'
 }
 
 function New-Key($path) {
     if (-not (Test-Path $path)) { New-Item -Path $path -Force | Out-Null }
+}
+
+function Set-DefaultValue($path, $value) {
+    Remove-ItemProperty -Path $path -Name "(default)" -ErrorAction SilentlyContinue
+    Set-Item -Path $path -Value $value
 }
 
 # ---------------------------------------------------------------
@@ -103,7 +95,7 @@ function Build-Submenu {
     function _add($Id, $Label, $Command, [switch]$MultiSelect) {
         $k = "$base\$Id"
         New-Key $k
-        Set-ItemProperty -Path $k -Name "(default)" -Value $Label
+        Set-DefaultValue $k $Label
         New-ItemProperty -Path $k -Name "MUIVerb" -Value $Label -PropertyType String -Force | Out-Null
         New-ItemProperty -Path $k -Name "Icon"    -Value $exe   -PropertyType String -Force | Out-Null
         if ($MultiSelect) {
@@ -111,7 +103,7 @@ function Build-Submenu {
             New-ItemProperty -Path $k -Name "MultiSelectModel" -Value "Player" -PropertyType String -Force | Out-Null
         }
         New-Key "$k\command"
-        Set-ItemProperty -Path "$k\command" -Name "(default)" -Value $Command
+        Set-DefaultValue "$k\command" $Command
     }
 
     if ($Mode -eq 'Folder') {
@@ -126,15 +118,12 @@ function Build-Submenu {
         _add "08_A4_NOAR"   "Convert All to A4 (no auto-rotate)"      ($q + ' --size a4 --no-auto-rotate "%V"')
         _add "09_A4_PENCIL" "Convert All to A4 (pencil / paper look)" ($q + ' --size a4 --style pencil --ask-strength "%V"')
     } else {
-        # Files: each leaf invokes its shipped launcher .cmd, passing all
-        # selected paths via %*. Using cmd.exe /c with a single quoted target
-        # (the launcher path) plus %* afterwards keeps quoting trivial:
-        #   cmd.exe /c ""C:\...\jpg2pdf-files-a4.cmd" %*"
+        # Files: each leaf invokes cmd.exe directly, visibly, passing all
+        # selected paths via %*. This avoids the previous hidden launcher chain
+        # and also avoids relying on generated .cmd files being unblocked.
         $i = 10
         foreach ($v in $verbs) {
-            $launcher = Join-Path $binDir ("jpg2pdf-files-" + $v.Id + ".cmd")
-            Write-VerbLauncher -Path $launcher -ExePath $exe -VerbArgs $v.Args -Label $v.Label
-            $cmd = 'cmd.exe /c ""' + $launcher + '" %*"'
+            $cmd = New-SelectedFilesCommand -ExePath $exe -VerbArgs $v.Args -Label $v.Label
             _add ("{0:D2}_{1}" -f $i, $v.Id) $v.Label $cmd -MultiSelect
             $i++
         }
@@ -146,7 +135,7 @@ function Register-Parent {
     $parent = "$Root\Jpg2PdfMenu"
     if (Test-Path $parent) { Remove-Item $parent -Recurse -Force }
     New-Key $parent
-    Set-ItemProperty -Path $parent -Name "(default)" -Value "Combine into PDF"
+    Set-DefaultValue $parent "Combine into PDF"
     New-ItemProperty -Path $parent -Name "MUIVerb"  -Value "Combine into PDF" -PropertyType String -Force | Out-Null
     New-ItemProperty -Path $parent -Name "Icon"     -Value $exe               -PropertyType String -Force | Out-Null
     New-ItemProperty -Path $parent -Name "SubCommands" -Value "" -PropertyType String -Force | Out-Null
@@ -154,11 +143,13 @@ function Register-Parent {
 }
 
 Write-Host "[ctx] Registering context menu (HKCU)..." -ForegroundColor Cyan
+Write-Host "[ctx] Selected-file verbs use direct visible cmd.exe commands." -ForegroundColor Cyan
 
-# Clean up obsolete VBS / PS1 launchers from older installs.
-foreach ($stale in @("jpg2pdf-selected-launcher.ps1", "jpg2pdf-selected-launcher.vbs")) {
+# Clean up obsolete launcher files from older installs.
+foreach ($stale in @("jpg2pdf-selected-launcher.ps1", "jpg2pdf-selected-launcher.vbs", "jpg2pdf-files-*.cmd")) {
     $p = Join-Path $binDir $stale
-    if (Test-Path $p) { Remove-Item $p -Force -ErrorAction SilentlyContinue }
+    Remove-Item -LiteralPath $p -Force -ErrorAction SilentlyContinue
+    Remove-Item -Path $p -Force -ErrorAction SilentlyContinue
 }
 
 Build-Submenu -ClassName "Jpg2Pdf.FolderMenu" -Mode 'Folder'

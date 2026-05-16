@@ -25,3 +25,7 @@ The default Windows PowerShell is 5.1, NOT 7.x. It is much stricter:
 ## Context menu registration
 
 `tools/jpg2pdf/scripts/register-context-menu.ps1` writes under HKCU (no admin). Uses `MultiSelectModel=Player` for multi-file selections.
+
+Explorer only executes the real unnamed/default value under each `command` key. Do not use `Set-ItemProperty -Name "(default)"`; that can create a literal property that looks right in code but is not the executable default. Use `Set-Item -Value` for registry defaults.
+
+Selected-files verbs must stay direct and visible: `cmd.exe /v:on /d /c "... jpg2pdf ... --files %* ..."`, with logging to `%LOCALAPPDATA%\jpg2pdf\context.log`. Do not reintroduce hidden VBS/PowerShell launchers or generated per-verb `.cmd` files for selected-files verbs.
