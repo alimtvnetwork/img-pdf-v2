@@ -243,6 +243,11 @@ function Convert-SafeJson($Description, $Raw) {
 
     function Download-MainArtifact($Repo, $Asset, $OutFile) {
         Info "Looking for latest main-branch artifact named $Asset ..."
+        if (-not (Get-SafeEnv "GITHUB_TOKEN")) {
+            Add-CrashReport "GITHUB_TOKEN" "Download-MainArtifact" "source/Python fallback" "GitHub artifact archive downloads require authentication"
+            Warn "Skipping main-branch artifact download because GitHub requires authentication for workflow artifact archives. Set GITHUB_TOKEN to enable this fallback."
+            return $false
+        }
         $runsUrl = "https://api.github.com/repos/$Repo/actions/workflows/release.yml/runs?branch=main&status=success&per_page=10"
         $runs = Get-GitHubJson $runsUrl "Main-branch workflow lookup"
         if (-not $runs -or -not $runs.workflow_runs) {
