@@ -1,6 +1,6 @@
 # 05 — Installer pins context-menu script to release tag
 
-**Status:** Fixed in v1.4.3 (workaround); architectural fix pending
+**Status:** Fixed in v1.4.4 (workaround); architectural fix pending
 
 ## Symptom
 User fixes the context-menu registrar on `main`, bumps version, but reinstalls keep getting the OLD broken script. "Nothing happens" persists across multiple "fixes."
@@ -15,7 +15,7 @@ $ctxUrl = "https://raw.githubusercontent.com/$script:Repo/$ctxRef/tools/jpg2pdf/
 
 When `$script:Version` is set by `Get-GitHubJson .../releases/latest`, it's always the latest tag — never `main`.
 
-## Workaround in v1.4.3
+## Workaround in v1.4.4
 - Bump version + push tag immediately after every context-menu fix.
 - Memory updated to flag this in `.lovable/memory/02-versioning.md`.
 
@@ -25,6 +25,6 @@ Add `JPG2PDF_CTX_REF` env var or `--ctx-ref main` flag so testers can override. 
 ## How to verify
 After tagging, run:
 ```powershell
-$env:JPG2PDF_VERSION = "v1.4.3"; irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.ps1 | iex
+$env:JPG2PDF_VERSION = "v1.4.4"; irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.ps1 | iex
 ```
 Then check `%USERPROFILE%\Tools\bin\jpg2pdf-files-a4-pencil.cmd` exists.
