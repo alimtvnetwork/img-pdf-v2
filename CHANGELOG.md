@@ -7,6 +7,13 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ## [1.4.4] - 2026-05-16
 
 ### Fixed
+- Selected-files Explorer actions now batch correctly instead of appearing to do nothing. Root cause: Windows static context-menu verbs do not pass every selected file through `%*`; Explorer starts the command once per selected file and passes that file as `%1`. The selected-files menu now writes a small `jpg2pdf-selected-runner.cmd` next to `jpg2pdf.exe`, queues those per-file invocations for the chosen verb, then runs one visible `jpg2pdf --files-from` conversion. Pencil conversion now opens once, prompts once, and logs failures to `%LOCALAPPDATA%\jpg2pdf\context.log`.
+
+See the full history in [CHANGELOG.md](./CHANGELOG.md).
+
+## [1.4.4] - 2026-05-16
+
+### Fixed
 - Selected-files Explorer verbs now write the registry command into the real unnamed/default value instead of a fragile literal `(default)` property. Root cause: the submenu labels could appear because `MUIVerb` was set, but Explorer had no executable command to run for the leaf verb, so clicking selected-image actions looked like nothing happened. Folder and selected-file verbs now use `Set-Item -Value` for registry defaults, selected files run through a direct visible `cmd.exe` command with `MultiSelectModel=Player`, and failures log to `%LOCALAPPDATA%\jpg2pdf\context.log` with a pause on non-zero exit.
 
 ### Changed
