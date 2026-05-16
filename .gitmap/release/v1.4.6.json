@@ -1,0 +1,15 @@
+{
+  "version": "1.4.6",
+  "branch": "release/v1.4.6",
+  "sourceBranch": "main",
+  "commit": "e5708f4b69ee2c1c49dd7a9bb7d8b38eef24b049",
+  "tag": "v1.4.6",
+  "assets": [],
+  "changelog": [
+    "Selected-files Explorer actions now keep the real runner console visible and avoid stale-lock no-ops. Root cause: the queued runner still used a nested `start`, so the first Explorer-launched process could exit while the worker failed invisibly; a leftover lock could then make every later click append to the queue and exit with no conversion. The runner now executes synchronously in the visible console and atomically claims the queue file before running one `jpg2pdf --files-from` conversion for pencil/A4/rotate selected-file actions."
+  ],
+  "isDraft": false,
+  "isPreRelease": false,
+  "createdAt": "2026-05-16T05:30:12Z",
+  "isLatest": false
+}
