@@ -90,7 +90,14 @@ set "LOCK=%~5"
 set "LOG=%~6"
 
 title jpg2pdf selected !VERB_ID!
-timeout /t 2 /nobreak >nul 2>nul
+set "LAST_SIZE=-1"
+for /L %%I in (1,1,10) do (
+  for %%A in ("!QUEUE!") do set "NOW_SIZE=%%~zA"
+  if "!NOW_SIZE!"=="!LAST_SIZE!" goto queue_ready
+  set "LAST_SIZE=!NOW_SIZE!"
+  timeout /t 1 /nobreak >nul 2>nul
+)
+:queue_ready
 echo.
 echo [jpg2pdf] Combining selected files (!VERB_ID!)
 echo [jpg2pdf] Queue: "!QUEUE!"
