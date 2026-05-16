@@ -512,6 +512,9 @@ case ":${PATH:-}:" in
 esac
 
 write_crash_report_section "installer completed"
+if [ -s "$CRASH_REPORT_FILE" ] && [ -n "$LOG_FILE" ]; then
+  warn "Diagnostic log: $LOG_FILE"
+fi
 info "Done. Try:"
 printf '    jpg2pdf ~/Pictures --size a4\n'
 printf '    jpg2pdf . --size a4 --style pencil\n'
