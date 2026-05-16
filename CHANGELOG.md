@@ -7,7 +7,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ## [1.4.6] - 2026-05-16
 
 ### Fixed
-- Selected-files Explorer actions now keep the real runner console visible and recover from stale queue locks. Root cause: the queued runner still used a nested `start`, so the first Explorer-launched process could exit while the worker failed invisibly; a leftover lock could then make every later click append to the queue and exit with no conversion. The first lock owner now runs the conversion synchronously in the visible console, writes an `active` marker, removes stale locks, and still runs one `jpg2pdf --files-from` conversion for pencil/A4/rotate selected-file actions.
+- Selected-files Explorer actions now keep the real runner console visible and avoid stale-lock no-ops. Root cause: the queued runner still used a nested `start`, so the first Explorer-launched process could exit while the worker failed invisibly; a leftover lock could then make every later click append to the queue and exit with no conversion. The runner now executes synchronously in the visible console and atomically claims the queue file before running one `jpg2pdf --files-from` conversion for pencil/A4/rotate selected-file actions.
 
 See the full history in [CHANGELOG.md](./CHANGELOG.md).
 
