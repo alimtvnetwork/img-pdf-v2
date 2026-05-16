@@ -7,11 +7,12 @@
 
 .NOTES
   HKCU only - no admin required.
-  Selected-files verbs use direct visible cmd.exe commands for maximum
-  reliability:
+  Selected-files verbs use one visible batch runner for maximum reliability:
     * No hidden VBS/PowerShell launcher chain.
-    * MultiSelectModel=Player on each leaf so Explorer invokes ONCE with
-      all selected files appended as %1..%N.
+    * MultiSelectModel=Player on each leaf so the verb appears for large
+      selections.
+    * Explorer legacy verbs invoke once per file, so the runner queues those
+      per-file calls briefly and then runs jpg2pdf once with --files-from.
     * Each command logs to %LOCALAPPDATA%\jpg2pdf\context.log and PAUSES on
       non-zero exit so users can read errors instead of seeing nothing.
 #>
@@ -40,35 +41,96 @@ $verbs = @(
 )
 
 # ---------------------------------------------------------------
-# Build a direct selected-files command for the registry default value.
+# Build the selected-files batch runner and registry command.
 # IMPORTANT: Explorer only runs the unnamed/default value under `command`.
 # Do not write a literal "(default)" named value; use Set-Item -Value.
 # ---------------------------------------------------------------
+function Write-SelectedFilesRunner {
+    param(
+        [Parameter(Mandatory=$true)][string]$Path,
+        [Parameter(Mandatory=$true)][string]$ExePath
+    )
+
+    $safeExe = $ExePath.Replace('"', '')
+    $content = @"
+@echo off
+setlocal EnableExtensions EnableDelayedExpansion
+set "JPG2PDF_EXE=$safeExe"
+set "LOG_DIR=%LOCALAPPDATA%\jpg2pdf"
+if not exist "!LOG_DIR!" mkdir "!LOG_DIR!" >nul 2>nul
+set "LOG=!LOG_DIR!\context.log"
+set "QUEUE_DIR=!LOG_DIR!\queue"
+if not exist "!QUEUE_DIR!" mkdir "!QUEUE_DIR!" >nul 2>nul
+
+if /I "%~1"=="--run" goto run
+
+set "VERB_ID=%~1"
+set "VERB_ARGS=%~2"
+set "SELECTED_FILE=%~3"
+if "!VERB_ID!"=="" exit /b 1
+if "!SELECTED_FILE!"=="" exit /b 1
+
+set "QUEUE=!QUEUE_DIR!\!VERB_ID!.lst"
+set "LOCK=!QUEUE_DIR!\!VERB_ID!.lock"
+
+>>"!LOG!" echo [%DATE% %TIME%] selected verb=!VERB_ID! file=!SELECTED_FILE!
+>>"!QUEUE!" echo(!SELECTED_FILE!
+
+mkdir "!LOCK!" >nul 2>nul
+if errorlevel 1 exit /b 0
+
+start "jpg2pdf selected !VERB_ID!" "%ComSpec%" /v:on /d /c ""%~f0" --run "!VERB_ID!" "!VERB_ARGS!" "!QUEUE!" "!LOCK!" "!LOG!""
+exit /b 0
+
+:run
+set "VERB_ID=%~2"
+set "VERB_ARGS=%~3"
+set "QUEUE=%~4"
+set "LOCK=%~5"
+set "LOG=%~6"
+
+title jpg2pdf selected !VERB_ID!
+timeout /t 2 /nobreak >nul 2>nul
+echo.
+echo [jpg2pdf] Combining selected files (!VERB_ID!)
+echo [jpg2pdf] Queue: "!QUEUE!"
+echo.
+>>"!LOG!" echo [%DATE% %TIME%] run verb=!VERB_ID! queue=!QUEUE!
+call "!JPG2PDF_EXE!" !VERB_ARGS! --files-from "!QUEUE!"
+set "JPG2PDF_CODE=!ERRORLEVEL!"
+>>"!LOG!" echo [%DATE% %TIME%] exit=!JPG2PDF_CODE! verb=!VERB_ID!
+if not "!JPG2PDF_CODE!"=="0" (
+  echo.
+  echo [jpg2pdf] FAILED with exit code !JPG2PDF_CODE!.
+  echo [jpg2pdf] Log: "!LOG!"
+  pause
+)
+del "!QUEUE!" >nul 2>nul
+rmdir "!LOCK!" >nul 2>nul
+exit /b !JPG2PDF_CODE!
+"@
+
+    [System.IO.File]::WriteAllText($Path, $content, [System.Text.Encoding]::ASCII)
+}
+
+function Quote-CmdArg($value) {
+    return '"' + ([string]$value).Replace('"', '""') + '"'
+}
+
 function New-SelectedFilesCommand {
     param(
-        [Parameter(Mandatory=$true)][string]$ExePath,
+        [Parameter(Mandatory=$true)][string]$RunnerPath,
+        [Parameter(Mandatory=$true)][string]$VerbId,
         [Parameter(Mandatory=$true)][string]$VerbArgs,
         [Parameter(Mandatory=$true)][string]$Label
     )
 
-    $safeExe = $ExePath.Replace('"', '')
-    $logDir = '%LOCALAPPDATA%\jpg2pdf'
-    $logFile = '%LOCALAPPDATA%\jpg2pdf\context.log'
-    $body = 'title jpg2pdf - ' + $Label +
-        ' & set "JPG2PDF_EXE=' + $safeExe + '"' +
-        ' & if not exist "' + $logDir + '" mkdir "' + $logDir + '" >nul 2>nul' +
-        ' & echo. >> "' + $logFile + '"' +
-        ' & echo [%DATE% %TIME%] verb=' + $Label + ' args=' + $VerbArgs + ' files=%* >> "' + $logFile + '"' +
-        ' & echo [jpg2pdf] ' + $Label +
-        ' & echo [jpg2pdf] Files: %*' +
-        ' & echo.' +
-        ' & call "%JPG2PDF_EXE%" ' + $VerbArgs + ' --files %*' +
-        ' & set "JPG2PDF_CODE=!ERRORLEVEL!"' +
-        ' & echo [%DATE% %TIME%] exit=!JPG2PDF_CODE! >> "' + $logFile + '"' +
-        ' & if not "!JPG2PDF_CODE!"=="0" ( echo. & echo [jpg2pdf] FAILED with exit code !JPG2PDF_CODE!. & echo [jpg2pdf] Log: "' + $logFile + '" & pause )' +
-        ' & exit /b !JPG2PDF_CODE!'
-
-    return 'cmd.exe /v:on /d /c "' + $body + '"'
+    # Legacy static verbs get one %1 per selected file; %* is not a reliable
+    # all-selected-files placeholder here. The runner batches those calls.
+    $runner = (Quote-CmdArg $RunnerPath)
+    $id = (Quote-CmdArg $VerbId)
+    $args = (Quote-CmdArg $VerbArgs)
+    return 'cmd.exe /d /c ""' + $RunnerPath + '" ' + $id + ' ' + $args + ' "%1""'
 }
 
 function New-Key($path) {
