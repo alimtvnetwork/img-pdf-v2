@@ -4,6 +4,13 @@ All notable changes to `jpg2pdf` are documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.6] - 2026-05-16
+
+### Fixed
+- Selected-files Explorer actions now keep the real runner console visible and recover from stale queue locks. Root cause: the queued runner still used a nested `start`, so the first Explorer-launched process could exit while the worker failed invisibly; a leftover lock could then make every later click append to the queue and exit with no conversion. The first lock owner now runs the conversion synchronously in the visible console, writes an `active` marker, removes stale locks, and still runs one `jpg2pdf --files-from` conversion for pencil/A4/rotate selected-file actions.
+
+See the full history in [CHANGELOG.md](./CHANGELOG.md).
+
 ## [1.4.5] - 2026-05-16
 
 ### Fixed
