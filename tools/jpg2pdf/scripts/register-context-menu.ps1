@@ -142,11 +142,13 @@ function Register-Parent {
 }
 
 Write-Host "[ctx] Registering context menu (HKCU)..." -ForegroundColor Cyan
+Write-Host "[ctx] Selected-file verbs use direct visible cmd.exe commands." -ForegroundColor Cyan
 
-# Clean up obsolete VBS / PS1 launchers from older installs.
-foreach ($stale in @("jpg2pdf-selected-launcher.ps1", "jpg2pdf-selected-launcher.vbs")) {
+# Clean up obsolete launcher files from older installs.
+foreach ($stale in @("jpg2pdf-selected-launcher.ps1", "jpg2pdf-selected-launcher.vbs", "jpg2pdf-files-*.cmd")) {
     $p = Join-Path $binDir $stale
-    if (Test-Path $p) { Remove-Item $p -Force -ErrorAction SilentlyContinue }
+    Remove-Item -LiteralPath $p -Force -ErrorAction SilentlyContinue
+    Remove-Item -Path $p -Force -ErrorAction SilentlyContinue
 }
 
 Build-Submenu -ClassName "Jpg2Pdf.FolderMenu" -Mode 'Folder'
