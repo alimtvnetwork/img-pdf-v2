@@ -1,6 +1,6 @@
 # 06 - Selected-files registry command was not a real default value
 
-**Status:** Fixed in v1.4.5
+**Status:** Fixed in v1.4.6
 
 ## Symptom
 Right-clicking selected images and choosing any selected-files verb, including pencil convert, appears to do nothing.
@@ -10,7 +10,7 @@ The selected-files submenu could be visible because `MUIVerb` was present, but t
 
 Explorer only runs the unnamed/default value under each `command` key. If that value is missing or the launcher file is blocked/removed, clicking the menu item silently returns.
 
-## Fix in v1.4.5
+## Fix in v1.4.6
 - Use `Set-Item -Value` for every registry default value.
 - Install one `jpg2pdf-selected-runner.cmd` next to `jpg2pdf.exe`.
 - Register selected-files leaf verbs to call the runner with `%1`.
@@ -19,7 +19,7 @@ Explorer only runs the unnamed/default value under each `command` key. If that v
 - Log selected-files invocations to `%LOCALAPPDATA%\jpg2pdf\context.log` and pause on non-zero exit.
 
 ## How to verify
-After reinstalling v1.4.5, right-click multiple selected supported files and choose:
+After reinstalling v1.4.6, right-click multiple selected supported files and choose:
 `Combine into PDF (A4, pencil / paper look)`.
 
 Expected:
