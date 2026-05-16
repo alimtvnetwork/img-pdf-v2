@@ -2,10 +2,10 @@
 # One-liner installer for jpg2pdf on Linux & macOS.
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/alimtvnetwork/img-pdf-v2/main/install.sh | bash
 #
 #   # Pin a specific version:
-#   curl -fsSL https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.sh | JPG2PDF_VERSION=v1.4.6 bash
+#   curl -fsSL https://raw.githubusercontent.com/alimtvnetwork/img-pdf-v2/main/install.sh | JPG2PDF_VERSION=v1.4.7 bash
 #
 #   # Install elsewhere (default: $HOME/.local/bin):
 #   curl -fsSL https://.../install.sh | JPG2PDF_PREFIX=$HOME/bin bash
@@ -125,7 +125,7 @@ DEFAULT_PREFIX="$HOME_DIR/.local/bin"
 if [ -z "${HOME:-}" ] && [ -z "${JPG2PDF_PREFIX:-}" ]; then
   DEFAULT_PREFIX="$PWD_SAFE/.local/bin"
 fi
-REPO="${JPG2PDF_REPO:-alimtvnetwork/img-pdf}"
+REPO="${JPG2PDF_REPO:-alimtvnetwork/img-pdf-v2}"
 VERSION="${JPG2PDF_VERSION:-}"
 PREFIX="${JPG2PDF_PREFIX:-$DEFAULT_PREFIX}"
 GITHUB_API="https://api.github.com"
