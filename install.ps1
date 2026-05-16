@@ -322,13 +322,23 @@ function Convert-SafeJson($Description, $Raw) {
             if (Test-SafePath $installRoot) { Invoke-SafeBool "Existing source fallback cleanup" { Remove-Item -LiteralPath $installRoot -Recurse -Force -ErrorAction Stop } | Out-Null }
             if (-not (Invoke-SafeBool "Source fallback copy" { Copy-Item -LiteralPath $sourceRoot -Destination $installRoot -Recurse -Force -ErrorAction Stop })) { return $null }
             $requirements = Join-SafePath $installRoot "tools\jpg2pdf\requirements.txt"
+            $vendorDir = Join-SafePath $installRoot "vendor"
+            $pipOk = $false
             if (Test-SafePath $requirements) {
-                $pipOutput = Invoke-Safe "Source fallback dependency install" { & $python -m pip install --user -r $requirements 2>&1 } $null
+                Invoke-SafeBool "Source fallback vendor directory creation" { New-Item -ItemType Directory -Force -Path $vendorDir -ErrorAction Stop | Out-Null } | Out-Null
+                $pipOutput = Invoke-Safe "Source fallback dependency install to vendor" { & $python -m pip install --target $vendorDir -r $requirements 2>&1 } $null
+                $pipCode = $LASTEXITCODE
                 Log-ExternalOutput "PIP  " $pipOutput
-                if ($LASTEXITCODE -ne 0) { Add-CrashReport "pip requirements" "Install-SourceFromRef" "write wrapper anyway" "pip exit $LASTEXITCODE"; Warn "Python dependency install failed; writing wrapper anyway. Check the log for pip output." }
+                if ($pipCode -eq 0) { $pipOk = $true } else { Add-CrashReport "pip vendor requirements" "Install-SourceFromRef" "try user-site pip install" "pip exit $pipCode" }
+                if (-not $pipOk) {
+                    $pipOutput = Invoke-Safe "Source fallback dependency install to user site" { & $python -m pip install --user -r $requirements 2>&1 } $null
+                    $pipCode = $LASTEXITCODE
+                    Log-ExternalOutput "PIP  " $pipOutput
+                    if ($pipCode -ne 0) { Add-CrashReport "pip user requirements" "Install-SourceFromRef" "write wrapper anyway" "pip exit $pipCode"; Warn "Python dependency install failed; writing wrapper anyway. Check the log for pip output." }
+                }
             } else { Add-CrashReport "requirements.txt" "Install-SourceFromRef" "write wrapper without pip" "requirements file missing" }
             $installedScript = Join-SafePath $installRoot "tools\jpg2pdf\src\jpg2pdf.py"
-            $wrapper = @("@echo off", "`"$python`" `"$installedScript`" %*")
+            $wrapper = @("@echo off", "if exist `"$vendorDir`" set `"PYTHONPATH=$vendorDir;%PYTHONPATH%`"", "`"$python`" `"$installedScript`" %*")
             if (-not (Invoke-SafeBool "Source fallback wrapper write" { Set-Content -LiteralPath $OutFile -Value $wrapper -Encoding ASCII -ErrorAction Stop })) { return $null }
             return "source fallback $Ref"
         } catch {
