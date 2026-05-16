@@ -3,13 +3,13 @@
   One-liner installer for jpg2pdf on Windows (no clone, no Python required).
 
 .USAGE
-  irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.ps1 | iex
+  irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf-v2/main/install.ps1 | iex
 
   # Pin a specific version:
-  $env:JPG2PDF_VERSION = "v1.4.6"; irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.ps1 | iex
+  $env:JPG2PDF_VERSION = "v1.4.7"; irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf-v2/main/install.ps1 | iex
 
   # Skip Explorer context-menu registration:
-  $env:JPG2PDF_NO_CONTEXT_MENU = "1"; irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.ps1 | iex
+  $env:JPG2PDF_NO_CONTEXT_MENU = "1"; irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf-v2/main/install.ps1 | iex
 
 .WHAT IT DOES
   1. Resolves the latest GitHub Release (or $env:JPG2PDF_VERSION).
@@ -192,7 +192,7 @@ function Convert-SafeJson($Description, $Raw) {
 }
 
     Invoke-InstallerStep "Resolve installer settings" {
-        if (-not $script:Repo) { $script:Repo = Get-SafeEnv "JPG2PDF_REPO" "alimtvnetwork/img-pdf" }
+        if (-not $script:Repo) { $script:Repo = Get-SafeEnv "JPG2PDF_REPO" "alimtvnetwork/img-pdf-v2" }
         if (-not $script:Version) { $script:Version = Get-SafeEnv "JPG2PDF_VERSION" }
         if ((Get-SafeEnv "JPG2PDF_NO_CONTEXT_MENU") -eq "1") { $script:NoContextMenu = $true }
         if (-not $script:Repo) {
