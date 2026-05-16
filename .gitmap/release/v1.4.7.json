@@ -1,0 +1,15 @@
+{
+  "version": "1.4.7",
+  "branch": "release/v1.4.7",
+  "sourceBranch": "main",
+  "commit": "pending",
+  "tag": "v1.4.7",
+  "assets": [],
+  "changelog": [
+    "Release-hosted installers now resolve binaries from the same repository that published the release. Root cause: install.ps1/install.sh kept the old hardcoded alimtvnetwork/img-pdf default, so img-pdf-v2 release installers looked in the wrong repo, got 404, then hit unauthenticated GitHub Actions artifact 401s."
+  ],
+  "isDraft": false,
+  "isPreRelease": false,
+  "createdAt": "2026-05-16T06:00:00Z",
+  "isLatest": false
+}
