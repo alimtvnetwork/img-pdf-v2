@@ -11,14 +11,20 @@ $paths = @(
     "HKCU:\Software\Classes\Jpg2Pdf.FilesMenu"
 )
 
-$exts = @(".jpg",".jpeg",".png",".webp",".bmp",".tif",".tiff")
+$exts = @(".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff", ".pdf", ".html", ".htm", ".docx", ".doc")
 foreach ($ext in $exts) {
     $paths += "HKCU:\Software\Classes\SystemFileAssociations\$ext\shell\Jpg2PdfMenu"
-    $progId = (Get-ItemProperty -Path "HKCU:\Software\Classes\$ext")."(default)"
+    $progId = (Get-ItemProperty -Path "HKCU:\Software\Classes\$ext" -ErrorAction SilentlyContinue)."(default)"
+    if (-not $progId) {
+        $progId = (Get-ItemProperty -Path "Registry::HKEY_CLASSES_ROOT\$ext" -ErrorAction SilentlyContinue)."(default)"
+    }
     if ($progId) {
         $paths += "HKCU:\Software\Classes\$progId\shell\Jpg2PdfMenu"
     }
 }
+
+$binDir = Join-Path $HOME "Tools\bin"
+Remove-Item -Path (Join-Path $binDir "jpg2pdf-files-*.cmd") -Force -ErrorAction SilentlyContinue
 
 foreach ($p in $paths) {
     if (Test-Path $p) {
