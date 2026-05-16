@@ -2,10 +2,10 @@
 # One-liner installer for jpg2pdf on Linux & macOS.
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/alimtvnetwork/img-pdf-v2/main/install.sh | bash
 #
 #   # Pin a specific version:
-#   curl -fsSL https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.sh | JPG2PDF_VERSION=v1.4.6 bash
+#   curl -fsSL https://raw.githubusercontent.com/alimtvnetwork/img-pdf-v2/main/install.sh | JPG2PDF_VERSION=v1.4.7 bash
 #
 #   # Install elsewhere (default: $HOME/.local/bin):
 #   curl -fsSL https://.../install.sh | JPG2PDF_PREFIX=$HOME/bin bash
@@ -125,7 +125,7 @@ DEFAULT_PREFIX="$HOME_DIR/.local/bin"
 if [ -z "${HOME:-}" ] && [ -z "${JPG2PDF_PREFIX:-}" ]; then
   DEFAULT_PREFIX="$PWD_SAFE/.local/bin"
 fi
-REPO="${JPG2PDF_REPO:-alimtvnetwork/img-pdf}"
+REPO="${JPG2PDF_REPO:-alimtvnetwork/img-pdf-v2}"
 VERSION="${JPG2PDF_VERSION:-}"
 PREFIX="${JPG2PDF_PREFIX:-$DEFAULT_PREFIX}"
 GITHUB_API="https://api.github.com"
@@ -257,6 +257,11 @@ PYC
 download_main_artifact() {
   out="$1"
   info "Looking for latest main-branch artifact named $asset ..."
+  if [ -z "${GITHUB_TOKEN:-}" ]; then
+    add_crash_report "GITHUB_TOKEN" "Main-branch artifact download" "source/Python fallback" "GitHub artifact archive downloads require authentication"
+    warn "Skipping main-branch artifact download because GitHub requires authentication for workflow artifact archives. Set GITHUB_TOKEN to enable this fallback."
+    return 1
+  fi
   runs_json="$(try_get "Main-branch workflow lookup" "$GITHUB_API/repos/$REPO/actions/workflows/release.yml/runs?branch=main&status=success&per_page=10")" || return 1
   artifacts_urls="$(printf '%s' "$runs_json" | grep -o '"artifacts_url"[[:space:]]*:[[:space:]]*"[^"]*"' | sed -n 's/.*"artifacts_url":[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 10 || true)"
   if [ -z "$artifacts_urls" ]; then

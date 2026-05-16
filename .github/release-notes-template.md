@@ -27,13 +27,13 @@
 Windows (PowerShell):
 
 ```powershell
-& { $env:JPG2PDF_VERSION = "{{VERSION}}"; irm https://github.com/{{REPO}}/releases/download/{{VERSION}}/install.ps1 | iex }
+& { $env:JPG2PDF_REPO = "{{REPO}}"; $env:JPG2PDF_VERSION = "{{VERSION}}"; irm https://github.com/{{REPO}}/releases/download/{{VERSION}}/install.ps1 | iex }
 ```
 
 Linux / macOS (bash):
 
 ```bash
-curl -fsSL https://github.com/{{REPO}}/releases/download/{{VERSION}}/install.sh | bash -s -- --version {{VERSION}}
+curl -fsSL https://github.com/{{REPO}}/releases/download/{{VERSION}}/install.sh | JPG2PDF_REPO={{REPO}} JPG2PDF_VERSION={{VERSION}} bash
 ```
 
 ### Manual download

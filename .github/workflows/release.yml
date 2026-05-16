@@ -259,9 +259,13 @@ jobs:
           cat dist/RELEASE_NOTES.md
 
       - name: Stage installer scripts
+        env:
+          RELEASE_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ steps.tag.outputs.name }}
         run: |
           cp install.ps1 dist/install.ps1
           cp install.sh  dist/install.sh
+          python3 -c 'import os,pathlib; repo=os.environ["RELEASE_REPO"]; tag=os.environ["RELEASE_TAG"]; source_tag="v"+pathlib.Path("tools/jpg2pdf/VERSION").read_text().strip(); [p.write_text(p.read_text().replace("alimtvnetwork/img-pdf-v2", repo).replace(source_tag, tag)) for p in (pathlib.Path("dist/install.ps1"), pathlib.Path("dist/install.sh"))]'
           chmod +x dist/install.sh
 
       - name: Create / update GitHub Release

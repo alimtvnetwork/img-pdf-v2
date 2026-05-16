@@ -12,14 +12,14 @@ Override the repo at any time with `JPG2PDF_REPO=other-user/other-repo` (env var
 ### Windows (PowerShell)
 
 ```powershell
-irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf-v2/main/install.ps1 | iex
 ```
 
 Pin a version, or skip the Explorer context-menu:
 
 ```powershell
-$env:JPG2PDF_VERSION = "v1.4.6"; irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.ps1 | iex
-$env:JPG2PDF_NO_CONTEXT_MENU = "1"; irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.ps1 | iex
+$env:JPG2PDF_VERSION = "v1.4.7"; irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf-v2/main/install.ps1 | iex
+$env:JPG2PDF_NO_CONTEXT_MENU = "1"; irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf-v2/main/install.ps1 | iex
 ```
 
 Drops `jpg2pdf.exe` into `%USERPROFILE%\Tools\bin`, adds it to **User PATH**,
@@ -28,14 +28,14 @@ and registers Explorer right-click entries. Open a new terminal afterwards.
 ### macOS / Linux (curl)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/alimtvnetwork/img-pdf-v2/main/install.sh | bash
 ```
 
 Options via env vars:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.sh \
-  | JPG2PDF_VERSION=v1.4.6 JPG2PDF_PREFIX=$HOME/bin bash
+curl -fsSL https://raw.githubusercontent.com/alimtvnetwork/img-pdf-v2/main/install.sh \
+  | JPG2PDF_VERSION=v1.4.7 JPG2PDF_PREFIX=$HOME/bin bash
 ```
 
 Drops `jpg2pdf` into `$HOME/.local/bin` (override with `JPG2PDF_PREFIX`).
@@ -90,7 +90,7 @@ Tag and push — the workflow builds binaries for Windows and Linux and publishe
 a GitHub Release. macOS is installed from source until macOS runners are restored:
 
 ```bash
-git tag v1.4.6 && git push origin v1.4.6
+git tag v1.4.7 && git push origin v1.4.7
 ```
 
 

@@ -6,8 +6,8 @@
 
 Cross-platform CLI · Quality-preserving · Windows right-click integration · Pencil-sketch mode for faint text
 
-[![Release](https://img.shields.io/github/v/release/alimtvnetwork/img-pdf?style=flat-square&color=4f46e5)](https://github.com/alimtvnetwork/img-pdf/releases)
-[![Platforms](https://img.shields.io/badge/platforms-windows%20%7C%20macos%20%7C%20linux-2dd4a8?style=flat-square)](https://github.com/alimtvnetwork/img-pdf/releases)
+[![Release](https://img.shields.io/github/v/release/alimtvnetwork/img-pdf-v2?style=flat-square&color=4f46e5)](https://github.com/alimtvnetwork/img-pdf-v2/releases)
+[![Platforms](https://img.shields.io/badge/platforms-windows%20%7C%20macos%20%7C%20linux-2dd4a8?style=flat-square)](https://github.com/alimtvnetwork/img-pdf-v2/releases)
 [![License](https://img.shields.io/badge/license-MIT-c9a84c?style=flat-square)](#license)
 
 <br/>
@@ -40,7 +40,7 @@ opening 30 images one-by-one, "Print to PDF", merging, repeat.
 ### 🪟 Windows · PowerShell
 
 ```powershell
-irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf-v2/main/install.ps1 | iex
 ```
 
 Drops `jpg2pdf.exe` into `%USERPROFILE%\Tools\bin`, adds it to your **User PATH**,
@@ -49,19 +49,19 @@ and registers the Explorer right-click entries. Open a new terminal afterwards.
 ### 🪟 Windows · PowerShell · skip context-menu registration
 
 ```powershell
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.ps1))) -NoContextMenu
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf-v2/main/install.ps1))) -NoContextMenu
 ```
 
 ### 🪟 Windows · PowerShell · pin a specific version
 
 ```powershell
-$env:JPG2PDF_VERSION = "v1.4.6"; irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.ps1 | iex
+$env:JPG2PDF_VERSION = "v1.4.7"; irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf-v2/main/install.ps1 | iex
 ```
 
 ### 🐧 macOS · Linux · Bash
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/alimtvnetwork/img-pdf-v2/main/install.sh | bash
 ```
 
 Drops `jpg2pdf` into `~/.local/bin` (override with `JPG2PDF_PREFIX=$HOME/bin`). If no macOS binary exists, the installer downloads the Python source, installs dependencies best-effort, and writes a `jpg2pdf` wrapper instead of failing.
@@ -71,21 +71,21 @@ For installer diagnostics, add `--debug` or `JPG2PDF_DEBUG=1`. The installer pri
 ### 🐧 macOS · Linux · Bash · pin a specific version
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.sh \
-  | JPG2PDF_VERSION=v1.4.6 JPG2PDF_PREFIX=$HOME/bin bash
+curl -fsSL https://raw.githubusercontent.com/alimtvnetwork/img-pdf-v2/main/install.sh \
+  | JPG2PDF_VERSION=v1.4.7 JPG2PDF_PREFIX=$HOME/bin bash
 ```
 
 If PowerShell blocks scripts, use a process-only bypass for the current shell first:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
-irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf-v2/main/install.ps1 | iex
 ```
 
 Or run the installer inside a bypassed PowerShell process:
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.ps1 | iex"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf-v2/main/install.ps1 | iex"
 ```
 
 After installation, open a new terminal and run `jpg2pdf --help`, or right-click any folder in Explorer and pick *Combine images into PDF*.
@@ -93,7 +93,7 @@ After installation, open a new terminal and run `jpg2pdf --help`, or right-click
 ### 🧹 Uninstall
 
 ```powershell
-irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/uninstall.ps1 | iex
+irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf-v2/main/uninstall.ps1 | iex
 ```
 
 > Env var overrides: `JPG2PDF_VERSION` (pin a tag), `JPG2PDF_REPO` (use a fork),
@@ -196,7 +196,7 @@ a Release with `SHA256SUMS.txt`. macOS installs use the Python source fallback
 until macOS runners are restored:
 
 ```bash
-git tag v1.4.6 && git push origin v1.4.6
+git tag v1.4.7 && git push origin v1.4.7
 ```
 
 Released artifacts: `jpg2pdf-windows-x64.exe`, `jpg2pdf-linux-x64`,
