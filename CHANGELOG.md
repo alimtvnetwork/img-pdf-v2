@@ -4,6 +4,16 @@ All notable changes to `jpg2pdf` are documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.4] - 2026-05-16
+
+### Fixed
+- Selected-files Explorer verbs now write the registry command into the real unnamed/default value instead of a fragile literal `(default)` property. Root cause: the submenu labels could appear because `MUIVerb` was set, but Explorer had no executable command to run for the leaf verb, so clicking selected-image actions looked like nothing happened. Folder and selected-file verbs now use `Set-Item -Value` for registry defaults, selected files run through a direct visible `cmd.exe` command with `MultiSelectModel=Player`, and failures log to `%LOCALAPPDATA%\jpg2pdf\context.log` with a pause on non-zero exit.
+
+### Changed
+- Removed the generated per-verb `.cmd` launcher files from the selected-files path; registration also cleans up any stale `jpg2pdf-files-*.cmd` files from older installs.
+
+See the full history in [CHANGELOG.md](./CHANGELOG.md).
+
 ## [1.4.3] - 2026-05-16
 
 ### Fixed
