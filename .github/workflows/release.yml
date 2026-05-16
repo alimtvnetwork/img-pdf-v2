@@ -266,16 +266,16 @@ jobs:
           cp install.ps1 dist/install.ps1
           cp install.sh  dist/install.sh
           python3 - <<'PY'
-          import os, pathlib
-          repo = os.environ["RELEASE_REPO"]
-          tag = os.environ["RELEASE_TAG"]
-          for name in ("install.ps1", "install.sh"):
-              path = pathlib.Path("dist") / name
-              text = path.read_text()
-              text = text.replace("alimtvnetwork/img-pdf-v2", repo)
-              text = text.replace("v1.4.7", tag)
-              path.write_text(text)
-          PY
+import os, pathlib
+repo = os.environ["RELEASE_REPO"]
+tag = os.environ["RELEASE_TAG"]
+for name in ("install.ps1", "install.sh"):
+    path = pathlib.Path("dist") / name
+    text = path.read_text()
+    text = text.replace("alimtvnetwork/img-pdf-v2", repo)
+    text = text.replace("v1.4.7", tag)
+    path.write_text(text)
+PY
           chmod +x dist/install.sh
 
       - name: Create / update GitHub Release
