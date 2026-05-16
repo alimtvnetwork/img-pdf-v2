@@ -51,17 +51,18 @@ function New-SelectedFilesCommand {
         [Parameter(Mandatory=$true)][string]$Label
     )
 
-    $quotedExe = '"' + $ExePath + '"'
+    $safeExe = $ExePath.Replace('"', '')
     $logDir = '%LOCALAPPDATA%\jpg2pdf'
     $logFile = '%LOCALAPPDATA%\jpg2pdf\context.log'
     $body = 'title jpg2pdf - ' + $Label +
+        ' & set "JPG2PDF_EXE=' + $safeExe + '"' +
         ' & if not exist "' + $logDir + '" mkdir "' + $logDir + '" >nul 2>nul' +
         ' & echo. >> "' + $logFile + '"' +
         ' & echo [%DATE% %TIME%] verb=' + $Label + ' args=' + $VerbArgs + ' files=%* >> "' + $logFile + '"' +
         ' & echo [jpg2pdf] ' + $Label +
         ' & echo [jpg2pdf] Files: %*' +
         ' & echo.' +
-        ' & ' + $quotedExe + ' ' + $VerbArgs + ' --files %*' +
+        ' & call "%JPG2PDF_EXE%" ' + $VerbArgs + ' --files %*' +
         ' & set "JPG2PDF_CODE=!ERRORLEVEL!"' +
         ' & echo [%DATE% %TIME%] exit=!JPG2PDF_CODE! >> "' + $logFile + '"' +
         ' & if not "!JPG2PDF_CODE!"=="0" ( echo. & echo [jpg2pdf] FAILED with exit code !JPG2PDF_CODE!. & echo [jpg2pdf] Log: "' + $logFile + '" & pause )' +
