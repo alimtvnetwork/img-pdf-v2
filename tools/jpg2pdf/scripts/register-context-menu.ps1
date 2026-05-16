@@ -77,10 +77,17 @@ set "LOCK=!QUEUE_DIR!\!VERB_ID!.lock"
 >>"!QUEUE!" echo(!SELECTED_FILE!
 
 mkdir "!LOCK!" >nul 2>nul
-if errorlevel 1 exit /b 0
+if errorlevel 1 (
+  if exist "!LOCK!\active" exit /b 0
+  >>"!LOG!" echo [%DATE% %TIME%] stale-lock verb=!VERB_ID! lock=!LOCK!
+  rmdir "!LOCK!" >nul 2>nul
+  mkdir "!LOCK!" >nul 2>nul
+  if errorlevel 1 exit /b 0
+)
+>"!LOCK!\active" echo %DATE% %TIME%
 
-start "jpg2pdf selected !VERB_ID!" "%ComSpec%" /v:on /d /c ""%~f0" --run "!VERB_ID!" "!VERB_ARGS!" "!QUEUE!" "!LOCK!" "!LOG!""
-exit /b 0
+call "%~f0" --run "!VERB_ID!" "!VERB_ARGS!" "!QUEUE!" "!LOCK!" "!LOG!"
+exit /b !ERRORLEVEL!
 
 :run
 set "VERB_ID=%~2"
@@ -113,6 +120,7 @@ if not "!JPG2PDF_CODE!"=="0" (
   pause
 )
 del "!QUEUE!" >nul 2>nul
+del "!LOCK!\active" >nul 2>nul
 rmdir "!LOCK!" >nul 2>nul
 exit /b !JPG2PDF_CODE!
 "@
