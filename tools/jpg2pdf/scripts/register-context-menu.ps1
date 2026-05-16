@@ -94,7 +94,7 @@ function Build-Submenu {
     function _add($Id, $Label, $Command, [switch]$MultiSelect) {
         $k = "$base\$Id"
         New-Key $k
-        Set-ItemProperty -Path $k -Name "(default)" -Value $Label
+        Set-DefaultValue $k $Label
         New-ItemProperty -Path $k -Name "MUIVerb" -Value $Label -PropertyType String -Force | Out-Null
         New-ItemProperty -Path $k -Name "Icon"    -Value $exe   -PropertyType String -Force | Out-Null
         if ($MultiSelect) {
@@ -102,7 +102,7 @@ function Build-Submenu {
             New-ItemProperty -Path $k -Name "MultiSelectModel" -Value "Player" -PropertyType String -Force | Out-Null
         }
         New-Key "$k\command"
-        Set-ItemProperty -Path "$k\command" -Name "(default)" -Value $Command
+        Set-DefaultValue "$k\command" $Command
     }
 
     if ($Mode -eq 'Folder') {
@@ -117,15 +117,12 @@ function Build-Submenu {
         _add "08_A4_NOAR"   "Convert All to A4 (no auto-rotate)"      ($q + ' --size a4 --no-auto-rotate "%V"')
         _add "09_A4_PENCIL" "Convert All to A4 (pencil / paper look)" ($q + ' --size a4 --style pencil --ask-strength "%V"')
     } else {
-        # Files: each leaf invokes its shipped launcher .cmd, passing all
-        # selected paths via %*. Using cmd.exe /c with a single quoted target
-        # (the launcher path) plus %* afterwards keeps quoting trivial:
-        #   cmd.exe /c ""C:\...\jpg2pdf-files-a4.cmd" %*"
+        # Files: each leaf invokes cmd.exe directly, visibly, passing all
+        # selected paths via %*. This avoids the previous hidden launcher chain
+        # and also avoids relying on generated .cmd files being unblocked.
         $i = 10
         foreach ($v in $verbs) {
-            $launcher = Join-Path $binDir ("jpg2pdf-files-" + $v.Id + ".cmd")
-            Write-VerbLauncher -Path $launcher -ExePath $exe -VerbArgs $v.Args -Label $v.Label
-            $cmd = 'cmd.exe /c ""' + $launcher + '" %*"'
+            $cmd = New-SelectedFilesCommand -ExePath $exe -VerbArgs $v.Args -Label $v.Label
             _add ("{0:D2}_{1}" -f $i, $v.Id) $v.Label $cmd -MultiSelect
             $i++
         }
@@ -137,7 +134,7 @@ function Register-Parent {
     $parent = "$Root\Jpg2PdfMenu"
     if (Test-Path $parent) { Remove-Item $parent -Recurse -Force }
     New-Key $parent
-    Set-ItemProperty -Path $parent -Name "(default)" -Value "Combine into PDF"
+    Set-DefaultValue $parent "Combine into PDF"
     New-ItemProperty -Path $parent -Name "MUIVerb"  -Value "Combine into PDF" -PropertyType String -Force | Out-Null
     New-ItemProperty -Path $parent -Name "Icon"     -Value $exe               -PropertyType String -Force | Out-Null
     New-ItemProperty -Path $parent -Name "SubCommands" -Value "" -PropertyType String -Force | Out-Null
