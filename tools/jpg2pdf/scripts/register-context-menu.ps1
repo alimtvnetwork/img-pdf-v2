@@ -180,12 +180,12 @@ function Build-Submenu {
         _add "08_A4_NOAR"   "Convert All to A4 (no auto-rotate)"      ($q + ' --size a4 --no-auto-rotate "%V"')
         _add "09_A4_PENCIL" "Convert All to A4 (pencil / paper look)" ($q + ' --size a4 --style pencil --ask-strength "%V"')
     } else {
-        # Files: each leaf invokes cmd.exe directly, visibly, passing all
-        # selected paths via %*. This avoids the previous hidden launcher chain
-        # and also avoids relying on generated .cmd files being unblocked.
+        # Files: Explorer legacy verbs invoke once per selected file. Each leaf
+        # calls one installed runner, which queues those per-file calls and then
+        # runs jpg2pdf once with --files-from.
         $i = 10
         foreach ($v in $verbs) {
-            $cmd = New-SelectedFilesCommand -ExePath $exe -VerbArgs $v.Args -Label $v.Label
+            $cmd = New-SelectedFilesCommand -RunnerPath $selectedRunner -VerbId $v.Id -VerbArgs $v.Args -Label $v.Label
             _add ("{0:D2}_{1}" -f $i, $v.Id) $v.Label $cmd -MultiSelect
             $i++
         }
@@ -205,7 +205,7 @@ function Register-Parent {
 }
 
 Write-Host "[ctx] Registering context menu (HKCU)..." -ForegroundColor Cyan
-Write-Host "[ctx] Selected-file verbs use direct visible cmd.exe commands." -ForegroundColor Cyan
+Write-Host "[ctx] Selected-file verbs use a visible queued batch runner." -ForegroundColor Cyan
 
 # Clean up obsolete launcher files from older installs.
 foreach ($stale in @("jpg2pdf-selected-launcher.ps1", "jpg2pdf-selected-launcher.vbs", "jpg2pdf-files-*.cmd")) {
@@ -213,6 +213,9 @@ foreach ($stale in @("jpg2pdf-selected-launcher.ps1", "jpg2pdf-selected-launcher
     Remove-Item -LiteralPath $p -Force -ErrorAction SilentlyContinue
     Remove-Item -Path $p -Force -ErrorAction SilentlyContinue
 }
+
+$selectedRunner = Join-Path $binDir "jpg2pdf-selected-runner.cmd"
+Write-SelectedFilesRunner -Path $selectedRunner -ExePath $exe
 
 Build-Submenu -ClassName "Jpg2Pdf.FolderMenu" -Mode 'Folder'
 Build-Submenu -ClassName "Jpg2Pdf.FilesMenu"  -Mode 'Files'
@@ -248,6 +251,6 @@ foreach ($ext in $exts) {
 }
 
 Write-Host "[ctx] Done. Right-click any folder, folder background, or image file." -ForegroundColor Green
-Write-Host "[ctx] Selected-file verbs log to %LOCALAPPDATA%\jpg2pdf\context.log and PAUSE on errors." -ForegroundColor Green
+Write-Host "[ctx] Selected-file verbs queue to %LOCALAPPDATA%\jpg2pdf\queue, log to context.log, and PAUSE on errors." -ForegroundColor Green
 Write-Host "[ctx] If entries don't appear immediately, restart Explorer:" -ForegroundColor Yellow
 Write-Host "      Stop-Process -Name explorer -Force; Start-Process explorer" -ForegroundColor Yellow
