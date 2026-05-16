@@ -4,6 +4,16 @@ All notable changes to `jpg2pdf` are documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.3] - 2026-05-16
+
+### Fixed
+- Selected-files context menu now reliably runs even where 1.4.2's fix appeared to do nothing. Root cause was two-fold: (1) the 1.4.2 fix only landed on `main` and was never tagged, so the installer (which pulls `register-context-menu.ps1` from the latest **release tag** = `v1.4.1`) kept fetching the broken VBS launcher chain; (2) nested registry quoting + ExecutionPolicy/AV interference made even the direct `cmd.exe /c` verbs flash-and-die with no diagnostics. Now ships per-verb `.cmd` launchers next to `jpg2pdf.exe` (`jpg2pdf-files-a4.cmd`, `...-pencil.cmd`, etc.). Each launcher logs to `%LOCALAPPDATA%\jpg2pdf\context.log` and PAUSES on non-zero exit so users can read errors. Registry entries are now trivially quoted: `cmd.exe /c ""<launcher>" %*"`. Pencil's `--ask-strength` prompt works again.
+
+### Changed
+- Old `jpg2pdf-selected-launcher.ps1` / `.vbs` files are auto-removed from the install dir on re-register.
+
+See the full history in [CHANGELOG.md](./CHANGELOG.md).
+
 ## [1.4.2] - 2026-05-16
 
 ### Fixed
