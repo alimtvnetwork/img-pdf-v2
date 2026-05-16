@@ -42,6 +42,8 @@ Drops `jpg2pdf` into `$HOME/.local/bin` (override with `JPG2PDF_PREFIX`).
 The script tells you the exact `export PATH=...` line to add if that
 folder isn't on `PATH` yet. If no macOS binary exists, the installer falls
 back to the Python source and writes a `jpg2pdf` wrapper instead of failing.
+Run with `--debug` or `JPG2PDF_DEBUG=1` to print a detailed log path; source
+fallback wrappers stay installed even when dependency verification needs repair.
 
 > **macOS note:** binaries are **ad-hoc signed** (not Apple-notarized).
 > The installer auto-strips `com.apple.quarantine`, so the CLI works
