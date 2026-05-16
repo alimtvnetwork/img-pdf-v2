@@ -17,8 +17,8 @@ Explorer only runs the unnamed/default value under each `command` key. If that v
 - Install one `jpg2pdf-selected-runner.cmd` next to `jpg2pdf.exe`.
 - Register selected-files leaf verbs to call the runner with `%1`.
 - The runner queues the per-file invocations briefly, then runs one visible `jpg2pdf --files-from <queue>` conversion.
-- The first lock owner now runs synchronously in the visible console instead of using nested `start`.
-- Stale locks without an `active` marker are removed so future clicks do not silently no-op.
+- The runner now runs synchronously in the visible console instead of using nested `start`.
+- The runner atomically renames/claims the queue file before conversion, removing the stale-lock no-op class entirely.
 - Keep `MultiSelectModel=Player` on every selected-files leaf verb.
 - Log selected-files invocations to `%LOCALAPPDATA%\jpg2pdf\context.log` and pause on non-zero exit.
 
