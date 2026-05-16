@@ -1,18 +1,19 @@
-# 02 — PowerShell Spec (`install.ps1`, `uninstall.ps1`, `run.ps1`)
+# 02 - PowerShell Spec (`install.ps1`, `uninstall.ps1`, `run.ps1`)
 
 This is the spec that has been violated most often. Read it in full before
-editing any `.ps1` file.
+editing any `.ps1` file. Installer edits must follow the defensive reference
+pattern from `alimtvnetwork/coding-guidelines-v20/install.ps1`: guarded startup,
+guarded steps, a top-level failure handler, and a final diagnostic section.
 
 ## Target runtime
 
 - **Windows PowerShell 5.1** (default on Windows 10/11) AND **PowerShell 7+**.
-- 5.1 has the most quirks — design for it, 7+ will keep working.
+- 5.1 has the most quirks - design for it, 7+ will keep working.
 
 ## Encoding rule (R4 from AI-INSTRUCTIONS)
 
-ASCII only. No em-dashes (`—`), no smart quotes (`' '`), no arrows (`→`),
-no emoji. If you must include UTF-8, save the file with a BOM — but
-prefer ASCII.
+ASCII only. No em-dashes, smart quotes, arrows, or emoji. If you must include
+UTF-8, save the file with a BOM - but prefer ASCII.
 
 ## Bulletproof startup (CRITICAL — this is the bug we keep hitting)
 
