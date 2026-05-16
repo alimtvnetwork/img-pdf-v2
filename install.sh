@@ -486,10 +486,15 @@ if [ "$os" = "macos" ] && command -v xattr >/dev/null 2>&1; then
   xattr -dr com.apple.quarantine "$target" 2>/dev/null || true
 fi
 
-if "$target" --version >/dev/null 2>&1; then
-  info "Installed from $installed_from: $("$target" --version) -> $target"
+set +e
+version_output="$("$target" --version 2>&1)"
+version_code=$?
+set -e
+if [ "$version_code" -eq 0 ]; then
+  info "Installed from $installed_from: $version_output -> $target"
 else
-  warn "Binary saved from $installed_from but --version failed; the file may be corrupt."
+  add_crash_report "installed binary verification" "Verify installed binary" "leave installed file in place" "--version exit $version_code: $version_output"
+  warn "Installed from $installed_from, but --version did not run cleanly. The installer left the file in place; check the log for missing Python dependencies or a corrupt binary."
 fi
 
 case ":${PATH:-}:" in
