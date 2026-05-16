@@ -257,6 +257,11 @@ PYC
 download_main_artifact() {
   out="$1"
   info "Looking for latest main-branch artifact named $asset ..."
+  if [ -z "${GITHUB_TOKEN:-}" ]; then
+    add_crash_report "GITHUB_TOKEN" "Main-branch artifact download" "source/Python fallback" "GitHub artifact archive downloads require authentication"
+    warn "Skipping main-branch artifact download because GitHub requires authentication for workflow artifact archives. Set GITHUB_TOKEN to enable this fallback."
+    return 1
+  fi
   runs_json="$(try_get "Main-branch workflow lookup" "$GITHUB_API/repos/$REPO/actions/workflows/release.yml/runs?branch=main&status=success&per_page=10")" || return 1
   artifacts_urls="$(printf '%s' "$runs_json" | grep -o '"artifacts_url"[[:space:]]*:[[:space:]]*"[^"]*"' | sed -n 's/.*"artifacts_url":[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 10 || true)"
   if [ -z "$artifacts_urls" ]; then
