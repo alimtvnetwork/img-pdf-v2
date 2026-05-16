@@ -28,4 +28,4 @@ The default Windows PowerShell is 5.1, NOT 7.x. It is much stricter:
 
 Explorer only executes the real unnamed/default value under each `command` key. Do not use `Set-ItemProperty -Name "(default)"`; that can create a literal property that looks right in code but is not the executable default. Use `Set-Item -Value` for registry defaults.
 
-Selected-files verbs must stay direct and visible: `cmd.exe /v:on /d /c "... jpg2pdf ... --files %* ..."`, with logging to `%LOCALAPPDATA%\jpg2pdf\context.log`. Do not reintroduce hidden VBS/PowerShell launchers or generated per-verb `.cmd` files for selected-files verbs.
+Selected-files verbs must use `jpg2pdf-selected-runner.cmd`: Explorer static verbs invoke once per selected file, so the runner queues `%1` calls briefly and then runs one `jpg2pdf --files-from` conversion. Do not reintroduce hidden VBS/PowerShell launchers or `%*` as an all-selected-files placeholder.
