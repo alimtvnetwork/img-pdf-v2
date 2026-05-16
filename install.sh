@@ -371,21 +371,23 @@ install_source_from_ref() {
   fi
 
   req_file="$install_root/tools/jpg2pdf/requirements.txt"
+  vendor_dir="$install_root/vendor"
   if [ -f "$req_file" ]; then
-    if [ -n "$LOG_FILE" ]; then
-      set +e
-      "$py_cmd" -m pip install --user -r "$req_file" >> "$LOG_FILE" 2>&1
-      pip_code=$?
-      set -e
-    else
-      set +e
-      "$py_cmd" -m pip install --user -r "$req_file" >/dev/null 2>&1
-      pip_code=$?
-      set -e
-    fi
+    mkdir -p "$vendor_dir" 2>/dev/null || add_crash_report "vendor_dir" "Source fallback dependencies" "try user-site pip install" "$vendor_dir"
+    set +e
+    "$py_cmd" -m pip install --target "$vendor_dir" -r "$req_file" >> "${LOG_FILE:-/dev/null}" 2>&1
+    pip_code=$?
+    set -e
     if [ "$pip_code" -ne 0 ]; then
-      add_crash_report "pip requirements" "Source fallback dependencies" "write wrapper anyway" "pip install failed"
-      warn "Python dependency install failed; writing wrapper anyway. Check the log for pip output."
+      add_crash_report "pip vendor requirements" "Source fallback dependencies" "try user-site pip install" "pip install failed"
+      set +e
+      "$py_cmd" -m pip install --user -r "$req_file" >> "${LOG_FILE:-/dev/null}" 2>&1
+      pip_code=$?
+      set -e
+      if [ "$pip_code" -ne 0 ]; then
+        add_crash_report "pip user requirements" "Source fallback dependencies" "write wrapper anyway" "pip install failed"
+        warn "Python dependency install failed; writing wrapper anyway. Check the log for pip output."
+      fi
     fi
   else
     add_crash_report "requirements.txt" "Source fallback dependencies" "write wrapper without pip" "requirements file missing"
@@ -394,6 +396,9 @@ install_source_from_ref() {
   script_path="$install_root/tools/jpg2pdf/src/jpg2pdf.py"
   if ! cat > "$is_out" <<EOF
 #!/usr/bin/env sh
+if [ -d "$vendor_dir" ]; then
+  PYTHONPATH="$vendor_dir").
+fi
 exec "$py_cmd" "$script_path" "\$@"
 EOF
   then
