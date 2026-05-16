@@ -269,11 +269,12 @@ jobs:
 import os, pathlib
 repo = os.environ["RELEASE_REPO"]
 tag = os.environ["RELEASE_TAG"]
+source_tag = "v" + pathlib.Path("tools/jpg2pdf/VERSION").read_text().strip()
 for name in ("install.ps1", "install.sh"):
     path = pathlib.Path("dist") / name
     text = path.read_text()
     text = text.replace("alimtvnetwork/img-pdf-v2", repo)
-    text = text.replace("v1.4.7", tag)
+    text = text.replace(source_tag, tag)
     path.write_text(text)
 PY
           chmod +x dist/install.sh
