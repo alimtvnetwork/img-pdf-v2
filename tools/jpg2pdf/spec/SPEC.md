@@ -86,8 +86,10 @@ Registered under HKCU (no admin). Three roots:
 Each menu entry calls `jpg2pdf.exe` with the appropriate `--size` and either
 the folder path or `--files <selected paths>`. Explorer command keys must store
 the real unnamed/default registry value via `Set-Item -Value`, never a literal
-`(default)` property. Selected-file verbs run through a direct visible `cmd.exe`
-command, log to `%LOCALAPPDATA%\jpg2pdf\context.log`, and pause on failure.
+`(default)` property. Selected-file verbs run through `jpg2pdf-selected-runner.cmd`: Explorer
+legacy verbs invoke once per file, the runner queues those calls briefly, then
+runs one `jpg2pdf --files-from` conversion. It logs to
+`%LOCALAPPDATA%\jpg2pdf\context.log` and pauses on failure.
 Output is written next to the folder / first selected file.
 
 ## File layout
