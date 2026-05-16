@@ -4,7 +4,7 @@ All notable changes to `jpg2pdf` are documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.4.4] - 2026-05-16
+## [1.4.5] - 2026-05-16
 
 ### Fixed
 - Selected-files Explorer actions now batch correctly instead of appearing to do nothing. Root cause: Windows static context-menu verbs do not pass every selected file through `%*`; Explorer starts the command once per selected file and passes that file as `%1`. The selected-files menu now writes a small `jpg2pdf-selected-runner.cmd` next to `jpg2pdf.exe`, queues those per-file invocations for the chosen verb, then runs one visible `jpg2pdf --files-from` conversion. Pencil conversion now opens once, prompts once, and logs failures to `%LOCALAPPDATA%\jpg2pdf\context.log`.
