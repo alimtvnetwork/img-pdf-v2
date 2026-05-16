@@ -71,23 +71,18 @@ if "!VERB_ID!"=="" exit /b 1
 if "!SELECTED_FILE!"=="" exit /b 1
 
 set "QUEUE=!QUEUE_DIR!\!VERB_ID!.lst"
-set "LOCK=!QUEUE_DIR!\!VERB_ID!.lock"
 
 >>"!LOG!" echo [%DATE% %TIME%] selected verb=!VERB_ID! file=!SELECTED_FILE!
 >>"!QUEUE!" echo(!SELECTED_FILE!
 
-mkdir "!LOCK!" >nul 2>nul
-if errorlevel 1 exit /b 0
-
-start "jpg2pdf selected !VERB_ID!" "%ComSpec%" /v:on /d /c ""%~f0" --run "!VERB_ID!" "!VERB_ARGS!" "!QUEUE!" "!LOCK!" "!LOG!""
-exit /b 0
+call "%~f0" --run "!VERB_ID!" "!VERB_ARGS!" "!QUEUE!" "!LOG!"
+exit /b !ERRORLEVEL!
 
 :run
 set "VERB_ID=%~2"
 set "VERB_ARGS=%~3"
 set "QUEUE=%~4"
-set "LOCK=%~5"
-set "LOG=%~6"
+set "LOG=%~5"
 
 title jpg2pdf selected !VERB_ID!
 set "LAST_SIZE=-1"
@@ -98,6 +93,10 @@ for /L %%I in (1,1,10) do (
   timeout /t 1 /nobreak >nul 2>nul
 )
 :queue_ready
+set "WORK_NAME=!VERB_ID!-work-%RANDOM%%RANDOM%.lst"
+ren "!QUEUE!" "!WORK_NAME!" >nul 2>nul
+if errorlevel 1 exit /b 0
+set "QUEUE=!QUEUE_DIR!\!WORK_NAME!"
 echo.
 echo [jpg2pdf] Combining selected files (!VERB_ID!)
 echo [jpg2pdf] Queue: "!QUEUE!"
@@ -113,7 +112,6 @@ if not "!JPG2PDF_CODE!"=="0" (
   pause
 )
 del "!QUEUE!" >nul 2>nul
-rmdir "!LOCK!" >nul 2>nul
 exit /b !JPG2PDF_CODE!
 "@
 
