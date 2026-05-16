@@ -424,9 +424,16 @@ function Convert-SafeJson($Description, $Raw) {
     }
 
     Invoke-InstallerStep "Verify installed binary" {
-        $verLine = & $script:exePath --version 2>&1
-        Info "Installed from ${script:installedFrom}: $verLine -> $script:exePath"
-    } "continue after successful download" | Out-Null
+        $verOutput = Invoke-Safe "Installed binary version check" { & $script:exePath --version 2>&1 } $null
+        $verCode = $LASTEXITCODE
+        Log-ExternalOutput "VERIFY" $verOutput
+        if ($verCode -eq 0 -and $verOutput) {
+            Info "Installed from ${script:installedFrom}: $verOutput -> $script:exePath"
+        } else {
+            Add-CrashReport "installed binary verification" "Verify installed binary" "leave installed file in place" "--version exit $verCode"
+            Warn "Installed from ${script:installedFrom}, but --version did not run cleanly. The installer left the file in place; check the log for missing Python dependencies or a corrupt binary."
+        }
+    } "leave installed file in place" | Out-Null
 
     Invoke-InstallerStep "Update PATH" {
         $current = [Environment]::GetEnvironmentVariable("Path", "User")
