@@ -4,6 +4,15 @@ All notable changes to `jpg2pdf` are documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-05-22
+
+### Changed
+- **Major version bump to 2.0.0** to mark the GUI-complete milestone as a stable, production-ready line. Bundles every Step 1–20 feature from the 1.5.x / 1.6.0 series under one supported release banner.
+- Pinned `v2.0.0` references in root `README.md` install snippets.
+
+### Added
+- Hover-zoom animation styling on the hero, demo, and context-menu images in the root `README.md` (honored by renderers that allow inline CSS; gracefully degrades to a static image on GitHub).
+
 ## [1.6.0] - 2026-05-22
 
 ### Added — Desktop GUI (complete roadmap, Steps 1–19)

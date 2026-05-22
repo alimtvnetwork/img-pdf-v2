@@ -12,7 +12,16 @@ Cross-platform CLI · Quality-preserving · Windows right-click integration · P
 
 <br/>
 
-<img src="tools/jpg2pdf/docs/hero.png" alt="jpg2pdf in action — converting a folder of images into a single PDF" width="820"/>
+<style>
+  .jpg2pdf-zoom { transition: transform .35s ease, box-shadow .35s ease; border-radius: 12px; }
+  .jpg2pdf-zoom:hover { transform: scale(1.03); box-shadow: 0 12px 32px -10px rgba(79,70,229,.35); }
+  @keyframes jpg2pdf-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+  .jpg2pdf-float { animation: jpg2pdf-float 4s ease-in-out infinite; }
+</style>
+
+<a href="tools/jpg2pdf/docs/hero.png">
+  <img class="jpg2pdf-zoom jpg2pdf-float" src="tools/jpg2pdf/docs/hero.png" alt="jpg2pdf in action — converting a folder of images into a single PDF" width="820" style="transition: transform .35s ease, box-shadow .35s ease; border-radius: 12px;"/>
+</a>
 
 </div>
 
