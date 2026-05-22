@@ -443,7 +443,56 @@ function Convert-SafeJson($Description, $Raw) {
         }
     } "leave installed file in place" | Out-Null
 
+    # ----- GUI binary + Start-menu / Desktop shortcuts (Step 12) ----------
+    $script:guiInstalled = $false
+    Invoke-InstallerStep "Download GUI binary" {
+        if ((Get-SafeEnv "JPG2PDF_NO_GUI") -eq "1") {
+            Info "Skipping GUI binary install (JPG2PDF_NO_GUI=1)."
+            return
+        }
+        $ver = $script:Version
+        if ($ver -and (Download-ReleaseAsset $script:Repo $ver $script:guiAsset $script:guiExePath)) {
+            $script:guiInstalled = $true
+        } elseif (Download-MainArtifact $script:Repo $script:guiAsset $script:guiExePath) {
+            $script:guiInstalled = $true
+        } else {
+            Warn "GUI binary not available for this release. CLI is installed; shortcuts skipped."
+        }
+    } "skip GUI binary install" | Out-Null
+
+    Invoke-InstallerStep "Create Start-menu and Desktop shortcuts" {
+        if (-not $script:guiInstalled) { return }
+        if ((Get-SafeEnv "JPG2PDF_NO_SHORTCUTS") -eq "1") {
+            Info "Skipping shortcuts (JPG2PDF_NO_SHORTCUTS=1)."
+            return
+        }
+        $appData = Get-SafeEnv "APPDATA"
+        $desktop = Join-SafePath $script:homeDir "Desktop"
+        $startMenu = if ($appData) { Join-SafePath $appData "Microsoft\Windows\Start Menu\Programs" } else { $null }
+        $targets = @()
+        if ($startMenu) { $targets += (Join-SafePath $startMenu "jpg2pdf.lnk") }
+        if (Test-SafePath $desktop) { $targets += (Join-SafePath $desktop "jpg2pdf.lnk") }
+        $wsh = Invoke-Safe "WScript.Shell COM object" { New-Object -ComObject WScript.Shell -ErrorAction Stop } $null
+        if (-not $wsh) { Warn "Could not create WScript.Shell; shortcuts skipped."; return }
+        foreach ($lnk in $targets) {
+            Invoke-SafeBool "Shortcut write: $lnk" {
+                $parent = Split-Path -Parent $lnk
+                if ($parent -and -not (Test-SafePath $parent)) {
+                    New-Item -ItemType Directory -Force -Path $parent -ErrorAction Stop | Out-Null
+                }
+                $shortcut = $wsh.CreateShortcut($lnk)
+                $shortcut.TargetPath       = $script:guiExePath
+                $shortcut.WorkingDirectory = $script:binDir
+                $shortcut.IconLocation     = "$($script:guiExePath),0"
+                $shortcut.Description      = "jpg2pdf — combine images, PDFs, HTML and Word docs into one file"
+                $shortcut.Save()
+            } | Out-Null
+            Info "Shortcut: $lnk"
+        }
+    } "skip shortcut creation" | Out-Null
+
     Invoke-InstallerStep "Update PATH" {
+
         $current = [Environment]::GetEnvironmentVariable("Path", "User")
         if (-not $current) { $current = "" }
         $entries = $current.Split(';') | ForEach-Object { $_.Trim().TrimEnd('\') } | Where-Object { $_ }
