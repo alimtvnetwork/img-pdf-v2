@@ -7,8 +7,12 @@ any mix and merges them in the given order. One-shot Windows install with a
 global PATH binary and **Explorer context-menu** integration.
 
 ## Non-goals
-- No OCR or image editing.
-- No GUI (context menu + small Tk dialogs only).
+- No OCR or per-page PDF editing.
+
+> **GUI:** a desktop GUI is being added in v1.5.0 → v1.6.0. See
+> [`GUI.md`](./GUI.md) for window layout, output modes (PDF / Stacked
+> Image / Pencil PDF / Pencil Image), sorting modes, and launch points
+> (Start menu, Applications, .desktop, restructured context menu).
 
 ## Supported platforms
 - Windows 10/11 (primary; `run.ps1` bootstraps everything).
