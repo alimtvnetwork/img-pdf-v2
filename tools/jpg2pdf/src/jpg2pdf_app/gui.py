@@ -91,6 +91,18 @@ class Jpg2PdfApp:
 
         self.inputs: list[str] = []   # ordered list of input paths
 
+        # Option state (read by Step 10 when wiring Convert).
+        self.var_mode    = tk.StringVar(value="pdf")
+        self.var_sort    = tk.StringVar(value="auto")
+        self.var_size    = tk.StringVar(value="a4")
+        self.var_orient  = tk.StringVar(value="portrait")
+        self.var_fit     = tk.StringVar(value="contain")
+        self.var_stack   = tk.StringVar(value="vertical")
+        self.var_pencil  = tk.BooleanVar(value=False)
+        self.var_strength = tk.StringVar(value="subtle")  # project default
+        self.var_output  = tk.StringVar(value="")
+
+
         self._build_menubar()
         self._build_layout()
         self._refresh_list()
