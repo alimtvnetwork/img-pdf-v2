@@ -85,15 +85,19 @@ jobs:
           - os: windows-latest
             label: windows-x64
             asset: jpg2pdf-windows-x64.exe
+            gui_asset: jpg2pdf-gui-windows-x64.exe
             ext: .exe
           - os: ubuntu-latest
             label: linux-x64
             asset: jpg2pdf-linux-x64
+            gui_asset: jpg2pdf-gui-linux-x64
             ext: ""
           - os: ubuntu-24.04-arm
             label: linux-arm64
             asset: jpg2pdf-linux-arm64
+            gui_asset: jpg2pdf-gui-linux-arm64
             ext: ""
+
 
     steps:
       - uses: actions/checkout@v4
