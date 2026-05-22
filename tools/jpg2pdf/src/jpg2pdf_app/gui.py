@@ -92,17 +92,22 @@ class Jpg2PdfApp:
 
         self.inputs: list[str] = []   # ordered list of input paths
 
-        # Option state (read by Step 10 when wiring Convert).
-        self.var_mode    = tk.StringVar(value="pdf")
-        self.var_sort    = tk.StringVar(value="auto")
-        self.var_size    = tk.StringVar(value="a4")
-        self.var_orient  = tk.StringVar(value="portrait")
-        self.var_fit     = tk.StringVar(value="contain")
-        self.var_stack   = tk.StringVar(value="vertical")
-        self.var_pencil  = tk.BooleanVar(value=False)
-        self.var_strength = tk.StringVar(value="subtle")  # project default
-        self.var_output  = tk.StringVar(value="")
+        # Load persisted preset (Step 17). Falls back to defaults on any error.
+        self._settings = _settings.load()
+        s = self._settings
 
+        # Option state (read by Convert; persisted on close + after conversion).
+        self.var_mode    = tk.StringVar(value=s.get("mode", "pdf"))
+        self.var_sort    = tk.StringVar(value=s.get("sort", "auto"))
+        self.var_size    = tk.StringVar(value=s.get("size", "a4"))
+        self.var_orient  = tk.StringVar(value=s.get("orient", "portrait"))
+        self.var_fit     = tk.StringVar(value=s.get("fit", "contain"))
+        self.var_stack   = tk.StringVar(value=s.get("stack", "vertical"))
+        self.var_pencil  = tk.BooleanVar(value=bool(s.get("pencil", False)))
+        self.var_strength = tk.StringVar(value=s.get("strength", "subtle"))
+        self.var_output  = tk.StringVar(value=s.get("output", ""))
+
+        self._recent: list[str] = list(s.get("recent", []) or [])
 
         self._build_menubar()
         self._build_layout()
@@ -114,6 +119,9 @@ class Jpg2PdfApp:
             self._set_status(
                 f"Ready. jpg2pdf {__version__}. "
                 "Install 'tkinterdnd2' for drag-and-drop.")
+
+        # Persist preset + recent files when the window closes.
+        self.root.protocol("WM_DELETE_WINDOW", self._on_close)
 
     # ------------------------------------------------------------------ UI
 
