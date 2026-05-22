@@ -862,6 +862,14 @@ def main():
                          "'folder' = preserve OS folder enumeration order.")
     args = ap.parse_args()
 
+    # Expand pencil-* aliases into base output-mode + style.
+    if args.output_mode == "pencil-pdf":
+        args.output_mode = "pdf"
+        args.style = "pencil"
+    elif args.output_mode == "pencil-image":
+        args.output_mode = "image"
+        args.style = "pencil"
+
     # Load persisted prefs (last chosen pencil strength).
     prefs = load_prefs()
     if args.reset_prefs:
