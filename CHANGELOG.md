@@ -4,7 +4,14 @@ All notable changes to `jpg2pdf` are documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.4] - 2026-05-22
+
+### Added
+- Windows installer (`install.ps1`) now also downloads `jpg2pdf-gui-windows-x64.exe` to `%USERPROFILE%\Tools\bin\jpg2pdf-gui.exe` and creates Start-menu + Desktop shortcuts pointing at it (Step 12 of the GUI roadmap). Skip with `$env:JPG2PDF_NO_GUI = "1"` or `$env:JPG2PDF_NO_SHORTCUTS = "1"`. Falls back to the latest main-branch artifact when no release asset is available, and never aborts the CLI install if the GUI bits are missing.
+- `uninstall.ps1` now also removes `jpg2pdf-gui.exe` and both shortcuts.
+
 ## [1.5.3] - 2026-05-22
+
 
 ### Added
 - Release workflow now compiles a second PyInstaller binary, `jpg2pdf-gui-{platform}` (Windows/Linux x64/Linux arm64), built from `jpg2pdf_app/__main__.py` with `--windowed`, bundled `jpg2pdf.py` data file, and `tkinterdnd2` + `tkinter` hidden imports. Both binaries are smoke-tested with `--version` (GUI smoke skipped on Windows where `--windowed` detaches stdout) and uploaded as separate release assets.

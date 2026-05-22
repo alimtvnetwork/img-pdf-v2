@@ -38,10 +38,11 @@ if (Test-Path $unreg) {
     Warn "Unregister script not found ($unreg). Skipping context-menu cleanup."
 }
 
-# ---------- 2. Delete the exe / shim ----------
+# ---------- 2. Delete the exe / shim / GUI exe ----------
 $targets = @(
     (Join-Path $BinDir "jpg2pdf.exe"),
-    (Join-Path $BinDir "jpg2pdf.cmd")
+    (Join-Path $BinDir "jpg2pdf.cmd"),
+    (Join-Path $BinDir "jpg2pdf-gui.exe")
 )
 foreach ($t in $targets) {
     if (Test-Path -LiteralPath $t) {
@@ -53,6 +54,19 @@ foreach ($t in $targets) {
         }
     }
 }
+
+# ---------- 2b. Delete Start-menu and Desktop shortcuts ----------
+$shortcuts = @(
+    (Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\jpg2pdf.lnk"),
+    (Join-Path $HOME "Desktop\jpg2pdf.lnk")
+)
+foreach ($lnk in $shortcuts) {
+    if ($lnk -and (Test-Path -LiteralPath $lnk)) {
+        try { Remove-Item -LiteralPath $lnk -Force; OK "Removed shortcut $lnk" }
+        catch { Warn "Could not remove shortcut $lnk : $_" }
+    }
+}
+
 
 # ---------- 3. PATH cleanup ----------
 function Remove-FromUserPath {
