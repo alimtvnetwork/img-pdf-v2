@@ -5,7 +5,7 @@
 #   curl -fsSL https://raw.githubusercontent.com/alimtvnetwork/img-pdf-v2/main/install.sh | bash
 #
 #   # Pin a specific version:
-#   curl -fsSL https://raw.githubusercontent.com/alimtvnetwork/img-pdf-v2/main/install.sh | JPG2PDF_VERSION=v1.4.7 bash
+#   curl -fsSL https://raw.githubusercontent.com/alimtvnetwork/img-pdf-v2/main/install.sh | JPG2PDF_VERSION=v1.5.0 bash
 #
 #   # Install elsewhere (default: $HOME/.local/bin):
 #   curl -fsSL https://.../install.sh | JPG2PDF_PREFIX=$HOME/bin bash

@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 from PIL import Image, ImageChops, ImageEnhance, ImageFilter, ImageOps
 
-__version__ = "1.4.7"
+__version__ = "1.5.0"
 
 # Pencil presets — tuned for faint handwritten text.
 # Module-scope so prompt_pencil_strength() can render the live preview with
@@ -683,6 +683,86 @@ def make_page(img_path: Path, page_w_pt: float, page_h_pt: float,
         return page
 
 
+def stack_images_to_image(image_paths, out_path: Path, *,
+                          direction: str = "vertical",
+                          rotate: int = 0,
+                          auto_rotate: str = "off",
+                          style: str = "none",
+                          pencil_opacity: float = 0.25,
+                          pencil_brightness: float = 1.0,
+                          pencil_ink_threshold: int = 110,
+                          pencil_ink_darken: float = 0.45) -> Path:
+    """Stack image inputs into a single image file (PNG or JPG).
+
+    All images are normalised to a common width (vertical stack) or a
+    common height (horizontal stack) using the largest dimension across
+    the batch, then composited onto a white canvas in the given order.
+    Honors --rotate / --auto-rotate / --style pencil exactly like the
+    PDF pipeline.
+    """
+    if not image_paths:
+        raise ValueError("stack_images_to_image: no images to stack")
+
+    frames: list[Image.Image] = []
+    for p in image_paths:
+        im = Image.open(p)
+        try:
+            im = ImageOps.exif_transpose(im)
+        except Exception:
+            pass
+        if im.mode not in ("RGB", "L"):
+            im = im.convert("RGB")
+        if rotate:
+            im = im.rotate(rotate, expand=True)
+        if auto_rotate in ("cw", "ccw"):
+            # Match the PDF path: rotate landscape into portrait orientation.
+            if im.width > im.height:
+                im = im.rotate(-90 if auto_rotate == "cw" else 90, expand=True)
+        if style == "pencil":
+            im = apply_pencil(im, opacity=pencil_opacity,
+                              brightness=pencil_brightness,
+                              ink_threshold=pencil_ink_threshold,
+                              ink_darken=pencil_ink_darken)
+            if im.mode != "RGB":
+                im = im.convert("RGB")
+        frames.append(im)
+
+    if direction == "horizontal":
+        target_h = max(f.height for f in frames)
+        resized = []
+        for f in frames:
+            if f.height != target_h:
+                new_w = max(1, int(round(f.width * target_h / f.height)))
+                f = f.resize((new_w, target_h), Image.LANCZOS)
+            resized.append(f)
+        total_w = sum(f.width for f in resized)
+        canvas = Image.new("RGB", (total_w, target_h), "white")
+        x = 0
+        for f in resized:
+            canvas.paste(f, (x, 0)); x += f.width
+    else:
+        target_w = max(f.width for f in frames)
+        resized = []
+        for f in frames:
+            if f.width != target_w:
+                new_h = max(1, int(round(f.height * target_w / f.width)))
+                f = f.resize((target_w, new_h), Image.LANCZOS)
+            resized.append(f)
+        total_h = sum(f.height for f in resized)
+        canvas = Image.new("RGB", (target_w, total_h), "white")
+        y = 0
+        for f in resized:
+            canvas.paste(f, (0, y)); y += f.height
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    ext = out_path.suffix.lower()
+    if ext in (".jpg", ".jpeg"):
+        canvas.save(out_path, "JPEG", quality=92, optimize=True)
+    else:
+        canvas.save(out_path, "PNG", optimize=True)
+    return out_path
+
+
 def main():
     ap = argparse.ArgumentParser(
         description="Combine images into a single PDF.")
@@ -757,6 +837,14 @@ def main():
                     help="--preview-grid: max thumbnail edge in pixels (default 140).")
     ap.add_argument("--thumb-cols", type=int, default=4,
                     help="--preview-grid: number of columns (default 4).")
+    ap.add_argument("--output-mode", choices=["pdf", "image"], default="pdf",
+                    help="'pdf' (default) merges inputs into one PDF. "
+                         "'image' stacks image inputs into a single PNG/JPG "
+                         "(non-image inputs are skipped with a warning).")
+    ap.add_argument("--stack", choices=["vertical", "horizontal"],
+                    default="vertical",
+                    help="--output-mode image: stacking direction "
+                         "(default: vertical).")
     args = ap.parse_args()
 
     # Load persisted prefs (last chosen pencil strength).
@@ -856,6 +944,7 @@ def main():
     if args.name_pattern is None:
         args.name_pattern = prefs.get("name_pattern", DEFAULT_NAME_PATTERN)
 
+    out_ext = ".png" if args.output_mode == "image" else ".pdf"
     if args.out:
         out = Path(args.out).expanduser().resolve()
     else:
@@ -867,7 +956,7 @@ def main():
             style=args.style,
             strength=args.pencil_strength,
         )
-        out = (out_dir / f"{base}.pdf").resolve()
+        out = (out_dir / f"{base}{out_ext}").resolve()
 
     if cli_pattern_explicit and prefs.get("name_pattern") != args.name_pattern:
         prefs["name_pattern"] = args.name_pattern
@@ -876,13 +965,41 @@ def main():
     auto_rot = "off" if args.no_auto_rotate else args.auto_rotate
 
     print(f"Files:    {len(images)}")
-    print(f"Page:     {args.size} {args.orientation} ({int(w)}x{int(h)} pt) @ {args.dpi} DPI")
-    print(f"Fit:      {args.fit}  rotate: {args.rotate}  auto-rotate: {auto_rot}")
+    print(f"Mode:     {args.output_mode}"
+          + (f" ({args.stack} stack)" if args.output_mode == "image" else ""))
+    if args.output_mode == "pdf":
+        print(f"Page:     {args.size} {args.orientation} ({int(w)}x{int(h)} pt) @ {args.dpi} DPI")
+        print(f"Fit:      {args.fit}  rotate: {args.rotate}  auto-rotate: {auto_rot}")
     if args.style == "pencil":
         print(f"Style:    pencil [{args.pencil_strength}] (opacity={args.pencil_opacity}, "
               f"ink<= {args.pencil_ink_threshold} *{args.pencil_ink_darken}, "
               f"brightness={args.pencil_brightness})")
     print(f"Output:   {out}")
+
+    # Image-stacking output mode short-circuits the PDF pipeline.
+    if args.output_mode == "image":
+        image_only = [p for p in images if kind_of(p) == "image"]
+        skipped = len(images) - len(image_only)
+        if skipped:
+            print(f"  image mode: skipped {skipped} non-image input(s)",
+                  file=sys.stderr)
+        if not image_only:
+            print("No image inputs to stack.", file=sys.stderr); sys.exit(1)
+        for k, ip in enumerate(image_only, 1):
+            print(f"  [{k}/{len(image_only)}] image: {ip.name}")
+        stack_images_to_image(
+            image_only, out,
+            direction=args.stack,
+            rotate=args.rotate, auto_rotate=auto_rot,
+            style=args.style,
+            pencil_opacity=args.pencil_opacity,
+            pencil_brightness=args.pencil_brightness,
+            pencil_ink_threshold=args.pencil_ink_threshold,
+            pencil_ink_darken=args.pencil_ink_darken,
+        )
+        print(f"Done -> {out}")
+        return
+
 
     # Group consecutive inputs by kind so adjacent images become a single
     # image-PDF chunk (efficient + matches user's selection order).
