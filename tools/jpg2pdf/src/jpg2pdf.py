@@ -837,10 +837,16 @@ def main():
                     help="--preview-grid: max thumbnail edge in pixels (default 140).")
     ap.add_argument("--thumb-cols", type=int, default=4,
                     help="--preview-grid: number of columns (default 4).")
-    ap.add_argument("--output-mode", choices=["pdf", "image"], default="pdf",
+    ap.add_argument("--output-mode",
+                    choices=["pdf", "image", "pencil-pdf", "pencil-image"],
+                    default="pdf",
                     help="'pdf' (default) merges inputs into one PDF. "
                          "'image' stacks image inputs into a single PNG/JPG "
-                         "(non-image inputs are skipped with a warning).")
+                         "(non-image inputs are skipped with a warning). "
+                         "'pencil-pdf' = pdf + --style pencil. "
+                         "'pencil-image' = image stack + --style pencil. "
+                         "The pencil aliases force --style pencil regardless "
+                         "of --style.")
     ap.add_argument("--stack", choices=["vertical", "horizontal"],
                     default="vertical",
                     help="--output-mode image: stacking direction "
@@ -855,6 +861,14 @@ def main():
                          "'date' = file mtime ascending. "
                          "'folder' = preserve OS folder enumeration order.")
     args = ap.parse_args()
+
+    # Expand pencil-* aliases into base output-mode + style.
+    if args.output_mode == "pencil-pdf":
+        args.output_mode = "pdf"
+        args.style = "pencil"
+    elif args.output_mode == "pencil-image":
+        args.output_mode = "image"
+        args.style = "pencil"
 
     # Load persisted prefs (last chosen pencil strength).
     prefs = load_prefs()
