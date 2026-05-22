@@ -4,6 +4,16 @@ All notable changes to `jpg2pdf` are documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.2] - 2026-05-22
+
+### Fixed
+- Windows Explorer context menu no longer flashes one cmd window per selected file. Per-file invocations are now routed through a hidden `jpg2pdf-selected-launcher.vbs` shim (run via `wscript.exe` with `intWindowStyle=0`), so only ONE visible console opens when the queue is ready and `jpg2pdf` actually runs.
+- `Combine into PDF > PDF` group now includes the `A4, pencil look` option (previously only available under the `Image` group). The PDF group lists: A4, Letter, Legal, and A4 + pencil.
+- Folder-mode `PDF` group also gains an `All to A4 (pencil / paper)` entry to match the file-selection group.
+
+### Changed
+- `unregister-context-menu.ps1` now also removes the new `.UI` class roots and the `jpg2pdf-selected-launcher.vbs` shim from `~\Tools\bin`.
+
 ## [2.1.1] - 2026-05-22
 
 ### Changed

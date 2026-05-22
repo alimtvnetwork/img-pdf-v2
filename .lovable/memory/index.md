@@ -11,6 +11,7 @@ All institutional knowledge for this project. Every file under `.lovable/memory/
 - [05-windows-powershell.md](./05-windows-powershell.md) — PS 5.1 quirks, encoding rules, run.ps1 architecture.
 - [06-windows-only-tasks.md](./06-windows-only-tasks.md) — Tasks the AI sandbox cannot do; delegate to user.
 - [07-release-pipeline.md](./07-release-pipeline.md) — Tag → Actions → binaries flow.
+- [08-selected-files-hidden-launcher.md](./08-selected-files-hidden-launcher.md) — v2.1.2+: per-file Explorer verbs go through a hidden .vbs shim so only one console window appears.
 
 ## Subfolders
 
