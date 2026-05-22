@@ -117,12 +117,17 @@ class Jpg2PdfApp:
         menubar.add_cascade(label="File", menu=file_menu)
 
         mode_menu = tk.Menu(menubar, tearoff=False)
-        for label in ("PDF", "Stacked Image", "Pencil PDF", "Pencil Image"):
+        for label, value in (
+            ("PDF",            "pdf"),
+            ("Stacked Image",  "image"),
+            ("Pencil PDF",     "pencil-pdf"),
+            ("Pencil Image",   "pencil-image"),
+        ):
             mode_menu.add_command(
                 label=label,
-                command=lambda lbl=label: self._set_status(
-                    f"Mode '{lbl}' will be wired in Step 9."))
+                command=lambda v=value, l=label: self._set_output_mode(v, l))
         menubar.add_cascade(label="Mode", menu=mode_menu)
+
 
         help_menu = tk.Menu(menubar, tearoff=False)
         help_menu.add_command(label="About", command=self.on_about)
