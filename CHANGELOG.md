@@ -4,6 +4,25 @@ All notable changes to `jpg2pdf` are documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-05-22
+
+### Added — Desktop GUI (complete roadmap, Steps 1–19)
+- **GUI application** (`jpg2pdf-gui` / `jpg2pdf --gui` / `python -m jpg2pdf_app`) built on tkinter with drag-and-drop (via `tkinterdnd2`), reorderable file list, live options panel, Convert with progress bar, and modal status reporting.
+- **Options panel** (Step 9): output mode (PDF / PNG stack), sort order, page size + orientation, image fit, stack direction, pencil-toggle with strength preset (`subtle` default), and output-path picker.
+- **Convert engine integration** (Step 10): GUI calls the CLI in a background thread; auto-derives output path; reports success or the last stderr line. When frozen as a PyInstaller bundle, runs the engine in-process.
+- **PyInstaller binaries** (Step 11): cross-platform `jpg2pdf-gui-{platform}` one-file builds for Windows x64, Linux x64/arm64, and macOS x64/arm64. macOS `.app` bundles (`jpg2pdf-gui-macos-{x64,arm64}.app.zip`) with ad-hoc code signing.
+- **Windows installer enhancements** (Step 12): `install.ps1` downloads the GUI binary, creates Start-menu + Desktop shortcuts, and the uninstaller removes them.
+- **macOS release matrix** (Step 13): re-enabled macOS x64 + arm64 CLI + GUI builds after runner availability returned.
+- **Linux .desktop entry** (Step 14): registers the GUI in the Applications menu and as a file handler for images, PDFs, HTML and Word documents.
+- **Grouped Windows Explorer context menu** (Step 15): restructured from a flat list into `Combine into PDF` -> `PDF` (A4/Letter/Legal + recursive) and `Combine into PDF` -> `Image` (rotations + pencil). Uses `ExtendedSubCommandsKey` with `MultiSelectModel=Player` and a queued `jpg2pdf-selected-runner.cmd` batcher.
+- **macOS Quick Actions + Linux file-manager actions** (Step 16): four Automator `.workflow` bundles (A4/Letter/Legal/Pencil) for macOS Finder Services; Nautilus scripts and a KDE Dolphin servicemenu for Linux.
+- **GUI preset persistence + recent files** (Step 17): settings saved to OS-standard config dirs (`%APPDATA%`, `~/Library/Application Support`, `$XDG_CONFIG_HOME`). Persisted: all options + last output path. File > Recent submenu with up to 12 deduped paths, populated only after successful conversions.
+- **End-to-end smoke tests + CI gating** (Step 18): `pytest` suite for settings round-trip, recent-files logic, and CLI conversions (PNG->PDF, stack, HTML->PDF). CI `tests` job gates the five-platform `build` matrix.
+- **Documentation refresh** (Step 19): README rewritten with full GUI, desktop-integration, and installer coverage; new `docs/gui.png` screenshot.
+
+### Changed
+- All of the above represents the completion of the GUI roadmap begun in v1.5.0.
+
 ## [1.5.11] - 2026-05-22
 
 ### Changed

@@ -47,8 +47,10 @@ Download the appropriate binary from the assets below and place it on your `PATH
 | Windows | amd64 | `jpg2pdf-windows-x64.exe` |
 | Linux   | amd64 | `jpg2pdf-linux-x64` |
 | Linux   | arm64 | `jpg2pdf-linux-arm64` |
+| macOS   | x64   | `jpg2pdf-macos-x64` |
+| macOS   | arm64 | `jpg2pdf-macos-arm64` |
 
-macOS: build from source via `install.sh` (Python fallback) while macOS runners are disabled.
+GUI binaries and macOS `.app` bundles are also attached.
 
 ## Full changelog
 
