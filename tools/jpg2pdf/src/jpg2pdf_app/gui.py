@@ -158,6 +158,51 @@ class Jpg2PdfApp:
         menubar.add_cascade(label="Help", menu=help_menu)
 
         self.root.config(menu=menubar)
+        self._refresh_recent_menu()
+
+    # -------------------------------------------------------- recents/preset
+
+    def _refresh_recent_menu(self) -> None:
+        try:
+            self.recent_menu.delete(0, tk.END)
+        except Exception:
+            return
+        if not self._recent:
+            self.recent_menu.add_command(label="(empty)", state=tk.DISABLED)
+            return
+        for path in self._recent:
+            disp = path if len(path) <= 60 else "..." + path[-57:]
+            self.recent_menu.add_command(
+                label=disp,
+                command=lambda p=path: self._add_paths([p]))
+        self.recent_menu.add_separator()
+        self.recent_menu.add_command(
+            label="Clear recent", command=self._on_clear_recent)
+
+    def _on_clear_recent(self) -> None:
+        self._recent = []
+        self._refresh_recent_menu()
+        _settings.save(self._collect_settings())
+
+    def _collect_settings(self) -> dict:
+        return {
+            "mode":     self.var_mode.get(),
+            "sort":     self.var_sort.get(),
+            "size":     self.var_size.get(),
+            "orient":   self.var_orient.get(),
+            "fit":      self.var_fit.get(),
+            "stack":    self.var_stack.get(),
+            "pencil":   bool(self.var_pencil.get()),
+            "strength": self.var_strength.get(),
+            "output":   self.var_output.get(),
+            "recent":   list(self._recent),
+        }
+
+    def _on_close(self) -> None:
+        try:
+            _settings.save(self._collect_settings())
+        finally:
+            self.root.destroy()
 
     def _build_layout(self) -> None:
         body = ttk.Frame(self.root, padding=8)
