@@ -365,14 +365,17 @@ function Convert-SafeJson($Description, $Raw) {
     }
 
     Invoke-InstallerStep "Resolve install paths" {
-        $script:asset = "jpg2pdf-windows-x64.exe"
+        $script:asset    = "jpg2pdf-windows-x64.exe"
+        $script:guiAsset = "jpg2pdf-gui-windows-x64.exe"
         $script:homeDir = Get-SafeEnv "USERPROFILE"
         if (-not $script:homeDir) { try { if ($HOME) { $script:homeDir = [string]$HOME } } catch { Add-CrashReport "HOME" "Resolve install paths" "current directory" $_ } }
         if (-not $script:homeDir) { try { $script:homeDir = (Get-Location).Path } catch { Add-CrashReport "Get-Location" "Resolve install paths" "." $_; $script:homeDir = "." } }
-        $script:binDir  = Join-SafePath $script:homeDir "Tools\bin"
-        $script:exePath = Join-SafePath $script:binDir "jpg2pdf.exe"
-        $script:cmdPath = Join-SafePath $script:binDir "jpg2pdf.cmd"
+        $script:binDir     = Join-SafePath $script:homeDir "Tools\bin"
+        $script:exePath    = Join-SafePath $script:binDir "jpg2pdf.exe"
+        $script:cmdPath    = Join-SafePath $script:binDir "jpg2pdf.cmd"
+        $script:guiExePath = Join-SafePath $script:binDir "jpg2pdf-gui.exe"
     } "install under current directory" -Required | Out-Null
+
 
     Invoke-InstallerStep "Create install directory" {
         if (-not (Invoke-SafeBool "Install directory creation" { New-Item -ItemType Directory -Force -Path $script:binDir -ErrorAction Stop | Out-Null })) {
