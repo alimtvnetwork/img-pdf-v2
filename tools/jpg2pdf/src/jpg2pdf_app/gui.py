@@ -210,6 +210,114 @@ class Jpg2PdfApp:
             relief=tk.SUNKEN, padding=(8, 2))
         status.pack(fill=tk.X, side=tk.BOTTOM)
 
+    def _build_options_panel(self, parent: tk.Misc) -> None:
+        right = ttk.LabelFrame(parent, text="Options", padding=10, width=260)
+        right.pack(side=tk.RIGHT, fill=tk.Y)
+        right.pack_propagate(False)
+
+        def row(label: str) -> ttk.Frame:
+            ttk.Label(right, text=label).pack(anchor=tk.W, pady=(6, 2))
+            f = ttk.Frame(right); f.pack(fill=tk.X)
+            return f
+
+        # Output mode
+        f = row("Output mode")
+        ttk.OptionMenu(
+            f, self.var_mode, self.var_mode.get(),
+            "pdf", "image", "pencil-pdf", "pencil-image",
+            command=lambda v: self._on_mode_changed(v),
+        ).pack(fill=tk.X)
+
+        # Sort
+        f = row("Sort")
+        ttk.OptionMenu(
+            f, self.var_sort, self.var_sort.get(),
+            "auto", "selection", "name", "date", "folder",
+        ).pack(fill=tk.X)
+
+        # Page size + orientation (PDF only)
+        f = row("Page size")
+        ttk.OptionMenu(
+            f, self.var_size, self.var_size.get(), "a4", "letter", "legal",
+        ).pack(side=tk.LEFT, fill=tk.X, expand=True)
+        ttk.OptionMenu(
+            f, self.var_orient, self.var_orient.get(),
+            "portrait", "landscape",
+        ).pack(side=tk.RIGHT, padx=(6, 0))
+
+        # Fit (PDF only)
+        f = row("Image fit (PDF)")
+        ttk.OptionMenu(
+            f, self.var_fit, self.var_fit.get(),
+            "contain", "cover", "stretch", "original",
+        ).pack(fill=tk.X)
+
+        # Stack direction (image only)
+        f = row("Stack (image)")
+        ttk.OptionMenu(
+            f, self.var_stack, self.var_stack.get(),
+            "vertical", "horizontal",
+        ).pack(fill=tk.X)
+
+        # Pencil
+        f = row("Pencil style")
+        self.chk_pencil = ttk.Checkbutton(
+            f, text="Apply pencil sketch", variable=self.var_pencil,
+            command=self._on_pencil_toggle)
+        self.chk_pencil.pack(anchor=tk.W)
+        self.strength_menu = ttk.OptionMenu(
+            f, self.var_strength, self.var_strength.get(),
+            "subtle", "normal", "extra")
+        self.strength_menu.pack(fill=tk.X, pady=(4, 0))
+
+        # Output path
+        f = row("Output")
+        ttk.Entry(f, textvariable=self.var_output).pack(
+            side=tk.LEFT, fill=tk.X, expand=True)
+        ttk.Button(f, text="...", width=3,
+                   command=self._on_pick_output).pack(side=tk.RIGHT, padx=(4, 0))
+
+        # Sync derived state
+        self._on_mode_changed(self.var_mode.get())
+
+    # -------------------------------------------------------- options helpers
+
+    def _set_output_mode(self, value: str, label: str) -> None:
+        self.var_mode.set(value)
+        self._on_mode_changed(value)
+        self._set_status(f"Mode: {label}")
+
+    def _on_mode_changed(self, value: str) -> None:
+        is_pencil_alias = value in ("pencil-pdf", "pencil-image")
+        if is_pencil_alias:
+            self.var_pencil.set(True)
+        self._on_pencil_toggle()
+
+    def _on_pencil_toggle(self) -> None:
+        state = (tk.NORMAL if self.var_pencil.get() or
+                 self.var_mode.get() in ("pencil-pdf", "pencil-image")
+                 else tk.DISABLED)
+        try:
+            self.strength_menu.configure(state=state)
+        except tk.TclError:
+            pass
+
+    def _on_pick_output(self) -> None:
+        mode = self.var_mode.get()
+        if mode in ("pdf", "pencil-pdf"):
+            path = filedialog.asksaveasfilename(
+                title="Save PDF as",
+                defaultextension=".pdf",
+                filetypes=[("PDF", "*.pdf")])
+        else:
+            path = filedialog.asksaveasfilename(
+                title="Save image as",
+                defaultextension=".png",
+                filetypes=[("PNG", "*.png"), ("JPEG", "*.jpg *.jpeg")])
+        if path:
+            self.var_output.set(path)
+
+
     # ----------------------------------------------------------- DnD wiring
 
     def _wire_dnd(self) -> None:
