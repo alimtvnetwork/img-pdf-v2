@@ -531,19 +531,17 @@ class Jpg2PdfApp:
         argv += ["--files", *self.inputs]
         return argv
 
-    def _on_convert_done(self, ok: bool, summary: str, proc) -> None:
+    def _on_convert_done(self, ok: bool, summary: str, detail: str = "") -> None:
         self.convert_btn.config(state=tk.NORMAL if self.inputs else tk.DISABLED)
         if ok:
             self._set_status(f"Done -> {self.var_output.get()}")
             messagebox.showinfo("jpg2pdf", f"Converted.\n\n{self.var_output.get()}")
         else:
             self._set_status(f"Failed: {summary}")
-            detail = ""
-            if proc is not None:
-                detail = (proc.stderr or proc.stdout or "").strip()
             messagebox.showerror(
                 "jpg2pdf — conversion failed",
                 f"{summary}\n\n{detail[-1200:]}" if detail else summary)
+
 
 
     def on_about(self) -> None:
