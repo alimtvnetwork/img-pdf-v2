@@ -7,7 +7,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ## [1.5.0] - 2026-05-22
 
 ### Added
-- New `--output-mode image` option that stacks image inputs into a single PNG (or JPG, picked from `--out` extension) instead of a PDF. Use `--stack horizontal` for a side-by-side layout (default is vertical). Honors `--rotate`, `--auto-rotate`, and `--style pencil` exactly like the PDF pipeline, so you can now produce one tall pencil-styled image from a stack of notes. Non-image inputs (PDF/HTML/DOCX) are skipped with a warning in image mode.
+- New `--output-mode` option with four values: `pdf` (default, current behavior), `image` (stack image inputs into one PNG/JPG), `pencil-pdf` (PDF + forced pencil style), and `pencil-image` (stacked image + forced pencil style). Use `--stack horizontal` for side-by-side instead of the default vertical stack. Non-image inputs (PDF/HTML/DOCX) are skipped with a warning in any `image`/`pencil-image` mode.
 - New `--sort {selection,name,date,folder,auto}` option (default `auto`). `auto` picks `selection` for `--files`/`--files-from` and `name` for folder mode. `date` sorts by file mtime ascending; `folder` preserves the OS filesystem enumeration order. Applies to both PDF and image output modes.
 - Importable `jpg2pdf_app` Python package (`core`, `cli`, `__main__`) under `tools/jpg2pdf/src/`, exposing the engine for the upcoming desktop GUI.
 
