@@ -19,6 +19,7 @@ from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 
 from jpg2pdf_app.core import __version__
+from jpg2pdf_app import settings as _settings
 
 
 WINDOW_TITLE = f"jpg2pdf {__version__}"
