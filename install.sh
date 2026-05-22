@@ -585,6 +585,209 @@ EOF
       warn "Could not create $desktop_dir; skipping desktop entry."
     fi
   fi
+
+  # Linux Nautilus scripts + KDE Dolphin servicemenu (Step 16) ----------------
+  if [ "$os" = "linux" ] && [ -x "$JPG2PDF_BIN" ] && [ "${JPG2PDF_NO_FM_ACTIONS:-}" != "1" ]; then
+    naut_dir="$HOME_DIR/.local/share/nautilus/scripts"
+    if mkdir -p "$naut_dir" 2>/dev/null; then
+      write_naut() {
+        nf="$naut_dir/$1"
+        cat > "$nf" <<NAUT
+#!/usr/bin/env bash
+set -e
+list="\$(mktemp -t jpg2pdf-naut.XXXXXX)"
+printf '%s\n' "\$NAUTILUS_SCRIPT_SELECTED_FILE_PATHS" | sed '/^\$/d' > "\$list"
+[ -s "\$list" ] || exit 0
+"$JPG2PDF_BIN" $2 --files-from "\$list"
+rc=\$?
+rm -f "\$list" 2>/dev/null || true
+exit \$rc
+NAUT
+        chmod 755 "$nf" 2>/dev/null || true
+      }
+      write_naut "jpg2pdf - Combine to PDF (A4)"         "--size a4"
+      write_naut "jpg2pdf - Combine to PDF (Letter)"     "--size letter"
+      write_naut "jpg2pdf - Combine to PDF (Legal)"      "--size legal"
+      write_naut "jpg2pdf - Combine to PDF (A4, pencil)" "--size a4 --style pencil"
+      info "Nautilus scripts installed: $naut_dir"
+    else
+      warn "Could not create $naut_dir; skipping Nautilus scripts."
+    fi
+
+    kde_dir="$HOME_DIR/.local/share/kio/servicemenus"
+    kde_file="$kde_dir/jpg2pdf.desktop"
+    if mkdir -p "$kde_dir" 2>/dev/null; then
+      if cat > "$kde_file" <<EOF
+[Desktop Entry]
+Type=Service
+ServiceTypes=KonqPopupMenu/Plugin
+MimeType=image/jpeg;image/png;image/webp;image/tiff;image/bmp;application/pdf;text/html;application/vnd.openxmlformats-officedocument.wordprocessingml.document;application/msword;
+Actions=Jpg2PdfA4;Jpg2PdfLetter;Jpg2PdfLegal;Jpg2PdfPencil;
+X-KDE-Submenu=Combine into PDF
+Icon=application-pdf
+X-KDE-Priority=TopLevel
+
+[Desktop Action Jpg2PdfA4]
+Name=A4
+Icon=application-pdf
+Exec=$JPG2PDF_BIN --size a4 %F
+
+[Desktop Action Jpg2PdfLetter]
+Name=Letter
+Icon=application-pdf
+Exec=$JPG2PDF_BIN --size letter %F
+
+[Desktop Action Jpg2PdfLegal]
+Name=Legal
+Icon=application-pdf
+Exec=$JPG2PDF_BIN --size legal %F
+
+[Desktop Action Jpg2PdfPencil]
+Name=A4 pencil / paper look
+Icon=application-pdf
+Exec=$JPG2PDF_BIN --size a4 --style pencil %F
+EOF
+      then
+        chmod 644 "$kde_file" 2>/dev/null || true
+        info "KDE Dolphin servicemenu installed: $kde_file"
+      else
+        warn "Failed to write KDE servicemenu at $kde_file"
+      fi
+    fi
+  fi
+
+  # macOS Quick Action (Finder Services) (Step 16) ----------------------------
+  if [ "$os" = "macos" ] && [ -x "$JPG2PDF_BIN" ] && [ "${JPG2PDF_NO_QUICKACTION:-}" != "1" ]; then
+    svc_root="$HOME_DIR/Library/Services"
+    if mkdir -p "$svc_root" 2>/dev/null; then
+      install_quick_action() {
+        wf="$svc_root/$1.workflow"
+        rm -rf "$wf" 2>/dev/null || true
+        mkdir -p "$wf/Contents" || return 1
+        cat > "$wf/Contents/Info.plist" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>NSServices</key>
+  <array>
+    <dict>
+      <key>NSMenuItem</key>
+      <dict><key>default</key><string>$1</string></dict>
+      <key>NSMessage</key><string>runWorkflowAsService</string>
+      <key>NSRequiredContext</key>
+      <dict><key>NSApplicationIdentifier</key><string>com.apple.finder</string></dict>
+      <key>NSSendFileTypes</key>
+      <array>
+        <string>public.image</string>
+        <string>com.adobe.pdf</string>
+        <string>public.html</string>
+        <string>org.openxmlformats.wordprocessingml.document</string>
+        <string>com.microsoft.word.doc</string>
+      </array>
+    </dict>
+  </array>
+</dict>
+</plist>
+PLIST
+        cat > "$wf/Contents/document.wflow" <<WFLOW
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>AMApplicationBuild</key><string>523</string>
+  <key>AMApplicationVersion</key><string>2.10</string>
+  <key>AMDocumentVersion</key><string>2</string>
+  <key>actions</key>
+  <array>
+    <dict>
+      <key>action</key>
+      <dict>
+        <key>AMAccepts</key>
+        <dict>
+          <key>Container</key><string>List</string>
+          <key>Optional</key><false/>
+          <key>Types</key><array><string>com.apple.cocoa.path</string></array>
+        </dict>
+        <key>AMActionVersion</key><string>2.0.3</string>
+        <key>AMApplication</key><array><string>Automator</string></array>
+        <key>AMParameterProperties</key>
+        <dict>
+          <key>COMMAND_STRING</key><dict/>
+          <key>CheckedForUserDefaultShell</key><dict/>
+          <key>inputMethod</key><dict/>
+          <key>shell</key><dict/>
+          <key>source</key><dict/>
+        </dict>
+        <key>AMProvides</key>
+        <dict>
+          <key>Container</key><string>List</string>
+          <key>Types</key><array><string>com.apple.cocoa.string</string></array>
+        </dict>
+        <key>ActionBundlePath</key><string>/System/Library/Automator/Run Shell Script.action</string>
+        <key>ActionName</key><string>Run Shell Script</string>
+        <key>ActionParameters</key>
+        <dict>
+          <key>COMMAND_STRING</key>
+          <string>list="\$(mktemp -t jpg2pdf-qa)"
+for f in "\$@"; do printf '%s\n' "\$f" &gt;&gt; "\$list"; done
+"$JPG2PDF_BIN" $2 --files-from "\$list"
+rc=\$?
+rm -f "\$list" 2&gt;/dev/null || true
+exit \$rc</string>
+          <key>CheckedForUserDefaultShell</key><true/>
+          <key>inputMethod</key><integer>1</integer>
+          <key>shell</key><string>/bin/bash</string>
+          <key>source</key><string></string>
+        </dict>
+        <key>BundleIdentifier</key><string>com.apple.RunShellScript</string>
+        <key>CFBundleVersion</key><string>2.0.3</string>
+        <key>CanShowSelectedItemsWhenRun</key><false/>
+        <key>CanShowWhenRun</key><true/>
+        <key>Category</key><array><string>AMCategoryUtilities</string></array>
+        <key>Class Name</key><string>RunShellScriptAction</string>
+        <key>InputUUID</key><string>00000000-0000-0000-0000-000000000001</string>
+        <key>Keywords</key><array><string>Shell</string></array>
+        <key>OutputUUID</key><string>00000000-0000-0000-0000-000000000002</string>
+        <key>UUID</key><string>00000000-0000-0000-0000-000000000003</string>
+        <key>UnlocalizedApplications</key><array><string>Automator</string></array>
+        <key>arguments</key>
+        <dict>
+          <key>0</key><dict><key>default value</key><integer>0</integer><key>name</key><string>inputMethod</string><key>required</key><string>0</string><key>type</key><string>0</string><key>uuid</key><string>0</string></dict>
+          <key>1</key><dict><key>default value</key><false/><key>name</key><string>CheckedForUserDefaultShell</string><key>required</key><string>0</string><key>type</key><string>0</string><key>uuid</key><string>1</string></dict>
+          <key>2</key><dict><key>default value</key><string></string><key>name</key><string>source</string><key>required</key><string>0</string><key>type</key><string>0</string><key>uuid</key><string>2</string></dict>
+          <key>3</key><dict><key>default value</key><string></string><key>name</key><string>COMMAND_STRING</string><key>required</key><string>0</string><key>type</key><string>0</string><key>uuid</key><string>3</string></dict>
+          <key>4</key><dict><key>default value</key><string>/bin/sh</string><key>name</key><string>shell</string><key>required</key><string>0</string><key>type</key><string>0</string><key>uuid</key><string>4</string></dict>
+        </dict>
+        <key>isViewVisible</key><true/>
+        <key>location</key><string>309.000000:253.000000</string>
+        <key>nibPath</key><string>/System/Library/Automator/Run Shell Script.action/Contents/Resources/Base.lproj/main.nib</string>
+      </dict>
+      <key>isViewVisible</key><true/>
+    </dict>
+  </array>
+  <key>connectors</key><dict/>
+  <key>workflowMetaData</key>
+  <dict>
+    <key>serviceInputTypeIdentifier</key><string>com.apple.Automator.fileSystemObject</string>
+    <key>serviceOutputTypeIdentifier</key><string>com.apple.Automator.nothing</string>
+    <key>serviceProcessesInput</key><integer>0</integer>
+    <key>workflowTypeIdentifier</key><string>com.apple.Automator.servicesMenu</string>
+  </dict>
+</dict>
+</plist>
+WFLOW
+        info "Quick Action installed: $wf"
+      }
+      install_quick_action "Combine into PDF (A4)"         "--size a4"
+      install_quick_action "Combine into PDF (Letter)"     "--size letter"
+      install_quick_action "Combine into PDF (Legal)"      "--size legal"
+      install_quick_action "Combine into PDF (A4, pencil)" "--size a4 --style pencil"
+      /System/Library/CoreServices/pbs -flush >/dev/null 2>&1 || true
+    else
+      warn "Could not create $svc_root; skipping Quick Actions."
+    fi
+  fi
 fi
 
 
