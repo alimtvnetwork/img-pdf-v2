@@ -66,6 +66,16 @@ jpg2pdf . --size a4 --style pencil           # faint pencil-on-paper look
 
 # Mixed selections — merged in the order given
 jpg2pdf --files cover.jpg invoice.pdf notes.docx report.html --out bundle.pdf
+
+# Output modes (new in 1.5.0)
+jpg2pdf --files a.jpg b.jpg c.jpg --output-mode image --out tall.png
+jpg2pdf --files a.jpg b.jpg c.jpg --output-mode image --stack horizontal --out wide.png
+jpg2pdf --files notes/*.jpg --output-mode pencil-image --out pencil.png
+jpg2pdf ~/scans --output-mode pencil-pdf --out scans.pdf
+
+# Sorting (new in 1.5.0): selection | name | date | folder | auto
+jpg2pdf ~/scans --sort date           # oldest first
+jpg2pdf --files a.jpg b.jpg --sort name   # natural filename order
 ```
 
 Supported inputs (sorted naturally; mixed types merged in selection order):
