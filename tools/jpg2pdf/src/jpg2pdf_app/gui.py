@@ -592,6 +592,10 @@ class Jpg2PdfApp:
         self.convert_btn.config(state=tk.NORMAL if self.inputs else tk.DISABLED)
         if ok:
             self._set_status(f"Done -> {self.var_output.get()}")
+            # Push inputs into recent files and persist (Step 17).
+            self._recent = _settings.push_recent(self._recent, self.inputs)
+            self._refresh_recent_menu()
+            _settings.save(self._collect_settings())
             messagebox.showinfo("jpg2pdf", f"Converted.\n\n{self.var_output.get()}")
         else:
             self._set_status(f"Failed: {summary}")
