@@ -4,6 +4,14 @@ All notable changes to `jpg2pdf` are documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2026-05-22
+
+### Fixed
+- GUI binary on Linux (x64 + arm64) crashed at startup with `ImportError: attempted relative import with no known parent package`. PyInstaller's `--onefile` loads the entry script as a top-level module, so `jpg2pdf_app/__main__.py`'s `from .cli import main` had no parent package at runtime. Added a dedicated absolute-import entry script (`tools/jpg2pdf/src/jpg2pdf_gui_entry.py`) and pointed both CI and release PyInstaller invocations at it.
+
+### Changed
+- Added `timeout-minutes` to the build matrix (25 min for macOS, 20 min for the rest) so a stuck or backlogged runner can't hang the workflow indefinitely.
+
 ## [2.0.0] - 2026-05-22
 
 ### Changed
