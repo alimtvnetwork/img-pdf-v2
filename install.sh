@@ -502,6 +502,61 @@ else
   warn "Installed from $installed_from, but --version did not run cleanly. The installer left the file in place; check the log for missing Python dependencies or a corrupt binary."
 fi
 
+# ----- GUI binary + macOS .app bundle (Steps 12-13) ----------------------
+if [ "${JPG2PDF_NO_GUI:-}" = "1" ]; then
+  info "Skipping GUI install (JPG2PDF_NO_GUI=1)."
+else
+  gui_asset="jpg2pdf-gui-${os}-${arch}"
+  gui_target="$PREFIX/jpg2pdf-gui"
+  gui_installed_from=""
+  if [ -n "$VERSION" ]; then
+    gui_url="https://github.com/$REPO/releases/download/$VERSION/$gui_asset"
+    info "Downloading $gui_url"
+    if try_download "GUI binary download" "$gui_url" "$gui_target"; then
+      gui_installed_from="release $VERSION"
+    fi
+  fi
+  if [ -n "$gui_installed_from" ]; then
+    chmod +x "$gui_target" 2>/dev/null || true
+    [ "$os" = "macos" ] && command -v xattr >/dev/null 2>&1 && \
+      xattr -dr com.apple.quarantine "$gui_target" 2>/dev/null || true
+    info "GUI binary installed: $gui_target"
+  else
+    warn "GUI binary not available for this release; CLI is installed."
+  fi
+
+  # macOS .app bundle -> ~/Applications/jpg2pdf.app
+  if [ "$os" = "macos" ] && [ -n "$VERSION" ] && [ "${JPG2PDF_NO_APP:-}" != "1" ]; then
+    app_zip_name="jpg2pdf-gui-${os}-${arch}.app.zip"
+    app_url="https://github.com/$REPO/releases/download/$VERSION/$app_zip_name"
+    app_dest_parent="$HOME_DIR/Applications"
+    if [ -w "/Applications" ] && [ "${JPG2PDF_APP_USER_ONLY:-}" != "1" ]; then
+      app_dest_parent="/Applications"
+    fi
+    mkdir -p "$app_dest_parent" 2>/dev/null || true
+    tmp_app_zip="$TMP_DIR/jpg2pdf-app-$$.zip"
+    info "Downloading $app_url"
+    if try_download ".app bundle download" "$app_url" "$tmp_app_zip"; then
+      rm -rf "$app_dest_parent/jpg2pdf.app" 2>/dev/null || true
+      if command -v ditto >/dev/null 2>&1; then
+        ditto -x -k "$tmp_app_zip" "$app_dest_parent" \
+          && info "Installed $app_dest_parent/jpg2pdf.app"
+      elif command -v unzip >/dev/null 2>&1; then
+        unzip -q "$tmp_app_zip" -d "$app_dest_parent" \
+          && info "Installed $app_dest_parent/jpg2pdf.app"
+      else
+        warn "Need ditto or unzip to install the .app bundle."
+      fi
+      [ -d "$app_dest_parent/jpg2pdf.app" ] && command -v xattr >/dev/null 2>&1 \
+        && xattr -dr com.apple.quarantine "$app_dest_parent/jpg2pdf.app" 2>/dev/null || true
+    else
+      warn ".app bundle not available for this release; CLI/GUI binary still installed."
+    fi
+    rm -f "$tmp_app_zip" 2>/dev/null || true
+  fi
+fi
+
+
 case ":${PATH:-}:" in
   *":$PREFIX:"*) info "$PREFIX is already on PATH." ;;
   *)
