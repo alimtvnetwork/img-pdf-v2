@@ -12,9 +12,11 @@ $paths = @(
     "HKCU:\Software\Classes\Jpg2Pdf.FolderMenu",
     "HKCU:\Software\Classes\Jpg2Pdf.FolderMenu.PDF",
     "HKCU:\Software\Classes\Jpg2Pdf.FolderMenu.Image",
+    "HKCU:\Software\Classes\Jpg2Pdf.FolderMenu.UI",
     "HKCU:\Software\Classes\Jpg2Pdf.FilesMenu",
     "HKCU:\Software\Classes\Jpg2Pdf.FilesMenu.PDF",
-    "HKCU:\Software\Classes\Jpg2Pdf.FilesMenu.Image"
+    "HKCU:\Software\Classes\Jpg2Pdf.FilesMenu.Image",
+    "HKCU:\Software\Classes\Jpg2Pdf.FilesMenu.UI"
 )
 
 $exts = @(".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff", ".pdf", ".html", ".htm", ".docx", ".doc")
@@ -32,6 +34,7 @@ foreach ($ext in $exts) {
 $binDir = Join-Path $HOME "Tools\bin"
 Remove-Item -Path (Join-Path $binDir "jpg2pdf-files-*.cmd") -Force -ErrorAction SilentlyContinue
 Remove-Item -Path (Join-Path $binDir "jpg2pdf-selected-runner.cmd") -Force -ErrorAction SilentlyContinue
+Remove-Item -Path (Join-Path $binDir "jpg2pdf-selected-launcher.vbs") -Force -ErrorAction SilentlyContinue
 
 foreach ($p in $paths) {
     if (Test-Path $p) {
