@@ -351,8 +351,8 @@ function Register-Parent {
 }
 
 Write-Host "[ctx] Registering context menu (HKCU)..." -ForegroundColor Cyan
-Write-Host "[ctx] Menu is grouped: Combine into PDF > PDF | Image > leaves." -ForegroundColor Cyan
-Write-Host "[ctx] Selected-file verbs use a visible queued batch runner." -ForegroundColor Cyan
+Write-Host "[ctx] Menu is grouped: Combine into PDF > PDF | Image | UI > leaves." -ForegroundColor Cyan
+Write-Host "[ctx] Selected-file verbs use a visible queued batch runner; UI opens jpg2pdf-gui.exe." -ForegroundColor Cyan
 
 Remove-LegacyMenus
 
