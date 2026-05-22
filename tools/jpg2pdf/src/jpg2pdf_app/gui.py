@@ -180,15 +180,9 @@ class Jpg2PdfApp:
         ttk.Button(tools, text="Clear",  width=6,
                    command=self.on_clear).pack(side=tk.RIGHT)
 
-        # Right: options placeholder ------------------------------------
-        right = ttk.LabelFrame(body, text="Options", padding=10, width=240)
-        right.pack(side=tk.RIGHT, fill=tk.Y)
-        right.pack_propagate(False)
-        ttk.Label(
-            right, foreground="#777777", justify=tk.LEFT, wraplength=200,
-            text="Output mode, sort, page size, pencil strength and the "
-                 "output picker land here in Step 9.",
-        ).pack(anchor=tk.NW)
+        # Right: options panel -----------------------------------------
+        self._build_options_panel(body)
+
 
         # Bottom: convert button + status bar ---------------------------
         bottom = ttk.Frame(self.root, padding=(8, 0, 8, 6))
