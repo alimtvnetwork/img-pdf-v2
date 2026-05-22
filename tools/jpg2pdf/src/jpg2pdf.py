@@ -944,6 +944,7 @@ def main():
     if args.name_pattern is None:
         args.name_pattern = prefs.get("name_pattern", DEFAULT_NAME_PATTERN)
 
+    out_ext = ".png" if args.output_mode == "image" else ".pdf"
     if args.out:
         out = Path(args.out).expanduser().resolve()
     else:
@@ -955,7 +956,7 @@ def main():
             style=args.style,
             strength=args.pencil_strength,
         )
-        out = (out_dir / f"{base}.pdf").resolve()
+        out = (out_dir / f"{base}{out_ext}").resolve()
 
     if cli_pattern_explicit and prefs.get("name_pattern") != args.name_pattern:
         prefs["name_pattern"] = args.name_pattern
@@ -964,13 +965,41 @@ def main():
     auto_rot = "off" if args.no_auto_rotate else args.auto_rotate
 
     print(f"Files:    {len(images)}")
-    print(f"Page:     {args.size} {args.orientation} ({int(w)}x{int(h)} pt) @ {args.dpi} DPI")
-    print(f"Fit:      {args.fit}  rotate: {args.rotate}  auto-rotate: {auto_rot}")
+    print(f"Mode:     {args.output_mode}"
+          + (f" ({args.stack} stack)" if args.output_mode == "image" else ""))
+    if args.output_mode == "pdf":
+        print(f"Page:     {args.size} {args.orientation} ({int(w)}x{int(h)} pt) @ {args.dpi} DPI")
+        print(f"Fit:      {args.fit}  rotate: {args.rotate}  auto-rotate: {auto_rot}")
     if args.style == "pencil":
         print(f"Style:    pencil [{args.pencil_strength}] (opacity={args.pencil_opacity}, "
               f"ink<= {args.pencil_ink_threshold} *{args.pencil_ink_darken}, "
               f"brightness={args.pencil_brightness})")
     print(f"Output:   {out}")
+
+    # Image-stacking output mode short-circuits the PDF pipeline.
+    if args.output_mode == "image":
+        image_only = [p for p in images if kind_of(p) == "image"]
+        skipped = len(images) - len(image_only)
+        if skipped:
+            print(f"  image mode: skipped {skipped} non-image input(s)",
+                  file=sys.stderr)
+        if not image_only:
+            print("No image inputs to stack.", file=sys.stderr); sys.exit(1)
+        for k, ip in enumerate(image_only, 1):
+            print(f"  [{k}/{len(image_only)}] image: {ip.name}")
+        stack_images_to_image(
+            image_only, out,
+            direction=args.stack,
+            rotate=args.rotate, auto_rotate=auto_rot,
+            style=args.style,
+            pencil_opacity=args.pencil_opacity,
+            pencil_brightness=args.pencil_brightness,
+            pencil_ink_threshold=args.pencil_ink_threshold,
+            pencil_ink_darken=args.pencil_ink_darken,
+        )
+        print(f"Done -> {out}")
+        return
+
 
     # Group consecutive inputs by kind so adjacent images become a single
     # image-PDF chunk (efficient + matches user's selection order).
