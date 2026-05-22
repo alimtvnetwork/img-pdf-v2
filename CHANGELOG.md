@@ -4,6 +4,13 @@ All notable changes to `jpg2pdf` are documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.10] - 2026-05-22
+
+### Added
+- End-to-end smoke test suite + CI gating (Step 18 of the GUI roadmap).
+- New `tools/jpg2pdf/tests/test_smoke.py` covers: GUI settings round-trip + recent-files dedupe/cap, CLI `--version` matches `VERSION` file, single-PNG -> PDF (validates `%PDF` magic), 2-PNG vertical stack to PNG (validates PNG magic), and HTML -> PDF (skipped when xhtml2pdf is unavailable).
+- New `tests` job in `.github/workflows/release.yml` runs `pytest -q tests` on Linux for every PR, main push, tag push, and manual dispatch (except notes-only mode). Both the existing PR `ci` job and the cross-platform `build` matrix now `needs: [tests]`, so a failing pytest blocks all five-platform binary builds before they consume runner time.
+
 ## [1.5.9] - 2026-05-22
 
 ### Added
