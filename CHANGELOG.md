@@ -4,6 +4,11 @@ All notable changes to `jpg2pdf` are documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.7] - 2026-05-22
+
+### Changed
+- Restructured the Windows Explorer context menu into two grouped submenus (Step 15 of the GUI roadmap). The flat `Combine into PDF (A4)`, `(A4, rotate 90 CW)`, etc. list is gone. New shape: `Combine into PDF` -> `PDF` (A4, Letter, Legal, plus `A4 recursive` for folders) and `Combine into PDF` -> `Image` (rotations + `A4 pencil / paper look`). Implemented via new `Jpg2Pdf.{Folder,Files}Menu.{PDF,Image}` registry classes wired through `ExtendedSubCommandsKey`. `MultiSelectModel=Player` and the queued `jpg2pdf-selected-runner.cmd` are preserved on every leaf. `unregister-context-menu.ps1` cleans up the new child classes too. Labels stay ASCII (no chevron glyphs) so the script remains safe for Windows PowerShell 5.1.
+
 ## [1.5.6] - 2026-05-22
 
 ### Added
