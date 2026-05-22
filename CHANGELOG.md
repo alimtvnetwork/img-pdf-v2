@@ -4,6 +4,13 @@ All notable changes to `jpg2pdf` are documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.11] - 2026-05-22
+
+### Changed
+- Documentation refresh for the GUI + desktop integration work (Step 19 of the GUI roadmap).
+- `tools/jpg2pdf/README.md` rewritten to cover: the desktop GUI (launch commands, drag-and-drop, preset/recent-files persistence and config locations), the grouped Windows Explorer context menu (PDF / Image submenus), macOS `.app` bundle + Finder Quick Actions, Linux `.desktop` entry + Nautilus scripts + KDE Dolphin servicemenu, full table of installer skip flags (`JPG2PDF_NO_GUI/APP/QUICKACTION/DESKTOP/FM_ACTIONS/SHORTCUTS/CONTEXT_MENU`), updated macOS notes (binaries now built and ad-hoc signed), pytest smoke command, and refreshed release/repo-layout sections.
+- New `tools/jpg2pdf/docs/gui.png` screenshot embedded at the top of the README.
+
 ## [1.5.10] - 2026-05-22
 
 ### Added
