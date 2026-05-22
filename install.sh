@@ -506,6 +506,7 @@ fi
 if [ "${JPG2PDF_NO_GUI:-}" = "1" ]; then
   info "Skipping GUI install (JPG2PDF_NO_GUI=1)."
 else
+  JPG2PDF_BIN="$PREFIX/jpg2pdf"
   gui_asset="jpg2pdf-gui-${os}-${arch}"
   gui_target="$PREFIX/jpg2pdf-gui"
   gui_installed_from=""
