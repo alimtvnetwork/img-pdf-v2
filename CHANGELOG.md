@@ -4,6 +4,14 @@ All notable changes to `jpg2pdf` are documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.8] - 2026-05-22
+
+### Added
+- macOS Quick Actions + Linux file-manager actions (Step 16 of the GUI roadmap).
+  - **macOS**: `install.sh` writes four Automator `.workflow` bundles to `~/Library/Services/` (`Combine into PDF (A4)`, `(Letter)`, `(Legal)`, `(A4, pencil)`) with `NSSendFileTypes` covering images, PDF, HTML and Word. Each workflow runs a `Run Shell Script` action that funnels selected files through `--files-from`. Flushes the Services menu via `pbs -flush`. Skip with `JPG2PDF_NO_QUICKACTION=1`.
+  - **Linux**: Installs four executable Nautilus scripts to `~/.local/share/nautilus/scripts/` (using `$NAUTILUS_SCRIPT_SELECTED_FILE_PATHS`) and a KDE Dolphin servicemenu at `~/.local/share/kio/servicemenus/jpg2pdf.desktop` with a `Combine into PDF` submenu containing A4 / Letter / Legal / Pencil actions. Skip with `JPG2PDF_NO_FM_ACTIONS=1`.
+  - Only installs when the CLI binary is actually present at `$PREFIX/jpg2pdf`.
+
 ## [1.5.7] - 2026-05-22
 
 ### Changed
