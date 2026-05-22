@@ -87,7 +87,7 @@ jobs:
             --collect-submodules jpg2pdf_app \
             --hidden-import tkinter \
             --hidden-import tkinterdnd2 \
-            --distpath dist tools/jpg2pdf/src/jpg2pdf_app/__main__.py
+            --distpath dist tools/jpg2pdf/src/jpg2pdf_gui_entry.py
       - name: Smoke test CLI --version
         run: ./dist/jpg2pdf --version
       - name: Smoke test GUI --version
@@ -118,6 +118,10 @@ jobs:
       (github.event_name == 'pull_request') ||
       (github.event_name == 'workflow_dispatch' && github.event.inputs.notes_only != 'true')
     runs-on: ${{ matrix.os }}
+    # Hard cap so a stuck/queued macOS runner can't burn the day. macOS PyInstaller
+    # builds genuinely need ~10-15 min (brew install cairo + pip + PyInstaller +
+    # codesign), so 1-2 min isn't feasible — 25 is a safe upper bound.
+    timeout-minutes: ${{ startsWith(matrix.os, 'macos') && 25 || 20 }}
     strategy:
       fail-fast: false
       matrix:
@@ -195,7 +199,7 @@ jobs:
             --hidden-import tkinter \
             --hidden-import tkinterdnd2 \
             "${EXTRA[@]}" \
-            --distpath dist tools/jpg2pdf/src/jpg2pdf_app/__main__.py
+            --distpath dist tools/jpg2pdf/src/jpg2pdf_gui_entry.py
       - name: Rename artifacts
         shell: bash
         run: |
