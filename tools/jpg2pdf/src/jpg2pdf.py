@@ -1000,6 +1000,7 @@ def main():
     auto_rot = "off" if args.no_auto_rotate else args.auto_rotate
 
     print(f"Files:    {len(images)}")
+    print(f"Sort:     {args._resolved_sort}")
     print(f"Mode:     {args.output_mode}"
           + (f" ({args.stack} stack)" if args.output_mode == "image" else ""))
     if args.output_mode == "pdf":
