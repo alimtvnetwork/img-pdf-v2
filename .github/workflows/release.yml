@@ -99,17 +99,33 @@ jobs:
             label: windows-x64
             asset: jpg2pdf-windows-x64.exe
             gui_asset: jpg2pdf-gui-windows-x64.exe
+            bundle_asset: ""
             ext: .exe
           - os: ubuntu-latest
             label: linux-x64
             asset: jpg2pdf-linux-x64
             gui_asset: jpg2pdf-gui-linux-x64
+            bundle_asset: ""
             ext: ""
           - os: ubuntu-24.04-arm
             label: linux-arm64
             asset: jpg2pdf-linux-arm64
             gui_asset: jpg2pdf-gui-linux-arm64
+            bundle_asset: ""
             ext: ""
+          - os: macos-13
+            label: macos-x64
+            asset: jpg2pdf-macos-x64
+            gui_asset: jpg2pdf-gui-macos-x64
+            bundle_asset: jpg2pdf-gui-macos-x64.app.zip
+            ext: ""
+          - os: macos-latest
+            label: macos-arm64
+            asset: jpg2pdf-macos-arm64
+            gui_asset: jpg2pdf-gui-macos-arm64
+            bundle_asset: jpg2pdf-gui-macos-arm64.app.zip
+            ext: ""
+
 
 
     steps:
