@@ -83,7 +83,6 @@ jobs:
           pyinstaller --onefile --name jpg2pdf-gui --noconfirm \
             --windowed \
             --paths tools/jpg2pdf/src \
-            --add-data "tools/jpg2pdf/src/jpg2pdf.py:." \
             --collect-submodules jpg2pdf_app \
             --hidden-import tkinter \
             --hidden-import tkinterdnd2 \
@@ -186,8 +185,7 @@ jobs:
         shell: bash
         run: |
           # The GUI runs the engine in-process when frozen (see gui.py),
-          # so the single-file bundle must include jpg2pdf.py + jpg2pdf_app.
-          if [ "${{ runner.os }}" = "Windows" ]; then SEP=";"; else SEP=":"; fi
+          # so the bundle must include the importable jpg2pdf module + jpg2pdf_app.
           EXTRA=()
           if [ "${{ runner.os }}" = "macOS" ]; then
             EXTRA+=( --osx-bundle-identifier "dev.jpg2pdf.gui" )
@@ -195,7 +193,6 @@ jobs:
           pyinstaller --onefile --name jpg2pdf-gui --noconfirm \
             --windowed \
             --paths tools/jpg2pdf/src \
-            --add-data "tools/jpg2pdf/src/jpg2pdf.py${SEP}." \
             --collect-submodules jpg2pdf_app \
             --hidden-import tkinter \
             --hidden-import tkinterdnd2 \

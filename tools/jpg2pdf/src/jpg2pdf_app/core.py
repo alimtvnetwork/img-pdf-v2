@@ -1,9 +1,8 @@
 """Engine re-exports from the canonical `jpg2pdf.py` script.
 
-Imports the sibling single-file CLI script as a regular module so
-PyInstaller statically analyses its dependencies (json, PIL, pypdf, etc.)
-and bundles them. Falls back to importlib by file path for source/dev
-checkouts where `tools/jpg2pdf/src` may not be on sys.path.
+Imports the sibling single-file CLI script as a regular module so PyInstaller
+statically analyses its dependencies (json, PIL, pypdf, etc.) and bundles them.
+In non-frozen source/dev checkouts only, falls back to importlib by file path.
 """
 from __future__ import annotations
 
@@ -11,12 +10,14 @@ import sys
 from pathlib import Path
 
 _SRC_DIR = Path(__file__).resolve().parent.parent
-if str(_SRC_DIR) not in sys.path:
+if not getattr(sys, "frozen", False) and str(_SRC_DIR) not in sys.path:
     sys.path.insert(0, str(_SRC_DIR))
 
 try:
     import jpg2pdf as _engine  # type: ignore[import-not-found]
 except ImportError:
+    if getattr(sys, "frozen", False):
+        raise
     import importlib.util
     _SCRIPT = _SRC_DIR / "jpg2pdf.py"
     _spec = importlib.util.spec_from_file_location("jpg2pdf", _SCRIPT)
