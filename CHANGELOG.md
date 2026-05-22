@@ -4,6 +4,11 @@ All notable changes to `jpg2pdf` are documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.5] - 2026-05-22
+
+### Fixed
+- Windows Explorer context-menu registration now removes older flat `Jpg2PdfMenu` entries from wildcard and all-files registry roots before writing the grouped menu, so reinstalling produces `Combine into PDF` -> `PDF` / `Image` instead of the previous single flat submenu.
+
 ## [2.0.4] - 2026-05-22
 
 ### Fixed
