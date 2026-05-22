@@ -865,6 +865,18 @@ def main():
                          "'folder' = preserve OS folder enumeration order.")
     args = ap.parse_args()
 
+    # --gui short-circuits the CLI and hands control to the Tk shell.
+    if args.gui:
+        # Local import: only needed in GUI mode, and keeps Tk out of
+        # headless server runs.
+        from pathlib import Path as _Path
+        import sys as _sys
+        _pkg_parent = _Path(__file__).resolve().parent
+        if str(_pkg_parent) not in _sys.path:
+            _sys.path.insert(0, str(_pkg_parent))
+        from jpg2pdf_app.gui import run as _gui_run
+        sys.exit(_gui_run())
+
     # Expand pencil-* aliases into base output-mode + style.
     if args.output_mode == "pencil-pdf":
         args.output_mode = "pdf"
