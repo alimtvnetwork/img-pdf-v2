@@ -87,7 +87,7 @@ jobs:
             --collect-submodules jpg2pdf_app \
             --hidden-import tkinter \
             --hidden-import tkinterdnd2 \
-            --distpath dist tools/jpg2pdf/src/jpg2pdf_app/__main__.py
+            --distpath dist tools/jpg2pdf/src/jpg2pdf_gui_entry.py
       - name: Smoke test CLI --version
         run: ./dist/jpg2pdf --version
       - name: Smoke test GUI --version
