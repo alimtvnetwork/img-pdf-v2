@@ -4,7 +4,14 @@ All notable changes to `jpg2pdf` are documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.5] - 2026-05-22
+
+### Added
+- macOS is back in the release matrix: `jpg2pdf-macos-x64` (Intel) and `jpg2pdf-macos-arm64` (Apple Silicon) CLI + GUI binaries, plus a packaged `.app` bundle (`jpg2pdf-gui-macos-{x64,arm64}.app.zip`) built from PyInstaller's `--windowed` mode with bundle identifier `dev.jpg2pdf.gui` (Step 13 of the GUI roadmap).
+- `install.sh` now also installs the GUI binary to `$PREFIX/jpg2pdf-gui` and, on macOS, downloads the `.app.zip` and unpacks it to `/Applications/jpg2pdf.app` (or `~/Applications/jpg2pdf.app` when the system folder isn't writable). Skip with `JPG2PDF_NO_GUI=1`, `JPG2PDF_NO_APP=1`, or force user-local with `JPG2PDF_APP_USER_ONLY=1`.
+
 ## [1.5.4] - 2026-05-22
+
 
 ### Added
 - Windows installer (`install.ps1`) now also downloads `jpg2pdf-gui-windows-x64.exe` to `%USERPROFILE%\Tools\bin\jpg2pdf-gui.exe` and creates Start-menu + Desktop shortcuts pointing at it (Step 12 of the GUI roadmap). Skip with `$env:JPG2PDF_NO_GUI = "1"` or `$env:JPG2PDF_NO_SHORTCUTS = "1"`. Falls back to the latest main-branch artifact when no release asset is available, and never aborts the CLI install if the GUI bits are missing.
