@@ -4,6 +4,11 @@ All notable changes to `jpg2pdf` are documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.6] - 2026-05-22
+
+### Added
+- Linux installer now writes a freedesktop `.desktop` entry to `~/.local/share/applications/jpg2pdf.desktop` so the GUI shows up in the Applications menu and as a file-handler for images, PDFs, HTML and Word documents (Step 14 of the GUI roadmap). Uses `Icon=application-pdf`, refreshes the menu via `update-desktop-database` when available, and is skippable with `JPG2PDF_NO_DESKTOP=1`. Only created when the GUI binary was installed successfully.
+
 ## [1.5.5] - 2026-05-22
 
 ### Added
