@@ -1,0 +1,15 @@
+{
+  "version": "2.0.4",
+  "branch": "release/v2.0.4",
+  "sourceBranch": "main",
+  "commit": "d337b39a3b66f5c5e0dc297689d77e488c77f42f",
+  "tag": "v2.0.4",
+  "assets": [],
+  "changelog": [
+    "macOS GUI one-file binaries could still load an extracted top-level `jpg2pdf.py` and crash at startup with `ModuleNotFoundError: No module named 'json'`. The GUI release build now copies the CLI engine to `jpg2pdf_app/engine.py` before freezing and imports that package-local module, eliminating PyInstaller's top-level script/data ambiguity across macOS and Linux."
+  ],
+  "isDraft": false,
+  "isPreRelease": false,
+  "createdAt": "2026-05-22T17:03:29Z",
+  "isLatest": false
+}
