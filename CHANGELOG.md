@@ -4,6 +4,11 @@ All notable changes to `jpg2pdf` are documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.2] - 2026-05-22
+
+### Fixed
+- GUI binary crashed at startup with `ModuleNotFoundError: No module named 'json'` (and similar for other stdlib/3rd-party modules). Root cause: `jpg2pdf_app/core.py` loaded the engine script via `importlib.util.spec_from_file_location`, so PyInstaller never statically analysed `jpg2pdf.py`'s imports and didn't bundle its dependencies. Switched `core.py` to a normal `import jpg2pdf` (with the importlib path as a dev-only fallback) and added `--hidden-import jpg2pdf` to the GUI PyInstaller invocations in CI and release.
+
 ## [2.0.1] - 2026-05-22
 
 ### Fixed
