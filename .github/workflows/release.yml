@@ -80,13 +80,14 @@ jobs:
             --distpath dist tools/jpg2pdf/src/jpg2pdf.py
       - name: Compile GUI binary
         run: |
+          cp tools/jpg2pdf/src/jpg2pdf.py tools/jpg2pdf/src/jpg2pdf_app/engine.py
           pyinstaller --onefile --name jpg2pdf-gui --noconfirm \
             --windowed \
             --paths tools/jpg2pdf/src \
             --collect-submodules jpg2pdf_app \
             --hidden-import tkinter \
             --hidden-import tkinterdnd2 \
-            --hidden-import jpg2pdf \
+            --hidden-import jpg2pdf_app.engine \
             --distpath dist tools/jpg2pdf/src/jpg2pdf_gui_entry.py
       - name: Smoke test CLI --version
         run: ./dist/jpg2pdf --version
@@ -185,7 +186,9 @@ jobs:
         shell: bash
         run: |
           # The GUI runs the engine in-process when frozen (see gui.py),
-          # so the bundle must include the importable jpg2pdf module + jpg2pdf_app.
+          # so copy the CLI engine inside jpg2pdf_app to avoid top-level script
+          # import ambiguity in PyInstaller one-file bundles.
+          cp tools/jpg2pdf/src/jpg2pdf.py tools/jpg2pdf/src/jpg2pdf_app/engine.py
           EXTRA=()
           if [ "${{ runner.os }}" = "macOS" ]; then
             EXTRA+=( --osx-bundle-identifier "dev.jpg2pdf.gui" )
@@ -196,7 +199,7 @@ jobs:
             --collect-submodules jpg2pdf_app \
             --hidden-import tkinter \
             --hidden-import tkinterdnd2 \
-            --hidden-import jpg2pdf \
+            --hidden-import jpg2pdf_app.engine \
             "${EXTRA[@]}" \
             --distpath dist tools/jpg2pdf/src/jpg2pdf_gui_entry.py
       - name: Rename artifacts

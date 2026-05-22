@@ -4,6 +4,11 @@ All notable changes to `jpg2pdf` are documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.4] - 2026-05-22
+
+### Fixed
+- macOS GUI one-file binaries could still load an extracted top-level `jpg2pdf.py` and crash at startup with `ModuleNotFoundError: No module named 'json'`. The GUI release build now copies the CLI engine to `jpg2pdf_app/engine.py` before freezing and imports that package-local module, eliminating PyInstaller's top-level script/data ambiguity across macOS and Linux.
+
 ## [2.0.3] - 2026-05-22
 
 ### Fixed
