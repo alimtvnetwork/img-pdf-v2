@@ -1,21 +1,29 @@
 """Engine re-exports from the canonical `jpg2pdf.py` script.
 
-Loads the sibling single-file CLI script via importlib (avoids a name
-collision between the package `jpg2pdf_app` and the script `jpg2pdf.py`)
-and re-exports the public engine symbols used by both the CLI and the
-upcoming GUI.
+Imports the sibling single-file CLI script as a regular module so
+PyInstaller statically analyses its dependencies (json, PIL, pypdf, etc.)
+and bundles them. Falls back to importlib by file path for source/dev
+checkouts where `tools/jpg2pdf/src` may not be on sys.path.
 """
 from __future__ import annotations
 
-import importlib.util
+import sys
 from pathlib import Path
 
-_SCRIPT = Path(__file__).resolve().parent.parent / "jpg2pdf.py"
-_spec = importlib.util.spec_from_file_location("_jpg2pdf_script", _SCRIPT)
-if _spec is None or _spec.loader is None:  # pragma: no cover - defensive
-    raise ImportError(f"Could not load jpg2pdf engine from {_SCRIPT}")
-_engine = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(_engine)
+_SRC_DIR = Path(__file__).resolve().parent.parent
+if str(_SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(_SRC_DIR))
+
+try:
+    import jpg2pdf as _engine  # type: ignore[import-not-found]
+except ImportError:
+    import importlib.util
+    _SCRIPT = _SRC_DIR / "jpg2pdf.py"
+    _spec = importlib.util.spec_from_file_location("jpg2pdf", _SCRIPT)
+    if _spec is None or _spec.loader is None:  # pragma: no cover - defensive
+        raise ImportError(f"Could not load jpg2pdf engine from {_SCRIPT}")
+    _engine = importlib.util.module_from_spec(_spec)
+    _spec.loader.exec_module(_engine)
 
 # Public re-exports — keep this list in sync with the symbols the GUI uses.
 __version__ = _engine.__version__

@@ -87,6 +87,7 @@ jobs:
             --collect-submodules jpg2pdf_app \
             --hidden-import tkinter \
             --hidden-import tkinterdnd2 \
+            --hidden-import jpg2pdf \
             --distpath dist tools/jpg2pdf/src/jpg2pdf_gui_entry.py
       - name: Smoke test CLI --version
         run: ./dist/jpg2pdf --version
@@ -198,6 +199,7 @@ jobs:
             --collect-submodules jpg2pdf_app \
             --hidden-import tkinter \
             --hidden-import tkinterdnd2 \
+            --hidden-import jpg2pdf \
             "${EXTRA[@]}" \
             --distpath dist tools/jpg2pdf/src/jpg2pdf_gui_entry.py
       - name: Rename artifacts
