@@ -878,6 +878,7 @@ def main():
     images = []
     out_dir = None       # where the PDF will be written
     folder_name = None   # used by {folder} in --name-pattern
+    input_mode = None    # "files" | "folder" (drives --sort auto)
 
     if args.files_from:
         listfile = Path(args.files_from).expanduser().resolve()
@@ -886,11 +887,13 @@ def main():
         lines = [ln.strip() for ln in listfile.read_text(encoding="utf-8").splitlines()
                  if ln.strip() and not ln.strip().startswith("#")]
         images = collect_from_list(lines)
+        input_mode = "files"
         if images:
             out_dir = images[0].parent
             folder_name = images[0].parent.name
     elif args.files:
         images = collect_from_list(args.files)
+        input_mode = "files"
         if images:
             out_dir = images[0].parent
             folder_name = images[0].parent.name
@@ -899,6 +902,7 @@ def main():
         if not folder.is_dir():
             print(f"Not a folder: {folder}", file=sys.stderr); sys.exit(1)
         images = collect_from_folder(folder, args.recursive)
+        input_mode = "folder"
         out_dir = folder
         folder_name = folder.name
     else:
@@ -906,6 +910,28 @@ def main():
 
     if not images:
         print("No images to convert.", file=sys.stderr); sys.exit(1)
+
+    # ---- Apply --sort. 'auto' = selection for files, name for folder mode.
+    resolved_sort = args.sort
+    if resolved_sort == "auto":
+        resolved_sort = "selection" if input_mode == "files" else "name"
+    if resolved_sort == "name":
+        images = sorted(images, key=natural_key)
+    elif resolved_sort == "date":
+        images = sorted(images, key=lambda p: p.stat().st_mtime)
+    elif resolved_sort == "folder":
+        # Preserve enumeration order. For folder mode, re-collect without the
+        # implicit natural-sort done by collect_from_folder.
+        if input_mode == "folder":
+            folder_p = Path(args.folder).expanduser().resolve()
+            it = folder_p.rglob("*") if args.recursive else folder_p.iterdir()
+            images = [p for p in it if p.is_file()
+                      and p.suffix.lower() in SUPPORTED_EXTS]
+        # For files mode, 'folder' is meaningless — fall back to selection
+        # order (which is what `images` already holds).
+    # 'selection' → leave images as-is.
+    args._resolved_sort = resolved_sort
+
 
     # Optional: confirm/deselect images via thumbnail grid before conversion.
     if args.preview_grid:
