@@ -99,17 +99,33 @@ jobs:
             label: windows-x64
             asset: jpg2pdf-windows-x64.exe
             gui_asset: jpg2pdf-gui-windows-x64.exe
+            bundle_asset: ""
             ext: .exe
           - os: ubuntu-latest
             label: linux-x64
             asset: jpg2pdf-linux-x64
             gui_asset: jpg2pdf-gui-linux-x64
+            bundle_asset: ""
             ext: ""
           - os: ubuntu-24.04-arm
             label: linux-arm64
             asset: jpg2pdf-linux-arm64
             gui_asset: jpg2pdf-gui-linux-arm64
+            bundle_asset: ""
             ext: ""
+          - os: macos-13
+            label: macos-x64
+            asset: jpg2pdf-macos-x64
+            gui_asset: jpg2pdf-gui-macos-x64
+            bundle_asset: jpg2pdf-gui-macos-x64.app.zip
+            ext: ""
+          - os: macos-latest
+            label: macos-arm64
+            asset: jpg2pdf-macos-arm64
+            gui_asset: jpg2pdf-gui-macos-arm64
+            bundle_asset: jpg2pdf-gui-macos-arm64.app.zip
+            ext: ""
+
 
 
     steps:
@@ -140,6 +156,10 @@ jobs:
           # The GUI runs the engine in-process when frozen (see gui.py),
           # so the single-file bundle must include jpg2pdf.py + jpg2pdf_app.
           if [ "${{ runner.os }}" = "Windows" ]; then SEP=";"; else SEP=":"; fi
+          EXTRA=()
+          if [ "${{ runner.os }}" = "macOS" ]; then
+            EXTRA+=( --osx-bundle-identifier "dev.jpg2pdf.gui" )
+          fi
           pyinstaller --onefile --name jpg2pdf-gui --noconfirm \
             --windowed \
             --paths tools/jpg2pdf/src \
@@ -147,12 +167,26 @@ jobs:
             --collect-submodules jpg2pdf_app \
             --hidden-import tkinter \
             --hidden-import tkinterdnd2 \
+            "${EXTRA[@]}" \
             --distpath dist tools/jpg2pdf/src/jpg2pdf_app/__main__.py
       - name: Rename artifacts
         shell: bash
         run: |
           mv "dist/jpg2pdf${{ matrix.ext }}"     "dist/${{ matrix.asset }}"
           mv "dist/jpg2pdf-gui${{ matrix.ext }}" "dist/${{ matrix.gui_asset }}"
+      - name: Package macOS .app bundle
+        if: matrix.bundle_asset != ''
+        shell: bash
+        run: |
+          # PyInstaller --windowed on macOS produces dist/jpg2pdf-gui.app
+          # alongside the single-file binary. Zip the .app for distribution.
+          if [ ! -d "dist/jpg2pdf-gui.app" ]; then
+            echo "::error::Expected dist/jpg2pdf-gui.app from PyInstaller, not found." >&2
+            ls -la dist
+            exit 1
+          fi
+          mv dist/jpg2pdf-gui.app dist/jpg2pdf.app
+          (cd dist && ditto -c -k --keepParent jpg2pdf.app "${{ matrix.bundle_asset }}")
       - name: Ad-hoc codesign (macOS)
         if: startsWith(matrix.os, 'macos')
         run: |
@@ -160,6 +194,10 @@ jobs:
           codesign --force --deep --sign - "dist/${{ matrix.gui_asset }}"
           codesign --verify --verbose=2 "dist/${{ matrix.asset }}"
           codesign --verify --verbose=2 "dist/${{ matrix.gui_asset }}"
+          if [ -d "dist/jpg2pdf.app" ]; then
+            codesign --force --deep --sign - "dist/jpg2pdf.app"
+            codesign --verify --verbose=2 "dist/jpg2pdf.app"
+          fi
       - name: Smoke test CLI
         shell: bash
         run: "./dist/${{ matrix.asset }} --version"
@@ -180,6 +218,14 @@ jobs:
           name: ${{ matrix.gui_asset }}
           path: dist/${{ matrix.gui_asset }}
           if-no-files-found: error
+      - name: Upload macOS .app bundle
+        if: matrix.bundle_asset != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.bundle_asset }}
+          path: dist/${{ matrix.bundle_asset }}
+          if-no-files-found: error
+
 
 
   # -----------------------------------------------------------------------
@@ -328,10 +374,17 @@ jobs:
             dist/jpg2pdf-windows-x64.exe
             dist/jpg2pdf-linux-x64
             dist/jpg2pdf-linux-arm64
+            dist/jpg2pdf-macos-x64
+            dist/jpg2pdf-macos-arm64
             dist/jpg2pdf-gui-windows-x64.exe
             dist/jpg2pdf-gui-linux-x64
             dist/jpg2pdf-gui-linux-arm64
+            dist/jpg2pdf-gui-macos-x64
+            dist/jpg2pdf-gui-macos-arm64
+            dist/jpg2pdf-gui-macos-x64.app.zip
+            dist/jpg2pdf-gui-macos-arm64.app.zip
             dist/SHA256SUMS.txt
             dist/install.ps1
             dist/install.sh
+
 
