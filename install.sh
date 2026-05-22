@@ -554,7 +554,39 @@ else
     fi
     rm -f "$tmp_app_zip" 2>/dev/null || true
   fi
+
+  # Linux .desktop entry -> ~/.local/share/applications/jpg2pdf.desktop (Step 14)
+  if [ "$os" = "linux" ] && [ -x "$gui_target" ] && [ "${JPG2PDF_NO_DESKTOP:-}" != "1" ]; then
+    desktop_dir="$HOME_DIR/.local/share/applications"
+    desktop_file="$desktop_dir/jpg2pdf.desktop"
+    if mkdir -p "$desktop_dir" 2>/dev/null; then
+      if cat > "$desktop_file" <<EOF
+[Desktop Entry]
+Type=Application
+Name=jpg2pdf
+GenericName=Image to PDF Converter
+Comment=Merge images, PDFs, HTML and Word documents into a single PDF
+Exec=$gui_target
+Icon=application-pdf
+Terminal=false
+Categories=Office;Graphics;Utility;
+MimeType=image/jpeg;image/png;image/webp;image/tiff;image/bmp;application/pdf;text/html;application/vnd.openxmlformats-officedocument.wordprocessingml.document;application/msword;
+StartupNotify=true
+EOF
+      then
+        chmod 644 "$desktop_file" 2>/dev/null || true
+        command -v update-desktop-database >/dev/null 2>&1 && \
+          update-desktop-database "$desktop_dir" >/dev/null 2>&1 || true
+        info "Desktop entry installed: $desktop_file"
+      else
+        warn "Failed to write desktop entry at $desktop_file"
+      fi
+    else
+      warn "Could not create $desktop_dir; skipping desktop entry."
+    fi
+  fi
 fi
+
 
 
 case ":${PATH:-}:" in
