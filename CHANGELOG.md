@@ -4,6 +4,11 @@ All notable changes to `jpg2pdf` are documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.1] - 2026-05-22
+
+### Changed
+- Version bump to 2.1.1. Pinned install-snippet versions in root `README.md`.
+
 ## [2.0.6] - 2026-05-22
 
 ### Added
