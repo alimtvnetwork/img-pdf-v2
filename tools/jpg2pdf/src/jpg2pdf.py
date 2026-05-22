@@ -845,6 +845,15 @@ def main():
                     default="vertical",
                     help="--output-mode image: stacking direction "
                          "(default: vertical).")
+    ap.add_argument("--sort",
+                    choices=["selection", "name", "date", "folder", "auto"],
+                    default="auto",
+                    help="Ordering of inputs before merging/stacking. "
+                         "'auto' (default) = 'selection' for --files / "
+                         "--files-from, 'name' for folder mode. "
+                         "'name' = natural filename sort. "
+                         "'date' = file mtime ascending. "
+                         "'folder' = preserve OS folder enumeration order.")
     args = ap.parse_args()
 
     # Load persisted prefs (last chosen pencil strength).
