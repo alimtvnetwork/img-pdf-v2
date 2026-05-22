@@ -1,13 +1,14 @@
 """jpg2pdf GUI — Tkinter shell.
 
-Steps 7-8 of the GUI roadmap (.lovable/plan.md): main window with menubar,
-drag-and-drop drop zone, reorderable file list, and status bar. Options
-panel (Step 9) and convert wiring (Step 10) land in later steps.
+Steps 7-9 of the GUI roadmap (.lovable/plan.md): main window with menubar,
+drag-and-drop drop zone, reorderable file list, options panel, and status
+bar. Convert wiring (Step 10) lands in the next step.
 
 Launch via:
     jpg2pdf --gui
     python -m jpg2pdf_app
 """
+
 from __future__ import annotations
 
 import os
