@@ -5,6 +5,8 @@
 $ErrorActionPreference = "SilentlyContinue"
 
 $paths = @(
+    "HKCU:\Software\Classes\*\shell\Jpg2PdfMenu",
+    "HKCU:\Software\Classes\AllFilesystemObjects\shell\Jpg2PdfMenu",
     "HKCU:\Software\Classes\Directory\shell\Jpg2PdfMenu",
     "HKCU:\Software\Classes\Directory\Background\shell\Jpg2PdfMenu",
     "HKCU:\Software\Classes\Jpg2Pdf.FolderMenu",
