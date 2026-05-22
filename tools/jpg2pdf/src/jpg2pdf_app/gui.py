@@ -132,9 +132,12 @@ class Jpg2PdfApp:
         file_menu.add_command(label="Add files...", command=self.on_add_files)
         file_menu.add_command(label="Add folder...", command=self.on_add_folder)
         file_menu.add_separator()
+        self.recent_menu = tk.Menu(file_menu, tearoff=False)
+        file_menu.add_cascade(label="Recent", menu=self.recent_menu)
+        file_menu.add_separator()
         file_menu.add_command(label="Clear list", command=self.on_clear)
         file_menu.add_separator()
-        file_menu.add_command(label="Quit", command=self.root.destroy)
+        file_menu.add_command(label="Quit", command=self._on_close)
         menubar.add_cascade(label="File", menu=file_menu)
 
         mode_menu = tk.Menu(menubar, tearoff=False)
