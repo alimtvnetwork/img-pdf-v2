@@ -17,3 +17,4 @@ All institutional knowledge for this project. Every file under `.lovable/memory/
 - [workflow/state.md](./workflow/state.md) — Current phase / in-progress / next.
 - [decisions/01-subtle-default.md](./decisions/01-subtle-default.md) — Why subtle is the pencil default.
 - [decisions/02-no-edge-functions.md](./decisions/02-no-edge-functions.md) — Why this project ignores Lovable Cloud.
+- [decisions/03-gui-tkinter.md](./decisions/03-gui-tkinter.md) — Why the GUI uses Tkinter + tkinterdnd2.
