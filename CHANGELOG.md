@@ -4,6 +4,14 @@ All notable changes to `jpg2pdf` are documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.9] - 2026-05-22
+
+### Added
+- GUI preset persistence and recent files (Step 17 of the GUI roadmap). New `jpg2pdf_app/settings.py` reads/writes a JSON config at `%APPDATA%\jpg2pdf\settings.json` (Windows), `~/Library/Application Support/jpg2pdf/settings.json` (macOS), or `$XDG_CONFIG_HOME/jpg2pdf/settings.json` (Linux, default `~/.config/jpg2pdf/settings.json`).
+- Persisted across sessions: output mode, sort, page size, orientation, fit, stack, pencil toggle, pencil strength (default `subtle` preserved), and last output path.
+- New **File > Recent** submenu listing up to 12 most-recent input paths (deduped, truncated for display); selecting one re-adds it to the queue. Includes a `Clear recent` action. Recents are populated only after successful conversions.
+- Settings are written on `WM_DELETE_WINDOW` (window close, including the Quit menu item) and after each successful conversion. Any read/write failure degrades silently to in-memory defaults.
+
 ## [1.5.8] - 2026-05-22
 
 ### Added

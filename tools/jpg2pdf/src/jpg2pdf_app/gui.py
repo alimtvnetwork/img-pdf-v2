@@ -19,6 +19,7 @@ from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 
 from jpg2pdf_app.core import __version__
+from jpg2pdf_app import settings as _settings
 
 
 WINDOW_TITLE = f"jpg2pdf {__version__}"
@@ -91,17 +92,22 @@ class Jpg2PdfApp:
 
         self.inputs: list[str] = []   # ordered list of input paths
 
-        # Option state (read by Step 10 when wiring Convert).
-        self.var_mode    = tk.StringVar(value="pdf")
-        self.var_sort    = tk.StringVar(value="auto")
-        self.var_size    = tk.StringVar(value="a4")
-        self.var_orient  = tk.StringVar(value="portrait")
-        self.var_fit     = tk.StringVar(value="contain")
-        self.var_stack   = tk.StringVar(value="vertical")
-        self.var_pencil  = tk.BooleanVar(value=False)
-        self.var_strength = tk.StringVar(value="subtle")  # project default
-        self.var_output  = tk.StringVar(value="")
+        # Load persisted preset (Step 17). Falls back to defaults on any error.
+        self._settings = _settings.load()
+        s = self._settings
 
+        # Option state (read by Convert; persisted on close + after conversion).
+        self.var_mode    = tk.StringVar(value=s.get("mode", "pdf"))
+        self.var_sort    = tk.StringVar(value=s.get("sort", "auto"))
+        self.var_size    = tk.StringVar(value=s.get("size", "a4"))
+        self.var_orient  = tk.StringVar(value=s.get("orient", "portrait"))
+        self.var_fit     = tk.StringVar(value=s.get("fit", "contain"))
+        self.var_stack   = tk.StringVar(value=s.get("stack", "vertical"))
+        self.var_pencil  = tk.BooleanVar(value=bool(s.get("pencil", False)))
+        self.var_strength = tk.StringVar(value=s.get("strength", "subtle"))
+        self.var_output  = tk.StringVar(value=s.get("output", ""))
+
+        self._recent: list[str] = list(s.get("recent", []) or [])
 
         self._build_menubar()
         self._build_layout()
@@ -114,6 +120,9 @@ class Jpg2PdfApp:
                 f"Ready. jpg2pdf {__version__}. "
                 "Install 'tkinterdnd2' for drag-and-drop.")
 
+        # Persist preset + recent files when the window closes.
+        self.root.protocol("WM_DELETE_WINDOW", self._on_close)
+
     # ------------------------------------------------------------------ UI
 
     def _build_menubar(self) -> None:
@@ -123,9 +132,12 @@ class Jpg2PdfApp:
         file_menu.add_command(label="Add files...", command=self.on_add_files)
         file_menu.add_command(label="Add folder...", command=self.on_add_folder)
         file_menu.add_separator()
+        self.recent_menu = tk.Menu(file_menu, tearoff=False)
+        file_menu.add_cascade(label="Recent", menu=self.recent_menu)
+        file_menu.add_separator()
         file_menu.add_command(label="Clear list", command=self.on_clear)
         file_menu.add_separator()
-        file_menu.add_command(label="Quit", command=self.root.destroy)
+        file_menu.add_command(label="Quit", command=self._on_close)
         menubar.add_cascade(label="File", menu=file_menu)
 
         mode_menu = tk.Menu(menubar, tearoff=False)
@@ -146,6 +158,51 @@ class Jpg2PdfApp:
         menubar.add_cascade(label="Help", menu=help_menu)
 
         self.root.config(menu=menubar)
+        self._refresh_recent_menu()
+
+    # -------------------------------------------------------- recents/preset
+
+    def _refresh_recent_menu(self) -> None:
+        try:
+            self.recent_menu.delete(0, tk.END)
+        except Exception:
+            return
+        if not self._recent:
+            self.recent_menu.add_command(label="(empty)", state=tk.DISABLED)
+            return
+        for path in self._recent:
+            disp = path if len(path) <= 60 else "..." + path[-57:]
+            self.recent_menu.add_command(
+                label=disp,
+                command=lambda p=path: self._add_paths([p]))
+        self.recent_menu.add_separator()
+        self.recent_menu.add_command(
+            label="Clear recent", command=self._on_clear_recent)
+
+    def _on_clear_recent(self) -> None:
+        self._recent = []
+        self._refresh_recent_menu()
+        _settings.save(self._collect_settings())
+
+    def _collect_settings(self) -> dict:
+        return {
+            "mode":     self.var_mode.get(),
+            "sort":     self.var_sort.get(),
+            "size":     self.var_size.get(),
+            "orient":   self.var_orient.get(),
+            "fit":      self.var_fit.get(),
+            "stack":    self.var_stack.get(),
+            "pencil":   bool(self.var_pencil.get()),
+            "strength": self.var_strength.get(),
+            "output":   self.var_output.get(),
+            "recent":   list(self._recent),
+        }
+
+    def _on_close(self) -> None:
+        try:
+            _settings.save(self._collect_settings())
+        finally:
+            self.root.destroy()
 
     def _build_layout(self) -> None:
         body = ttk.Frame(self.root, padding=8)
@@ -535,6 +592,10 @@ class Jpg2PdfApp:
         self.convert_btn.config(state=tk.NORMAL if self.inputs else tk.DISABLED)
         if ok:
             self._set_status(f"Done -> {self.var_output.get()}")
+            # Push inputs into recent files and persist (Step 17).
+            self._recent = _settings.push_recent(self._recent, self.inputs)
+            self._refresh_recent_menu()
+            _settings.save(self._collect_settings())
             messagebox.showinfo("jpg2pdf", f"Converted.\n\n{self.var_output.get()}")
         else:
             self._set_status(f"Failed: {summary}")
