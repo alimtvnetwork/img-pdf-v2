@@ -7,7 +7,13 @@
 
 .NOTES
   HKCU only - no admin required.
-  Selected-files verbs use one visible batch runner for maximum reliability:
+  As of Step 15 the menu is grouped:
+    Combine into PDF  ->  PDF      ->  paper-size leaves (A4, Letter, Legal, ...)
+                          Image    ->  image-specific leaves (rotations, pencil, ...)
+  ASCII-only file: no fancy arrows in labels - Explorer draws the chevron on
+  any node that has children.
+
+  Selected-files verbs still use one visible batch runner for reliability:
     * No hidden VBS/PowerShell launcher chain.
     * MultiSelectModel=Player on each leaf so the verb appears for large
       selections.
@@ -27,17 +33,55 @@ $exe    = (Resolve-Path $ExePath).Path
 $binDir = Split-Path -Parent $exe
 
 # ---------------------------------------------------------------
-# Per-verb launcher specs. Each entry: id, label, jpg2pdf args (without --files).
+# Grouped verb specs. Each verb has: Id, Label, Args (without --files).
+# Files mode (Explorer file selection): verbs operate on selected files.
 # ---------------------------------------------------------------
-$verbs = @(
-    @{ Id = "a4";          Label = "Combine into PDF (A4)";                       Args = "--size a4" },
-    @{ Id = "letter";      Label = "Combine into PDF (Letter)";                   Args = "--size letter" },
-    @{ Id = "legal";       Label = "Combine into PDF (Legal)";                    Args = "--size legal" },
-    @{ Id = "a4-cw";       Label = "Combine into PDF (A4, rotate 90 CW)";         Args = "--size a4 --rotate 270" },
-    @{ Id = "a4-ccw";      Label = "Combine into PDF (A4, rotate 90 CCW)";        Args = "--size a4 --rotate 90" },
-    @{ Id = "a4-180";      Label = "Combine into PDF (A4, rotate 180)";           Args = "--size a4 --rotate 180" },
-    @{ Id = "a4-noar";     Label = "Combine into PDF (A4, no auto-rotate)";       Args = "--size a4 --no-auto-rotate" },
-    @{ Id = "a4-pencil";   Label = "Combine into PDF (A4, pencil / paper look)";  Args = "--size a4 --style pencil --ask-strength" }
+$filesGroups = @(
+    @{
+        Key    = "PDF"
+        Label  = "PDF"
+        Verbs  = @(
+            @{ Id = "a4";     Label = "Combine into PDF (A4)";     Args = "--size a4" },
+            @{ Id = "letter"; Label = "Combine into PDF (Letter)"; Args = "--size letter" },
+            @{ Id = "legal";  Label = "Combine into PDF (Legal)";  Args = "--size legal" }
+        )
+    },
+    @{
+        Key    = "Image"
+        Label  = "Image"
+        Verbs  = @(
+            @{ Id = "a4-cw";     Label = "A4, rotate 90 CW";        Args = "--size a4 --rotate 270" },
+            @{ Id = "a4-ccw";    Label = "A4, rotate 90 CCW";       Args = "--size a4 --rotate 90" },
+            @{ Id = "a4-180";    Label = "A4, rotate 180";          Args = "--size a4 --rotate 180" },
+            @{ Id = "a4-noar";   Label = "A4, no auto-rotate";      Args = "--size a4 --no-auto-rotate" },
+            @{ Id = "a4-pencil"; Label = "A4, pencil / paper look"; Args = "--size a4 --style pencil --ask-strength" }
+        )
+    }
+)
+
+# Folder mode (right-click on a folder or folder background): pass "%V".
+$folderGroups = @(
+    @{
+        Key   = "PDF"
+        Label = "PDF"
+        Verbs = @(
+            @{ Id = "a4";       Label = "All to A4";              Args = "--size a4" },
+            @{ Id = "letter";   Label = "All to Letter";          Args = "--size letter" },
+            @{ Id = "legal";    Label = "All to Legal";           Args = "--size legal" },
+            @{ Id = "a4-r";     Label = "All to A4 (recursive)";  Args = "--size a4 --recursive" }
+        )
+    },
+    @{
+        Key   = "Image"
+        Label = "Image"
+        Verbs = @(
+            @{ Id = "a4-cw";     Label = "All to A4 (rotate 90 CW)";     Args = "--size a4 --rotate 270" },
+            @{ Id = "a4-ccw";    Label = "All to A4 (rotate 90 CCW)";    Args = "--size a4 --rotate 90" },
+            @{ Id = "a4-180";    Label = "All to A4 (rotate 180)";       Args = "--size a4 --rotate 180" },
+            @{ Id = "a4-noar";   Label = "All to A4 (no auto-rotate)";   Args = "--size a4 --no-auto-rotate" },
+            @{ Id = "a4-pencil"; Label = "All to A4 (pencil / paper)";   Args = "--size a4 --style pencil --ask-strength" }
+        )
+    }
 )
 
 # ---------------------------------------------------------------
@@ -126,16 +170,11 @@ function New-SelectedFilesCommand {
     param(
         [Parameter(Mandatory=$true)][string]$RunnerPath,
         [Parameter(Mandatory=$true)][string]$VerbId,
-        [Parameter(Mandatory=$true)][string]$VerbArgs,
-        [Parameter(Mandatory=$true)][string]$Label
+        [Parameter(Mandatory=$true)][string]$VerbArgs
     )
-
-    # Legacy static verbs get one %1 per selected file; %* is not a reliable
-    # all-selected-files placeholder here. The runner batches those calls.
-    $runner = (Quote-CmdArg $RunnerPath)
     $id = (Quote-CmdArg $VerbId)
-    $args = (Quote-CmdArg $VerbArgs)
-    return 'cmd.exe /d /c ""' + $RunnerPath + '" ' + $id + ' ' + $args + ' "%1""'
+    $a  = (Quote-CmdArg $VerbArgs)
+    return 'cmd.exe /d /c ""' + $RunnerPath + '" ' + $id + ' ' + $a + ' "%1""'
 }
 
 function New-Key($path) {
@@ -147,53 +186,93 @@ function Set-DefaultValue($path, $value) {
     Set-Item -Path $path -Value $value
 }
 
-# ---------------------------------------------------------------
-# Build the submenu trees.
-# ---------------------------------------------------------------
-function Build-Submenu {
-    param([string]$ClassName, [string]$Mode)  # 'Folder' or 'Files'
-
-    $base = "HKCU:\Software\Classes\$ClassName\shell"
-    if (Test-Path "HKCU:\Software\Classes\$ClassName") {
-        Remove-Item "HKCU:\Software\Classes\$ClassName" -Recurse -Force
+function Add-LeafVerb {
+    param(
+        [Parameter(Mandatory=$true)][string]$BaseShell,
+        [Parameter(Mandatory=$true)][string]$Id,
+        [Parameter(Mandatory=$true)][string]$Label,
+        [Parameter(Mandatory=$true)][string]$Command,
+        [switch]$MultiSelect
+    )
+    $k = "$BaseShell\$Id"
+    New-Key $k
+    Set-DefaultValue $k $Label
+    New-ItemProperty -Path $k -Name "MUIVerb" -Value $Label -PropertyType String -Force | Out-Null
+    New-ItemProperty -Path $k -Name "Icon"    -Value $exe   -PropertyType String -Force | Out-Null
+    if ($MultiSelect) {
+        # CRITICAL: must live on each LEAF when using ExtendedSubCommandsKey
+        New-ItemProperty -Path $k -Name "MultiSelectModel" -Value "Player" -PropertyType String -Force | Out-Null
     }
-    New-Key $base
+    New-Key "$k\command"
+    Set-DefaultValue "$k\command" $Command
+}
 
-    function _add($Id, $Label, $Command, [switch]$MultiSelect) {
-        $k = "$base\$Id"
-        New-Key $k
-        Set-DefaultValue $k $Label
-        New-ItemProperty -Path $k -Name "MUIVerb" -Value $Label -PropertyType String -Force | Out-Null
-        New-ItemProperty -Path $k -Name "Icon"    -Value $exe   -PropertyType String -Force | Out-Null
-        if ($MultiSelect) {
-            # CRITICAL: must live on each LEAF when using ExtendedSubCommandsKey
-            New-ItemProperty -Path $k -Name "MultiSelectModel" -Value "Player" -PropertyType String -Force | Out-Null
-        }
-        New-Key "$k\command"
-        Set-DefaultValue "$k\command" $Command
+function Add-GroupContainer {
+    param(
+        [Parameter(Mandatory=$true)][string]$BaseShell,
+        [Parameter(Mandatory=$true)][string]$Id,
+        [Parameter(Mandatory=$true)][string]$Label,
+        [Parameter(Mandatory=$true)][string]$ChildClassName
+    )
+    $k = "$BaseShell\$Id"
+    New-Key $k
+    Set-DefaultValue $k $Label
+    New-ItemProperty -Path $k -Name "MUIVerb"               -Value $Label          -PropertyType String -Force | Out-Null
+    New-ItemProperty -Path $k -Name "Icon"                  -Value $exe            -PropertyType String -Force | Out-Null
+    New-ItemProperty -Path $k -Name "SubCommands"           -Value ""              -PropertyType String -Force | Out-Null
+    New-ItemProperty -Path $k -Name "ExtendedSubCommandsKey" -Value $ChildClassName -PropertyType String -Force | Out-Null
+}
+
+# ---------------------------------------------------------------
+# Build the submenu trees with PDF / Image grouping.
+# Tree shape per Mode:
+#   HKCU:\Software\Classes\<RootClass>\shell\01_PDF   (group container)
+#   HKCU:\Software\Classes\<RootClass>\shell\02_Image (group container)
+#   HKCU:\Software\Classes\<RootClass>.PDF\shell\<verb leaves>
+#   HKCU:\Software\Classes\<RootClass>.Image\shell\<verb leaves>
+# ---------------------------------------------------------------
+function Build-GroupedSubmenu {
+    param(
+        [Parameter(Mandatory=$true)][string]$RootClass,
+        [Parameter(Mandatory=$true)][ValidateSet('Folder','Files')][string]$Mode
+    )
+
+    # Clean root + group classes from any previous install.
+    foreach ($cls in @($RootClass, "$RootClass.PDF", "$RootClass.Image")) {
+        $p = "HKCU:\Software\Classes\$cls"
+        if (Test-Path $p) { Remove-Item $p -Recurse -Force }
     }
 
-    if ($Mode -eq 'Folder') {
-        $q = '"' + $exe + '"'
-        _add "01_A4"        "Convert All to A4"                       ($q + ' --size a4 "%V"')
-        _add "02_Letter"    "Convert All to Letter"                   ($q + ' --size letter "%V"')
-        _add "03_Legal"     "Convert All to Legal"                    ($q + ' --size legal "%V"')
-        _add "04_A4_R"      "Convert All to A4 (recursive)"           ($q + ' --size a4 --recursive "%V"')
-        _add "05_A4_CW"     "Convert All to A4 (rotate 90 CW)"        ($q + ' --size a4 --rotate 270 "%V"')
-        _add "06_A4_CCW"    "Convert All to A4 (rotate 90 CCW)"       ($q + ' --size a4 --rotate 90 "%V"')
-        _add "07_A4_180"    "Convert All to A4 (rotate 180)"          ($q + ' --size a4 --rotate 180 "%V"')
-        _add "08_A4_NOAR"   "Convert All to A4 (no auto-rotate)"      ($q + ' --size a4 --no-auto-rotate "%V"')
-        _add "09_A4_PENCIL" "Convert All to A4 (pencil / paper look)" ($q + ' --size a4 --style pencil --ask-strength "%V"')
-    } else {
-        # Files: Explorer legacy verbs invoke once per selected file. Each leaf
-        # calls one installed runner, which queues those per-file calls and then
-        # runs jpg2pdf once with --files-from.
-        $i = 10
-        foreach ($v in $verbs) {
-            $cmd = New-SelectedFilesCommand -RunnerPath $selectedRunner -VerbId $v.Id -VerbArgs $v.Args -Label $v.Label
-            _add ("{0:D2}_{1}" -f $i, $v.Id) $v.Label $cmd -MultiSelect
-            $i++
+    $rootShell = "HKCU:\Software\Classes\$RootClass\shell"
+    New-Key $rootShell
+
+    $groups = if ($Mode -eq 'Folder') { $folderGroups } else { $filesGroups }
+
+    $gi = 1
+    foreach ($g in $groups) {
+        $childClass = "$RootClass.$($g.Key)"
+        $childShell = "HKCU:\Software\Classes\$childClass\shell"
+        New-Key $childShell
+
+        # Container entry on root.
+        $containerId = ("{0:D2}_{1}" -f $gi, $g.Key)
+        Add-GroupContainer -BaseShell $rootShell -Id $containerId -Label $g.Label -ChildClassName $childClass
+
+        # Leaves inside the group's child class.
+        $vi = 1
+        foreach ($v in $g.Verbs) {
+            $leafId = ("{0:D2}_{1}" -f $vi, $v.Id)
+            if ($Mode -eq 'Folder') {
+                $q = '"' + $exe + '"'
+                $cmd = $q + ' ' + $v.Args + ' "%V"'
+                Add-LeafVerb -BaseShell $childShell -Id $leafId -Label $v.Label -Command $cmd
+            } else {
+                $cmd = New-SelectedFilesCommand -RunnerPath $selectedRunner -VerbId $v.Id -VerbArgs $v.Args
+                Add-LeafVerb -BaseShell $childShell -Id $leafId -Label $v.Label -Command $cmd -MultiSelect
+            }
+            $vi++
         }
+        $gi++
     }
 }
 
@@ -210,6 +289,7 @@ function Register-Parent {
 }
 
 Write-Host "[ctx] Registering context menu (HKCU)..." -ForegroundColor Cyan
+Write-Host "[ctx] Menu is grouped: Combine into PDF > PDF | Image > leaves." -ForegroundColor Cyan
 Write-Host "[ctx] Selected-file verbs use a visible queued batch runner." -ForegroundColor Cyan
 
 # Clean up obsolete launcher files from older installs.
@@ -222,8 +302,8 @@ foreach ($stale in @("jpg2pdf-selected-launcher.ps1", "jpg2pdf-selected-launcher
 $selectedRunner = Join-Path $binDir "jpg2pdf-selected-runner.cmd"
 Write-SelectedFilesRunner -Path $selectedRunner -ExePath $exe
 
-Build-Submenu -ClassName "Jpg2Pdf.FolderMenu" -Mode 'Folder'
-Build-Submenu -ClassName "Jpg2Pdf.FilesMenu"  -Mode 'Files'
+Build-GroupedSubmenu -RootClass "Jpg2Pdf.FolderMenu" -Mode 'Folder'
+Build-GroupedSubmenu -RootClass "Jpg2Pdf.FilesMenu"  -Mode 'Files'
 
 # Hook into Explorer surfaces.
 Register-Parent "HKCU:\Software\Classes\Directory\shell"            "Jpg2Pdf.FolderMenu"
