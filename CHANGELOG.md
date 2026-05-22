@@ -4,7 +4,13 @@ All notable changes to `jpg2pdf` are documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.1] - 2026-05-22
+
+### Added
+- GUI options panel (Step 9 of the desktop-GUI roadmap): output mode, sort, page size + orientation, image fit, stack direction, pencil toggle with strength preset (defaults to `subtle`), and an output-path picker. The `Mode` menubar entry now syncs the output-mode dropdown. Convert wiring (Step 10) is next.
+
 ## [1.5.0] - 2026-05-22
+
 
 ### Added
 - New `--output-mode` option with four values: `pdf` (default, current behavior), `image` (stack image inputs into one PNG/JPG), `pencil-pdf` (PDF + forced pencil style), and `pencil-image` (stacked image + forced pencil style). Use `--stack horizontal` for side-by-side instead of the default vertical stack. Non-image inputs (PDF/HTML/DOCX) are skipped with a warning in any `image`/`pencil-image` mode.
