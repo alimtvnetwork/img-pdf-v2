@@ -624,7 +624,7 @@ class Jpg2PdfApp:
             "or stack images into a single PNG/JPG, optionally pencil-styled.")
 
 
-def run() -> int:
+def run(initial_paths: list[str] | None = None) -> int:
     """Entry point — create the root window (DnD-aware if possible)."""
     TkCls, dnd_const = _try_load_dnd()
     try:
@@ -632,7 +632,7 @@ def run() -> int:
     except tk.TclError as exc:
         print(f"jpg2pdf-gui: cannot open display ({exc}).", file=sys.stderr)
         return 1
-    Jpg2PdfApp(root, dnd_const=dnd_const)
+    Jpg2PdfApp(root, dnd_const=dnd_const, initial_paths=initial_paths)
     root.mainloop()
     return 0
 
