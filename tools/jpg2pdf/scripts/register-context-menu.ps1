@@ -56,6 +56,13 @@ $filesGroups = @(
             @{ Id = "a4-noar";   Label = "A4, no auto-rotate";      Args = "--size a4 --no-auto-rotate" },
             @{ Id = "a4-pencil"; Label = "A4, pencil / paper look"; Args = "--size a4 --style pencil --ask-strength" }
         )
+    },
+    @{
+        Key    = "UI"
+        Label  = "UI"
+        Verbs  = @(
+            @{ Id = "gui"; Label = "Open in jpg2pdf UI..."; Args = "" }
+        )
     }
 )
 
@@ -80,6 +87,13 @@ $folderGroups = @(
             @{ Id = "a4-180";    Label = "All to A4 (rotate 180)";       Args = "--size a4 --rotate 180" },
             @{ Id = "a4-noar";   Label = "All to A4 (no auto-rotate)";   Args = "--size a4 --no-auto-rotate" },
             @{ Id = "a4-pencil"; Label = "All to A4 (pencil / paper)";   Args = "--size a4 --style pencil --ask-strength" }
+        )
+    },
+    @{
+        Key   = "UI"
+        Label = "UI"
+        Verbs = @(
+            @{ Id = "gui"; Label = "Open folder in jpg2pdf UI..."; Args = "--gui" }
         )
     }
 )
