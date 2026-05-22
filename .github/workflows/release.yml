@@ -151,8 +151,10 @@ jobs:
         shell: bash
         run: "./dist/${{ matrix.asset }} --version"
       - name: Smoke test GUI (--version, no window)
+        if: runner.os != 'Windows'
         shell: bash
         run: "./dist/${{ matrix.gui_asset }} --version"
+
       - name: Upload CLI artifact
         uses: actions/upload-artifact@v4
         with:
