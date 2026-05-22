@@ -768,6 +768,9 @@ def main():
         description="Combine images into a single PDF.")
     ap.add_argument("--version", action="version",
                     version=f"jpg2pdf {__version__}")
+    ap.add_argument("--gui", action="store_true",
+                    help="Launch the desktop GUI instead of running a CLI "
+                         "conversion. All other flags are ignored.")
     ap.add_argument("folder", nargs="?", default=None,
                     help="Folder of images (omit if using --files / --files-from)")
     ap.add_argument("--files", nargs="+", default=None,
