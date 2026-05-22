@@ -316,9 +316,16 @@ function Build-GroupedSubmenu {
         $vi = 1
         foreach ($v in $g.Verbs) {
             $leafId = ("{0:D2}_{1}" -f $vi, $v.Id)
+            $isGui  = ($v.Id -eq "gui")
             if ($Mode -eq 'Folder') {
-                $q = '"' + $exe + '"'
-                $cmd = $q + ' ' + $v.Args + ' "%V"'
+                if ($isGui) {
+                    $targetExe = if (Test-Path $guiExe) { $guiExe } else { $exe }
+                    $q = '"' + $targetExe + '"'
+                    $cmd = $q + ' --gui "%V"'
+                } else {
+                    $q = '"' + $exe + '"'
+                    $cmd = $q + ' ' + $v.Args + ' "%V"'
+                }
                 Add-LeafVerb -BaseShell $childShell -Id $leafId -Label $v.Label -Command $cmd
             } else {
                 $cmd = New-SelectedFilesCommand -RunnerPath $selectedRunner -VerbId $v.Id -VerbArgs $v.Args
