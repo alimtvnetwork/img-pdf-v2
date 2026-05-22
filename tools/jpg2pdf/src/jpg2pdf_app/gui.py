@@ -486,7 +486,7 @@ class Jpg2PdfApp:
                 "--orientation", self.var_orient.get(),
                 "--fit", self.var_fit.get(),
                 "--stack", self.var_stack.get(),
-                "--output", out]
+                "--out", out]
 
         # Pencil: explicit style + strength when enabled (alias modes also
         # force pencil in the CLI, so this is safe to send either way).
