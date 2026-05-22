@@ -92,14 +92,17 @@ $folderGroups = @(
 function Write-SelectedFilesRunner {
     param(
         [Parameter(Mandatory=$true)][string]$Path,
-        [Parameter(Mandatory=$true)][string]$ExePath
+        [Parameter(Mandatory=$true)][string]$ExePath,
+        [Parameter(Mandatory=$true)][string]$GuiExePath
     )
 
-    $safeExe = $ExePath.Replace('"', '')
+    $safeExe    = $ExePath.Replace('"', '')
+    $safeGuiExe = $GuiExePath.Replace('"', '')
     $content = @"
 @echo off
 setlocal EnableExtensions EnableDelayedExpansion
 set "JPG2PDF_EXE=$safeExe"
+set "JPG2PDF_GUI_EXE=$safeGuiExe"
 set "LOG_DIR=%LOCALAPPDATA%\jpg2pdf"
 if not exist "!LOG_DIR!" mkdir "!LOG_DIR!" >nul 2>nul
 set "LOG=!LOG_DIR!\context.log"
@@ -141,6 +144,15 @@ set "WORK_NAME=!VERB_ID!-work-%RANDOM%%RANDOM%.lst"
 ren "!QUEUE!" "!WORK_NAME!" >nul 2>nul
 if errorlevel 1 exit /b 0
 set "QUEUE=!QUEUE_DIR!\!WORK_NAME!"
+
+if /I "!VERB_ID!"=="gui" (
+  >>"!LOG!" echo [%DATE% %TIME%] gui verb=!VERB_ID! queue=!QUEUE!
+  set "TARGET_EXE=!JPG2PDF_GUI_EXE!"
+  if not exist "!TARGET_EXE!" set "TARGET_EXE=!JPG2PDF_EXE!"
+  start "" "!TARGET_EXE!" --gui --files-from "!QUEUE!"
+  exit /b 0
+)
+
 echo.
 echo [jpg2pdf] Combining selected files (!VERB_ID!)
 echo [jpg2pdf] Queue: "!QUEUE!"
