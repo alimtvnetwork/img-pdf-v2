@@ -757,6 +757,14 @@ def main():
                     help="--preview-grid: max thumbnail edge in pixels (default 140).")
     ap.add_argument("--thumb-cols", type=int, default=4,
                     help="--preview-grid: number of columns (default 4).")
+    ap.add_argument("--output-mode", choices=["pdf", "image"], default="pdf",
+                    help="'pdf' (default) merges inputs into one PDF. "
+                         "'image' stacks image inputs into a single PNG/JPG "
+                         "(non-image inputs are skipped with a warning).")
+    ap.add_argument("--stack", choices=["vertical", "horizontal"],
+                    default="vertical",
+                    help="--output-mode image: stacking direction "
+                         "(default: vertical).")
     args = ap.parse_args()
 
     # Load persisted prefs (last chosen pencil strength).
