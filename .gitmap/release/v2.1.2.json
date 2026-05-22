@@ -1,0 +1,18 @@
+{
+  "version": "2.1.2",
+  "branch": "release/v2.1.2",
+  "sourceBranch": "main",
+  "commit": "ac39dd4e0581bdce31cac419e0e36ddc6a581e2e",
+  "tag": "v2.1.2",
+  "assets": [],
+  "changelog": [
+    "Windows Explorer context menu no longer flashes one cmd window per selected file. Per-file invocations are now routed through a hidden `jpg2pdf-selected-launcher.vbs` shim (run via `wscript.exe` with `intWindowStyle=0`), so only ONE visible console opens when the queue is ready and `jpg2pdf` actually runs.",
+    "`Combine into PDF \u003e PDF` group now includes the `A4, pencil look` option (previously only available under the `Image` group). The PDF group lists: A4, Letter, Legal, and A4 + pencil.",
+    "Folder-mode `PDF` group also gains an `All to A4 (pencil / paper)` entry to match the file-selection group.",
+    "`unregister-context-menu.ps1` now also removes the new `.UI` class roots and the `jpg2pdf-selected-launcher.vbs` shim from `~\\Tools\\bin`."
+  ],
+  "isDraft": false,
+  "isPreRelease": false,
+  "createdAt": "2026-05-22T18:44:37Z",
+  "isLatest": false
+}
