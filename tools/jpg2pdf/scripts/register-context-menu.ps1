@@ -31,6 +31,7 @@ $ErrorActionPreference = "Stop"
 if (-not (Test-Path $ExePath)) { Write-Error "Not found: $ExePath"; exit 1 }
 $exe    = (Resolve-Path $ExePath).Path
 $binDir = Split-Path -Parent $exe
+$guiExe = Join-Path $binDir "jpg2pdf-gui.exe"
 
 # ---------------------------------------------------------------
 # Grouped verb specs. Each verb has: Id, Label, Args (without --files).
@@ -55,6 +56,13 @@ $filesGroups = @(
             @{ Id = "a4-180";    Label = "A4, rotate 180";          Args = "--size a4 --rotate 180" },
             @{ Id = "a4-noar";   Label = "A4, no auto-rotate";      Args = "--size a4 --no-auto-rotate" },
             @{ Id = "a4-pencil"; Label = "A4, pencil / paper look"; Args = "--size a4 --style pencil --ask-strength" }
+        )
+    },
+    @{
+        Key    = "UI"
+        Label  = "UI"
+        Verbs  = @(
+            @{ Id = "gui"; Label = "Open in jpg2pdf UI..."; Args = "" }
         )
     }
 )
@@ -81,6 +89,13 @@ $folderGroups = @(
             @{ Id = "a4-noar";   Label = "All to A4 (no auto-rotate)";   Args = "--size a4 --no-auto-rotate" },
             @{ Id = "a4-pencil"; Label = "All to A4 (pencil / paper)";   Args = "--size a4 --style pencil --ask-strength" }
         )
+    },
+    @{
+        Key   = "UI"
+        Label = "UI"
+        Verbs = @(
+            @{ Id = "gui"; Label = "Open folder in jpg2pdf UI..."; Args = "--gui" }
+        )
     }
 )
 
@@ -92,14 +107,17 @@ $folderGroups = @(
 function Write-SelectedFilesRunner {
     param(
         [Parameter(Mandatory=$true)][string]$Path,
-        [Parameter(Mandatory=$true)][string]$ExePath
+        [Parameter(Mandatory=$true)][string]$ExePath,
+        [Parameter(Mandatory=$true)][string]$GuiExePath
     )
 
-    $safeExe = $ExePath.Replace('"', '')
+    $safeExe    = $ExePath.Replace('"', '')
+    $safeGuiExe = $GuiExePath.Replace('"', '')
     $content = @"
 @echo off
 setlocal EnableExtensions EnableDelayedExpansion
 set "JPG2PDF_EXE=$safeExe"
+set "JPG2PDF_GUI_EXE=$safeGuiExe"
 set "LOG_DIR=%LOCALAPPDATA%\jpg2pdf"
 if not exist "!LOG_DIR!" mkdir "!LOG_DIR!" >nul 2>nul
 set "LOG=!LOG_DIR!\context.log"
@@ -141,6 +159,15 @@ set "WORK_NAME=!VERB_ID!-work-%RANDOM%%RANDOM%.lst"
 ren "!QUEUE!" "!WORK_NAME!" >nul 2>nul
 if errorlevel 1 exit /b 0
 set "QUEUE=!QUEUE_DIR!\!WORK_NAME!"
+
+if /I "!VERB_ID!"=="gui" (
+  >>"!LOG!" echo [%DATE% %TIME%] gui verb=!VERB_ID! queue=!QUEUE!
+  set "TARGET_EXE=!JPG2PDF_GUI_EXE!"
+  if not exist "!TARGET_EXE!" set "TARGET_EXE=!JPG2PDF_EXE!"
+  start "" "!TARGET_EXE!" --gui --files-from "!QUEUE!"
+  exit /b 0
+)
+
 echo.
 echo [jpg2pdf] Combining selected files (!VERB_ID!)
 echo [jpg2pdf] Queue: "!QUEUE!"
@@ -290,9 +317,16 @@ function Build-GroupedSubmenu {
         $vi = 1
         foreach ($v in $g.Verbs) {
             $leafId = ("{0:D2}_{1}" -f $vi, $v.Id)
+            $isGui  = ($v.Id -eq "gui")
             if ($Mode -eq 'Folder') {
-                $q = '"' + $exe + '"'
-                $cmd = $q + ' ' + $v.Args + ' "%V"'
+                if ($isGui) {
+                    $targetExe = if (Test-Path $guiExe) { $guiExe } else { $exe }
+                    $q = '"' + $targetExe + '"'
+                    $cmd = $q + ' --gui "%V"'
+                } else {
+                    $q = '"' + $exe + '"'
+                    $cmd = $q + ' ' + $v.Args + ' "%V"'
+                }
                 Add-LeafVerb -BaseShell $childShell -Id $leafId -Label $v.Label -Command $cmd
             } else {
                 $cmd = New-SelectedFilesCommand -RunnerPath $selectedRunner -VerbId $v.Id -VerbArgs $v.Args
@@ -317,8 +351,8 @@ function Register-Parent {
 }
 
 Write-Host "[ctx] Registering context menu (HKCU)..." -ForegroundColor Cyan
-Write-Host "[ctx] Menu is grouped: Combine into PDF > PDF | Image > leaves." -ForegroundColor Cyan
-Write-Host "[ctx] Selected-file verbs use a visible queued batch runner." -ForegroundColor Cyan
+Write-Host "[ctx] Menu is grouped: Combine into PDF > PDF | Image | UI > leaves." -ForegroundColor Cyan
+Write-Host "[ctx] Selected-file verbs use a visible queued batch runner; UI opens jpg2pdf-gui.exe." -ForegroundColor Cyan
 
 Remove-LegacyMenus
 
@@ -330,7 +364,7 @@ foreach ($stale in @("jpg2pdf-selected-launcher.ps1", "jpg2pdf-selected-launcher
 }
 
 $selectedRunner = Join-Path $binDir "jpg2pdf-selected-runner.cmd"
-Write-SelectedFilesRunner -Path $selectedRunner -ExePath $exe
+Write-SelectedFilesRunner -Path $selectedRunner -ExePath $exe -GuiExePath $guiExe
 
 Build-GroupedSubmenu -RootClass "Jpg2Pdf.FolderMenu" -Mode 'Folder'
 Build-GroupedSubmenu -RootClass "Jpg2Pdf.FilesMenu"  -Mode 'Files'

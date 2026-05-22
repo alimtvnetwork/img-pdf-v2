@@ -83,7 +83,8 @@ def _split_dnd_paths(raw: str) -> list[str]:
 class Jpg2PdfApp:
     """Top-level GUI controller. Owns the root window and all widgets."""
 
-    def __init__(self, root: tk.Tk, dnd_const: str | None = None) -> None:
+    def __init__(self, root: tk.Tk, dnd_const: str | None = None,
+                 initial_paths: list[str] | None = None) -> None:
         self.root = root
         self.dnd_const = dnd_const
         self.root.title(WINDOW_TITLE)
@@ -119,6 +120,16 @@ class Jpg2PdfApp:
             self._set_status(
                 f"Ready. jpg2pdf {__version__}. "
                 "Install 'tkinterdnd2' for drag-and-drop.")
+
+        # Pre-load any paths handed in from the command line (e.g. the
+        # "Open in jpg2pdf UI..." context-menu entry).
+        if initial_paths:
+            try:
+                self._add_paths(list(initial_paths))
+                self._set_status(
+                    f"Loaded {len(self.inputs)} item(s) from context menu.")
+            except Exception:
+                pass
 
         # Persist preset + recent files when the window closes.
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
@@ -613,7 +624,7 @@ class Jpg2PdfApp:
             "or stack images into a single PNG/JPG, optionally pencil-styled.")
 
 
-def run() -> int:
+def run(initial_paths: list[str] | None = None) -> int:
     """Entry point — create the root window (DnD-aware if possible)."""
     TkCls, dnd_const = _try_load_dnd()
     try:
@@ -621,7 +632,7 @@ def run() -> int:
     except tk.TclError as exc:
         print(f"jpg2pdf-gui: cannot open display ({exc}).", file=sys.stderr)
         return 1
-    Jpg2PdfApp(root, dnd_const=dnd_const)
+    Jpg2PdfApp(root, dnd_const=dnd_const, initial_paths=initial_paths)
     root.mainloop()
     return 0
 

@@ -4,6 +4,12 @@ All notable changes to `jpg2pdf` are documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.6] - 2026-05-22
+
+### Added
+- Windows Explorer context menu now includes a third group, `UI`, with `Open in jpg2pdf UI...` (for selected files) and `Open folder in jpg2pdf UI...` (for folders). The entries launch `jpg2pdf-gui.exe --gui` with the selection pre-loaded so the user can reorder, change page size / rotation / pencil style and review the queue before converting. Falls back to `jpg2pdf.exe --gui` if the GUI binary is missing.
+- GUI `run()` and `Jpg2PdfApp` accept an `initial_paths` list and `jpg2pdf --gui` forwards `folder`, `--files`, and `--files-from` into it, so any caller (including the context menu) can hand a selection to the GUI on startup.
+
 ## [2.0.5] - 2026-05-22
 
 ### Fixed
