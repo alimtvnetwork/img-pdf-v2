@@ -31,6 +31,7 @@ $ErrorActionPreference = "Stop"
 if (-not (Test-Path $ExePath)) { Write-Error "Not found: $ExePath"; exit 1 }
 $exe    = (Resolve-Path $ExePath).Path
 $binDir = Split-Path -Parent $exe
+$guiExe = Join-Path $binDir "jpg2pdf-gui.exe"
 
 # ---------------------------------------------------------------
 # Grouped verb specs. Each verb has: Id, Label, Args (without --files).
