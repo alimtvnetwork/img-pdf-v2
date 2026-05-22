@@ -186,6 +186,34 @@ function Set-DefaultValue($path, $value) {
     Set-Item -Path $path -Value $value
 }
 
+function Remove-MenuParent($shellRoot) {
+    $p = "$shellRoot\Jpg2PdfMenu"
+    if (Test-Path $p) { Remove-Item $p -Recurse -Force }
+}
+
+function Remove-LegacyMenus {
+    foreach ($root in @(
+        "HKCU:\Software\Classes\*\shell",
+        "HKCU:\Software\Classes\AllFilesystemObjects\shell",
+        "HKCU:\Software\Classes\Directory\shell",
+        "HKCU:\Software\Classes\Directory\Background\shell"
+    )) {
+        Remove-MenuParent $root
+    }
+
+    foreach ($cls in @(
+        "Jpg2Pdf.FolderMenu",
+        "Jpg2Pdf.FolderMenu.PDF",
+        "Jpg2Pdf.FolderMenu.Image",
+        "Jpg2Pdf.FilesMenu",
+        "Jpg2Pdf.FilesMenu.PDF",
+        "Jpg2Pdf.FilesMenu.Image"
+    )) {
+        $p = "HKCU:\Software\Classes\$cls"
+        if (Test-Path $p) { Remove-Item $p -Recurse -Force }
+    }
+}
+
 function Add-LeafVerb {
     param(
         [Parameter(Mandatory=$true)][string]$BaseShell,
@@ -278,8 +306,8 @@ function Build-GroupedSubmenu {
 
 function Register-Parent {
     param([string]$Root, [string]$ClassName)
+    Remove-MenuParent $Root
     $parent = "$Root\Jpg2PdfMenu"
-    if (Test-Path $parent) { Remove-Item $parent -Recurse -Force }
     New-Key $parent
     Set-DefaultValue $parent "Combine into PDF"
     New-ItemProperty -Path $parent -Name "MUIVerb"  -Value "Combine into PDF" -PropertyType String -Force | Out-Null
@@ -291,6 +319,8 @@ function Register-Parent {
 Write-Host "[ctx] Registering context menu (HKCU)..." -ForegroundColor Cyan
 Write-Host "[ctx] Menu is grouped: Combine into PDF > PDF | Image > leaves." -ForegroundColor Cyan
 Write-Host "[ctx] Selected-file verbs use a visible queued batch runner." -ForegroundColor Cyan
+
+Remove-LegacyMenus
 
 # Clean up obsolete launcher files from older installs.
 foreach ($stale in @("jpg2pdf-selected-launcher.ps1", "jpg2pdf-selected-launcher.vbs", "jpg2pdf-files-*.cmd")) {
