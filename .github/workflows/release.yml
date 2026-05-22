@@ -195,7 +195,7 @@ jobs:
             --hidden-import tkinter \
             --hidden-import tkinterdnd2 \
             "${EXTRA[@]}" \
-            --distpath dist tools/jpg2pdf/src/jpg2pdf_app/__main__.py
+            --distpath dist tools/jpg2pdf/src/jpg2pdf_gui_entry.py
       - name: Rename artifacts
         shell: bash
         run: |
