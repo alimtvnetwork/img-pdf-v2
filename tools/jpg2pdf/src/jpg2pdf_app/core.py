@@ -1,9 +1,8 @@
 """Engine re-exports from the canonical `jpg2pdf.py` script.
 
-Imports the sibling single-file CLI script as a regular module so
-PyInstaller statically analyses its dependencies (json, PIL, pypdf, etc.)
-and bundles them. Falls back to importlib by file path for source/dev
-checkouts where `tools/jpg2pdf/src` may not be on sys.path.
+Imports the sibling single-file CLI script as a regular module so PyInstaller
+statically analyses its dependencies (json, PIL, pypdf, etc.) and bundles them.
+In non-frozen source/dev checkouts only, falls back to importlib by file path.
 """
 from __future__ import annotations
 
