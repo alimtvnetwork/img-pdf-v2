@@ -4,7 +4,13 @@ All notable changes to `jpg2pdf` are documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.2] - 2026-05-22
+
+### Added
+- GUI Convert button (Step 10 of the desktop-GUI roadmap): runs the `jpg2pdf` CLI in a background thread with the options panel's current values, auto-derives an output path next to the first input if none is set, and reports success or the last stderr line in the status bar plus a modal. Existing CLI flags (`--output-mode`, `--sort`, `--size`, `--orientation`, `--fit`, `--stack`, `--style pencil`, `--pencil-strength`, `--out`, `--files`) do all the work — no engine changes.
+
 ## [1.5.1] - 2026-05-22
+
 
 ### Added
 - GUI options panel (Step 9 of the desktop-GUI roadmap): output mode, sort, page size + orientation, image fit, stack direction, pencil toggle with strength preset (defaults to `subtle`), and an output-path picker. The `Mode` menubar entry now syncs the output-mode dropdown. Convert wiring (Step 10) is next.

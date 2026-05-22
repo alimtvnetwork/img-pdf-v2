@@ -435,12 +435,84 @@ class Jpg2PdfApp:
             self.listbox.selection_set(i + 1)
 
     def on_convert(self) -> None:
-        messagebox.showinfo(
-            "jpg2pdf",
-            f"Convert wiring lands in Step 10.\n\n"
-            f"Queued inputs ({len(self.inputs)}):\n"
-            + "\n".join(f"  {i+1}. {p}" for i, p in enumerate(self.inputs[:8]))
-            + ("\n  ..." if len(self.inputs) > 8 else ""))
+        if not self.inputs:
+            return
+        if getattr(self, "_worker", None) and self._worker.is_alive():
+            return  # already running
+
+        argv = self._build_cli_argv()
+        if argv is None:
+            return
+        self.convert_btn.config(state=tk.DISABLED)
+        self._set_status("Converting...")
+
+        import subprocess, threading
+
+        def worker():
+            try:
+                proc = subprocess.run(
+                    argv, capture_output=True, text=True,
+                    encoding="utf-8", errors="replace")
+                ok = proc.returncode == 0
+                msg = (proc.stdout or "").strip().splitlines()[-1:] or [""]
+                err = (proc.stderr or "").strip().splitlines()[-1:] or [""]
+                summary = msg[0] if ok else (err[0] or "Conversion failed.")
+            except Exception as exc:  # pragma: no cover - defensive
+                ok, summary = False, f"Error: {exc}"
+                proc = None
+            self.root.after(0, lambda: self._on_convert_done(
+                ok, summary, proc))
+
+        self._worker = threading.Thread(target=worker, daemon=True)
+        self._worker.start()
+
+    def _build_cli_argv(self) -> list[str] | None:
+        """Translate GUI option state into a `jpg2pdf` CLI command."""
+        mode = self.var_mode.get()
+        out = self.var_output.get().strip()
+        if not out:
+            # Auto-pick an output path next to the first input.
+            first = Path(self.inputs[0])
+            base = first.parent / (first.stem + "-jpg2pdf")
+            out = str(base.with_suffix(
+                ".pdf" if mode in ("pdf", "pencil-pdf") else ".png"))
+            self.var_output.set(out)
+
+        script = str(Path(__file__).resolve().parent.parent / "jpg2pdf.py")
+        argv = [sys.executable, script,
+                "--output-mode", mode,
+                "--sort", self.var_sort.get(),
+                "--size", self.var_size.get(),
+                "--orientation", self.var_orient.get(),
+                "--fit", self.var_fit.get(),
+                "--stack", self.var_stack.get(),
+                "--out", out]
+
+        # Pencil: explicit style + strength when enabled (alias modes also
+        # force pencil in the CLI, so this is safe to send either way).
+        if (self.var_pencil.get() or
+                mode in ("pencil-pdf", "pencil-image")):
+            argv += ["--style", "pencil",
+                     "--pencil-strength", self.var_strength.get()]
+
+        # Inputs come last via --files for explicit selection order.
+        argv += ["--files", *self.inputs]
+        return argv
+
+    def _on_convert_done(self, ok: bool, summary: str, proc) -> None:
+        self.convert_btn.config(state=tk.NORMAL if self.inputs else tk.DISABLED)
+        if ok:
+            self._set_status(f"Done -> {self.var_output.get()}")
+            messagebox.showinfo("jpg2pdf", f"Converted.\n\n{self.var_output.get()}")
+        else:
+            self._set_status(f"Failed: {summary}")
+            detail = ""
+            if proc is not None:
+                detail = (proc.stderr or proc.stdout or "").strip()
+            messagebox.showerror(
+                "jpg2pdf — conversion failed",
+                f"{summary}\n\n{detail[-1200:]}" if detail else summary)
+
 
     def on_about(self) -> None:
         messagebox.showinfo(
