@@ -1,0 +1,15 @@
+{
+  "version": "2.1.1",
+  "branch": "release/v2.1.1",
+  "sourceBranch": "main",
+  "commit": "8cbb9feae5195475c787c81bc971175cc249b9dd",
+  "tag": "v2.1.1",
+  "assets": [],
+  "changelog": [
+    "Version bump to 2.1.1. Pinned install-snippet versions in root `README.md`."
+  ],
+  "isDraft": false,
+  "isPreRelease": false,
+  "createdAt": "2026-05-22T18:03:31Z",
+  "isLatest": false
+}
