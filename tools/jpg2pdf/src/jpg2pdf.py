@@ -683,6 +683,86 @@ def make_page(img_path: Path, page_w_pt: float, page_h_pt: float,
         return page
 
 
+def stack_images_to_image(image_paths, out_path: Path, *,
+                          direction: str = "vertical",
+                          rotate: int = 0,
+                          auto_rotate: str = "off",
+                          style: str = "none",
+                          pencil_opacity: float = 0.25,
+                          pencil_brightness: float = 1.0,
+                          pencil_ink_threshold: int = 110,
+                          pencil_ink_darken: float = 0.45) -> Path:
+    """Stack image inputs into a single image file (PNG or JPG).
+
+    All images are normalised to a common width (vertical stack) or a
+    common height (horizontal stack) using the largest dimension across
+    the batch, then composited onto a white canvas in the given order.
+    Honors --rotate / --auto-rotate / --style pencil exactly like the
+    PDF pipeline.
+    """
+    if not image_paths:
+        raise ValueError("stack_images_to_image: no images to stack")
+
+    frames: list[Image.Image] = []
+    for p in image_paths:
+        im = Image.open(p)
+        try:
+            im = ImageOps.exif_transpose(im)
+        except Exception:
+            pass
+        if im.mode not in ("RGB", "L"):
+            im = im.convert("RGB")
+        if rotate:
+            im = im.rotate(rotate, expand=True)
+        if auto_rotate in ("cw", "ccw"):
+            # Match the PDF path: rotate landscape into portrait orientation.
+            if im.width > im.height:
+                im = im.rotate(-90 if auto_rotate == "cw" else 90, expand=True)
+        if style == "pencil":
+            im = apply_pencil(im, opacity=pencil_opacity,
+                              brightness=pencil_brightness,
+                              ink_threshold=pencil_ink_threshold,
+                              ink_darken=pencil_ink_darken)
+            if im.mode != "RGB":
+                im = im.convert("RGB")
+        frames.append(im)
+
+    if direction == "horizontal":
+        target_h = max(f.height for f in frames)
+        resized = []
+        for f in frames:
+            if f.height != target_h:
+                new_w = max(1, int(round(f.width * target_h / f.height)))
+                f = f.resize((new_w, target_h), Image.LANCZOS)
+            resized.append(f)
+        total_w = sum(f.width for f in resized)
+        canvas = Image.new("RGB", (total_w, target_h), "white")
+        x = 0
+        for f in resized:
+            canvas.paste(f, (x, 0)); x += f.width
+    else:
+        target_w = max(f.width for f in frames)
+        resized = []
+        for f in frames:
+            if f.width != target_w:
+                new_h = max(1, int(round(f.height * target_w / f.width)))
+                f = f.resize((target_w, new_h), Image.LANCZOS)
+            resized.append(f)
+        total_h = sum(f.height for f in resized)
+        canvas = Image.new("RGB", (target_w, total_h), "white")
+        y = 0
+        for f in resized:
+            canvas.paste(f, (0, y)); y += f.height
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    ext = out_path.suffix.lower()
+    if ext in (".jpg", ".jpeg"):
+        canvas.save(out_path, "JPEG", quality=92, optimize=True)
+    else:
+        canvas.save(out_path, "PNG", optimize=True)
+    return out_path
+
+
 def main():
     ap = argparse.ArgumentParser(
         description="Combine images into a single PDF.")
