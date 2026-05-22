@@ -8,7 +8,11 @@ $paths = @(
     "HKCU:\Software\Classes\Directory\shell\Jpg2PdfMenu",
     "HKCU:\Software\Classes\Directory\Background\shell\Jpg2PdfMenu",
     "HKCU:\Software\Classes\Jpg2Pdf.FolderMenu",
-    "HKCU:\Software\Classes\Jpg2Pdf.FilesMenu"
+    "HKCU:\Software\Classes\Jpg2Pdf.FolderMenu.PDF",
+    "HKCU:\Software\Classes\Jpg2Pdf.FolderMenu.Image",
+    "HKCU:\Software\Classes\Jpg2Pdf.FilesMenu",
+    "HKCU:\Software\Classes\Jpg2Pdf.FilesMenu.PDF",
+    "HKCU:\Software\Classes\Jpg2Pdf.FilesMenu.Image"
 )
 
 $exts = @(".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff", ".pdf", ".html", ".htm", ".docx", ".doc")
