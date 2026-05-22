@@ -874,8 +874,24 @@ def main():
         _pkg_parent = _Path(__file__).resolve().parent
         if str(_pkg_parent) not in _sys.path:
             _sys.path.insert(0, str(_pkg_parent))
+        # Gather any paths the caller passed so the context-menu "Open in
+        # jpg2pdf UI..." entry pre-loads the selection into the drop zone.
+        initial_paths: list[str] = []
+        if args.files_from:
+            try:
+                _lf = _Path(args.files_from).expanduser().resolve()
+                for ln in _lf.read_text(encoding="utf-8").splitlines():
+                    s = ln.strip()
+                    if s and not s.startswith("#"):
+                        initial_paths.append(s)
+            except OSError:
+                pass
+        if args.files:
+            initial_paths.extend(args.files)
+        if args.folder:
+            initial_paths.append(args.folder)
         from jpg2pdf_app.gui import run as _gui_run
-        sys.exit(_gui_run())
+        sys.exit(_gui_run(initial_paths=initial_paths or None))
 
     # Expand pencil-* aliases into base output-mode + style.
     if args.output_mode == "pencil-pdf":
