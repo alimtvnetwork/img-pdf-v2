@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 from PIL import Image, ImageChops, ImageEnhance, ImageFilter, ImageOps
 
-__version__ = "1.6.0"
+__version__ = "2.0.0"
 
 # Pencil presets — tuned for faint handwritten text.
 # Module-scope so prompt_pencil_strength() can render the live preview with

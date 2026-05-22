@@ -12,7 +12,16 @@ Cross-platform CLI · Quality-preserving · Windows right-click integration · P
 
 <br/>
 
-<img src="tools/jpg2pdf/docs/hero.png" alt="jpg2pdf in action — converting a folder of images into a single PDF" width="820"/>
+<style>
+  .jpg2pdf-zoom { transition: transform .35s ease, box-shadow .35s ease; border-radius: 12px; }
+  .jpg2pdf-zoom:hover { transform: scale(1.03); box-shadow: 0 12px 32px -10px rgba(79,70,229,.35); }
+  @keyframes jpg2pdf-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+  .jpg2pdf-float { animation: jpg2pdf-float 4s ease-in-out infinite; }
+</style>
+
+<a href="tools/jpg2pdf/docs/hero.png">
+  <img class="jpg2pdf-zoom jpg2pdf-float" src="tools/jpg2pdf/docs/hero.png" alt="jpg2pdf in action — converting a folder of images into a single PDF" width="820" style="transition: transform .35s ease, box-shadow .35s ease; border-radius: 12px;"/>
+</a>
 
 </div>
 
@@ -55,7 +64,7 @@ and registers the Explorer right-click entries. Open a new terminal afterwards.
 ### 🪟 Windows · PowerShell · pin a specific version
 
 ```powershell
-$env:JPG2PDF_VERSION = "v1.5.0"; irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf-v2/main/install.ps1 | iex
+$env:JPG2PDF_VERSION = "v2.0.0"; irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf-v2/main/install.ps1 | iex
 ```
 
 ### 🐧 macOS · Linux · Bash
@@ -72,7 +81,7 @@ For installer diagnostics, add `--debug` or `JPG2PDF_DEBUG=1`. The installer pri
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/alimtvnetwork/img-pdf-v2/main/install.sh \
-  | JPG2PDF_VERSION=v1.5.0 JPG2PDF_PREFIX=$HOME/bin bash
+  | JPG2PDF_VERSION=v2.0.0 JPG2PDF_PREFIX=$HOME/bin bash
 ```
 
 If PowerShell blocks scripts, use a process-only bypass for the current shell first:
@@ -128,7 +137,7 @@ Supported inputs (sorted naturally; mixed selections merged in order):
 | Word  | `.docx .doc`                             | Needs MS Word (Windows) or LibreOffice (macOS) |
 
 <div align="center">
-  <img src="tools/jpg2pdf/docs/demo.gif" alt="jpg2pdf demo — selecting mixed files and combining into one PDF" width="720"/>
+  <a href="tools/jpg2pdf/docs/demo.gif"><img class="jpg2pdf-zoom" src="tools/jpg2pdf/docs/demo.gif" alt="jpg2pdf demo — selecting mixed files and combining into one PDF" width="720" style="transition: transform .35s ease, box-shadow .35s ease; border-radius: 12px;"/></a>
 </div>
 
 ### ✏️ Pencil strength — three depths
@@ -157,7 +166,7 @@ No more 30 terminals popping up for 30 selected files. The launcher batches
 everything into one conversion call.
 
 <div align="center">
-  <img src="tools/jpg2pdf/docs/context-menu.png" alt="Windows Explorer right-click menu showing 'Combine into PDF' submenu" width="520"/>
+  <a href="tools/jpg2pdf/docs/context-menu.png"><img class="jpg2pdf-zoom" src="tools/jpg2pdf/docs/context-menu.png" alt="Windows Explorer right-click menu showing 'Combine into PDF' submenu" width="520" style="transition: transform .35s ease, box-shadow .35s ease; border-radius: 12px;"/></a>
 </div>
 
 ---
@@ -196,7 +205,7 @@ a Release with `SHA256SUMS.txt`. macOS installs use the Python source fallback
 until macOS runners are restored:
 
 ```bash
-git tag v1.5.0 && git push origin v1.5.0
+git tag v2.0.0 && git push origin v2.0.0
 ```
 
 Released artifacts: `jpg2pdf-windows-x64.exe`, `jpg2pdf-linux-x64`,
