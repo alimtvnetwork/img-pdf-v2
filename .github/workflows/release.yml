@@ -145,12 +145,6 @@ jobs:
             gui_asset: jpg2pdf-gui-linux-arm64
             bundle_asset: ""
             ext: ""
-          - os: macos-13
-            label: macos-x64
-            asset: jpg2pdf-macos-x64
-            gui_asset: jpg2pdf-gui-macos-x64
-            bundle_asset: jpg2pdf-gui-macos-x64.app.zip
-            ext: ""
           - os: macos-latest
             label: macos-arm64
             asset: jpg2pdf-macos-arm64
