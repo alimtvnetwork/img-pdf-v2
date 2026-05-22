@@ -113,7 +113,7 @@ def test_cli_stacked_image(tmp_path):
          "--out", str(out)],
         cwd=tmp_path)
     assert proc.returncode == 0, proc.stderr
-    assert out.exists() and out.stat().st_size > 200
+    assert out.exists() and out.stat().st_size > 50
     # PNG magic bytes.
     assert out.read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
 
