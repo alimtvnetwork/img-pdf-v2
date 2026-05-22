@@ -14,7 +14,7 @@ Push a semver tag: `git tag v1.1.0 && git push origin v1.1.0`.
 
 Only `v*` tag pushes and manual release runs publish a GitHub Release with all assets.
 
-Before uploading `install.ps1` and `install.sh`, the release workflow must stamp the packaged copies with `github.repository` and the tag being released. This prevents release-hosted installers in `img-pdf-v2` from using the source fallback repo or the old `alimtvnetwork/img-pdf` repository.
+Before uploading `install.ps1` and `install.sh`, the release workflow must stamp the packaged copies with `github.repository` and the tag being released. This prevents release-hosted installers in `img-pdf-v2` from using the source fallback repo or the old `alimtvnetwork/img-pdf-v2` repository.
 
 ## Installer fallback
 

@@ -1,6 +1,6 @@
 <div align="center">
 
-# 📄 img-pdf
+# 📄 img-pdf-v2
 
 **Turn a folder of images into one beautiful PDF — in a single command.**
 
@@ -183,7 +183,7 @@ python tools/jpg2pdf/src/jpg2pdf.py ./photos --size a4
 ## 📦 Repo layout
 
 ```text
-img-pdf/
+img-pdf-v2/
 ├── install.ps1                          # one-liner Windows installer
 ├── install.sh                           # one-liner macOS / Linux installer
 ├── run.ps1 / uninstall.ps1              # local runner + uninstaller

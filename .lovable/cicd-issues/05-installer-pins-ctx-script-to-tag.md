@@ -25,6 +25,6 @@ Add `JPG2PDF_CTX_REF` env var or `--ctx-ref main` flag so testers can override. 
 ## How to verify
 After tagging, run:
 ```powershell
-$env:JPG2PDF_VERSION = "v1.4.4"; irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf/main/install.ps1 | iex
+$env:JPG2PDF_VERSION = "v1.4.4"; irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf-v2/main/install.ps1 | iex
 ```
 Then check `%USERPROFILE%\Tools\bin\jpg2pdf-files-a4-pencil.cmd` exists.

@@ -27,4 +27,4 @@ Independent of `jpg2pdf` itself. Currently `RunPs1Version = "0.3.0"`. Bump when 
 
 ## Release-hosted installers
 
-Packaged release installers must resolve assets from the repository that published the release. The source default is currently `alimtvnetwork/img-pdf-v2`, and `.github/workflows/release.yml` stamps `github.repository` plus the release tag into `dist/install.ps1` and `dist/install.sh` before upload. Release notes exact-version snippets must also set `JPG2PDF_REPO={{REPO}}`. Do not ship release installers that silently fall back to the old `alimtvnetwork/img-pdf` repo.
+Packaged release installers must resolve assets from the repository that published the release. The source default is currently `alimtvnetwork/img-pdf-v2`, and `.github/workflows/release.yml` stamps `github.repository` plus the release tag into `dist/install.ps1` and `dist/install.sh` before upload. Release notes exact-version snippets must also set `JPG2PDF_REPO={{REPO}}`. Do not ship release installers that silently fall back to the old `alimtvnetwork/img-pdf-v2` repo.

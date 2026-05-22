@@ -3,7 +3,7 @@
 **Status:** Fixed in v1.4.7
 
 ## Symptom
-Running the installer from the `img-pdf-v2` release page still downloaded assets from `alimtvnetwork/img-pdf`:
+Running the installer from the `img-pdf-v2` release page still downloaded assets from `alimtvnetwork/img-pdf-v2`:
 
 ```powershell
 irm https://github.com/alimtvnetwork/img-pdf-v2/releases/download/v1.4.6/install.ps1 | iex
@@ -12,12 +12,12 @@ irm https://github.com/alimtvnetwork/img-pdf-v2/releases/download/v1.4.6/install
 The installer then logged:
 
 ```text
-Downloading https://github.com/alimtvnetwork/img-pdf/releases/download/v1.4.6/jpg2pdf-windows-x64.exe
+Downloading https://github.com/alimtvnetwork/img-pdf-v2/releases/download/v1.4.6/jpg2pdf-windows-x64.exe
 Release download failed safely: Not Found
 ```
 
 ## Root cause
-`install.ps1` and `install.sh` had a hardcoded fallback repository of `alimtvnetwork/img-pdf`. Release assets were copied into `dist/` unchanged, so an installer downloaded from `img-pdf-v2` did not know which repository hosted it unless the user manually set `JPG2PDF_REPO`.
+`install.ps1` and `install.sh` had a hardcoded fallback repository of `alimtvnetwork/img-pdf-v2`. Release assets were copied into `dist/` unchanged, so an installer downloaded from `img-pdf-v2` did not know which repository hosted it unless the user manually set `JPG2PDF_REPO`.
 
 After the `404`, the installer tried GitHub Actions main-branch artifacts. GitHub's artifact archive download endpoint requires authentication, so anonymous users repeatedly saw `401 Requires authentication` for each fallback run.
 
