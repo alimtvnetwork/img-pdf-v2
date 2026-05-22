@@ -4,7 +4,14 @@ All notable changes to `jpg2pdf` are documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.3] - 2026-05-22
+
+### Added
+- Release workflow now compiles a second PyInstaller binary, `jpg2pdf-gui-{platform}` (Windows/Linux x64/Linux arm64), built from `jpg2pdf_app/__main__.py` with `--windowed`, bundled `jpg2pdf.py` data file, and `tkinterdnd2` + `tkinter` hidden imports. Both binaries are smoke-tested with `--version` (GUI smoke skipped on Windows where `--windowed` detaches stdout) and uploaded as separate release assets.
+- GUI `Convert` now runs the engine in-process when the GUI is a frozen PyInstaller bundle (no python interpreter on PATH), and stays on subprocess in dev for crash isolation.
+
 ## [1.5.2] - 2026-05-22
+
 
 ### Added
 - GUI Convert button (Step 10 of the desktop-GUI roadmap): runs the `jpg2pdf` CLI in a background thread with the options panel's current values, auto-derives an output path next to the first input if none is set, and reports success or the last stderr line in the status bar plus a modal. Existing CLI flags (`--output-mode`, `--sort`, `--size`, `--orientation`, `--fit`, `--stack`, `--style pencil`, `--pencil-strength`, `--out`, `--files`) do all the work — no engine changes.

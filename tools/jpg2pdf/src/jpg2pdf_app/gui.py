@@ -446,9 +446,11 @@ class Jpg2PdfApp:
         self.convert_btn.config(state=tk.DISABLED)
         self._set_status("Converting...")
 
-        import subprocess, threading
+        import subprocess, threading, io, contextlib
 
-        def worker():
+        frozen = getattr(sys, "frozen", False)
+
+        def worker_subprocess():
             try:
                 proc = subprocess.run(
                     argv, capture_output=True, text=True,
@@ -457,14 +459,44 @@ class Jpg2PdfApp:
                 msg = (proc.stdout or "").strip().splitlines()[-1:] or [""]
                 err = (proc.stderr or "").strip().splitlines()[-1:] or [""]
                 summary = msg[0] if ok else (err[0] or "Conversion failed.")
+                detail = (proc.stderr or proc.stdout or "").strip()
             except Exception as exc:  # pragma: no cover - defensive
-                ok, summary = False, f"Error: {exc}"
-                proc = None
+                ok, summary, detail = False, f"Error: {exc}", ""
             self.root.after(0, lambda: self._on_convert_done(
-                ok, summary, proc))
+                ok, summary, detail))
 
-        self._worker = threading.Thread(target=worker, daemon=True)
+        def worker_inproc():
+            # In frozen builds there is no python interpreter on PATH, so
+            # call the engine directly with the argv after the script path.
+            from jpg2pdf_app.core import engine
+            buf_out, buf_err = io.StringIO(), io.StringIO()
+            saved = sys.argv
+            sys.argv = ["jpg2pdf", *argv[2:]]
+            try:
+                with contextlib.redirect_stdout(buf_out), \
+                     contextlib.redirect_stderr(buf_err):
+                    try:
+                        engine.main()
+                        ok, summary = True, "Done."
+                    except SystemExit as exc:
+                        code = exc.code if isinstance(exc.code, int) else 0
+                        ok = code == 0
+                        summary = "Done." if ok else f"Exit code {code}"
+                    except Exception as exc:
+                        ok, summary = False, f"{type(exc).__name__}: {exc}"
+            finally:
+                sys.argv = saved
+            detail = (buf_err.getvalue() or buf_out.getvalue()).strip()
+            tail = (buf_out.getvalue().strip().splitlines()[-1:] or [""])[0]
+            if ok and tail:
+                summary = tail
+            self.root.after(0, lambda: self._on_convert_done(
+                ok, summary, detail))
+
+        target = worker_inproc if frozen else worker_subprocess
+        self._worker = threading.Thread(target=target, daemon=True)
         self._worker.start()
+
 
     def _build_cli_argv(self) -> list[str] | None:
         """Translate GUI option state into a `jpg2pdf` CLI command."""
@@ -499,19 +531,17 @@ class Jpg2PdfApp:
         argv += ["--files", *self.inputs]
         return argv
 
-    def _on_convert_done(self, ok: bool, summary: str, proc) -> None:
+    def _on_convert_done(self, ok: bool, summary: str, detail: str = "") -> None:
         self.convert_btn.config(state=tk.NORMAL if self.inputs else tk.DISABLED)
         if ok:
             self._set_status(f"Done -> {self.var_output.get()}")
             messagebox.showinfo("jpg2pdf", f"Converted.\n\n{self.var_output.get()}")
         else:
             self._set_status(f"Failed: {summary}")
-            detail = ""
-            if proc is not None:
-                detail = (proc.stderr or proc.stdout or "").strip()
             messagebox.showerror(
                 "jpg2pdf — conversion failed",
                 f"{summary}\n\n{detail[-1200:]}" if detail else summary)
+
 
 
     def on_about(self) -> None:
