@@ -364,7 +364,7 @@ foreach ($stale in @("jpg2pdf-selected-launcher.ps1", "jpg2pdf-selected-launcher
 }
 
 $selectedRunner = Join-Path $binDir "jpg2pdf-selected-runner.cmd"
-Write-SelectedFilesRunner -Path $selectedRunner -ExePath $exe
+Write-SelectedFilesRunner -Path $selectedRunner -ExePath $exe -GuiExePath $guiExe
 
 Build-GroupedSubmenu -RootClass "Jpg2Pdf.FolderMenu" -Mode 'Folder'
 Build-GroupedSubmenu -RootClass "Jpg2Pdf.FilesMenu"  -Mode 'Files'
