@@ -29,11 +29,37 @@ permissions:
 
 jobs:
   # -----------------------------------------------------------------------
+  # Tests: pytest smoke suite (Step 18). Runs on every PR and main push so
+  # regressions in the engine or settings module are caught before the build
+  # matrix burns minutes on five platforms.
+  # -----------------------------------------------------------------------
+  tests:
+    name: Pytest smoke (linux-x64)
+    if: github.event_name != 'workflow_dispatch' || github.event.inputs.notes_only != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Cairo
+        run: sudo apt-get update && sudo apt-get install -y libcairo2-dev pkg-config
+      - name: Install runtime + test deps
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r tools/jpg2pdf/requirements.txt
+          python -m pip install pytest
+      - name: Run pytest
+        working-directory: tools/jpg2pdf
+        run: python -m pytest -q tests
+
+  # -----------------------------------------------------------------------
   # CI: runs on every push to main and every PR. Builds the Linux binary and
   # smoke-tests it. Does NOT publish anything.
   # -----------------------------------------------------------------------
   ci:
     name: CI build (linux-x64)
+    needs: [tests]
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
