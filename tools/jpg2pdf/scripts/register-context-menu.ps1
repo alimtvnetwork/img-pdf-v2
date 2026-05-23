@@ -286,11 +286,14 @@ set "VERB_ARGS=%~3"
 set "QUEUE=%~4"
 set "LOG=%~5"
 set "LAST_SIZE=-1"
-for /L %%I in (1,1,10) do (
+for /L %%I in (1,1,12) do (
   for %%A in ("!QUEUE!") do set "NOW_SIZE=%%~zA"
-  if "!NOW_SIZE!"=="!LAST_SIZE!" goto queue_ready
+  if "!NOW_SIZE!"=="!LAST_SIZE!" if %%I GTR 2 goto queue_ready
   set "LAST_SIZE=!NOW_SIZE!"
-  timeout /t 1 /nobreak >nul 2>nul
+  rem `timeout` aborts with "Input redirection is not supported" when stdin
+  rem is redirected (which happens under wscript-launched hidden cmd). Use
+  rem `ping` for a portable sub-second sleep that works in hidden mode.
+  ping -n 2 127.0.0.1 >nul 2>nul
 )
 :queue_ready
 set "WORK_NAME=!VERB_ID!-work-%RANDOM%%RANDOM%.lst"
@@ -302,7 +305,10 @@ if /I "!VERB_ID!"=="gui" (
   >>"!LOG!" echo [%DATE% %TIME%] gui verb=!VERB_ID! queue=!QUEUE!
   set "TARGET_EXE=!JPG2PDF_GUI_EXE!"
   if not exist "!TARGET_EXE!" set "TARGET_EXE=!JPG2PDF_EXE!"
-  start "" "!TARGET_EXE!" --gui --files-from "!QUEUE!"
+  rem Detach via explorer.exe so the GUI window is owned by the shell,
+  rem not by this hidden cmd. Without this the Tk window can open hidden
+  rem / behind because our parent cmd was started with intWindowStyle=0.
+  start "" explorer.exe "!TARGET_EXE!" --gui --files-from "!QUEUE!"
   exit /b 0
 )
 
