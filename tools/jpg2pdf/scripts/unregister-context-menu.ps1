@@ -35,6 +35,7 @@ $binDir = Join-Path $HOME "Tools\bin"
 Remove-Item -Path (Join-Path $binDir "jpg2pdf-files-*.cmd") -Force -ErrorAction SilentlyContinue
 Remove-Item -Path (Join-Path $binDir "jpg2pdf-selected-runner.cmd") -Force -ErrorAction SilentlyContinue
 Remove-Item -Path (Join-Path $binDir "jpg2pdf-selected-launcher.vbs") -Force -ErrorAction SilentlyContinue
+Remove-Item -Path (Join-Path $binDir "jpg2pdf-gui-launch.vbs") -Force -ErrorAction SilentlyContinue
 
 foreach ($p in $paths) {
     if (Test-Path $p) {
