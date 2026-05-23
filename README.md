@@ -64,7 +64,7 @@ and registers the Explorer right-click entries. Open a new terminal afterwards.
 ### 🪟 Windows · PowerShell · pin a specific version
 
 ```powershell
-$env:JPG2PDF_VERSION = "v2.1.2"; irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf-v2/main/install.ps1 | iex
+$env:JPG2PDF_VERSION = "v2.1.3"; irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf-v2/main/install.ps1 | iex
 ```
 
 ### 🐧 macOS · Linux · Bash
@@ -81,7 +81,7 @@ For installer diagnostics, add `--debug` or `JPG2PDF_DEBUG=1`. The installer pri
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/alimtvnetwork/img-pdf-v2/main/install.sh \
-  | JPG2PDF_VERSION=v2.1.2 JPG2PDF_PREFIX=$HOME/bin bash
+  | JPG2PDF_VERSION=v2.1.3 JPG2PDF_PREFIX=$HOME/bin bash
 ```
 
 If PowerShell blocks scripts, use a process-only bypass for the current shell first:
@@ -205,7 +205,7 @@ a Release with `SHA256SUMS.txt`. macOS installs use the Python source fallback
 until macOS runners are restored:
 
 ```bash
-git tag v2.1.2 && git push origin v2.1.2
+git tag v2.1.3 && git push origin v2.1.3
 ```
 
 Released artifacts: `jpg2pdf-windows-x64.exe`, `jpg2pdf-linux-x64`,

@@ -4,6 +4,14 @@ All notable changes to `jpg2pdf` are documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.3] - 2026-05-23
+
+### Fixed
+- `Combine into PDF > UI > Open in jpg2pdf UI...` now actually shows the Tk window when invoked from a multi-file selection. Two bugs were stacked together in v2.1.2:
+  1. The runner's queue-stability loop used `timeout /t 1 /nobreak`, which aborts immediately with "Input redirection is not supported" under wscript's hidden cmd (stdin is redirected). The loop spun through all iterations in milliseconds, so the winning per-file invocation often launched the GUI before the other selected paths had been appended to the queue (and sometimes the GUI inherited the hidden parent's window state). Replaced `timeout` with `ping -n 2 127.0.0.1 >nul`, which works under redirected stdin, and require at least 2 stable iterations before declaring the queue ready.
+  2. The GUI was launched via `start ""` from the hidden parent cmd; on some Windows builds the new Tk window inherited the hidden state and never surfaced. Added a small sibling `jpg2pdf-gui-launch.vbs` (written by `register-context-menu.ps1`) that uses `WScript.Shell.Run(cmd, 1, False)` to spawn the GUI with a normal, visible window style, detached from the hidden cmd parent.
+- `unregister-context-menu.ps1` now removes the new `jpg2pdf-gui-launch.vbs` shim.
+
 ## [2.1.2] - 2026-05-22
 
 ### Fixed

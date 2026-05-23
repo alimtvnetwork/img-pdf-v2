@@ -138,6 +138,28 @@ sh.Run cmdLine, 0, False
 }
 
 # ---------------------------------------------------------------
+# GUI launcher VBS. Called by the runner's gui branch. Uses Shell.Run
+# with intWindowStyle=1 (normal visible) so the Tk window is created by
+# a process whose parent is wscript (foreground), not the hidden cmd that
+# the queueing flow runs under. Without this, the GUI window inherits the
+# hidden state of its grand-parent and never becomes visible on top.
+# ---------------------------------------------------------------
+function Write-GuiLaunchScript {
+    param([Parameter(Mandatory=$true)][string]$Path)
+    $content = @"
+Option Explicit
+Dim sh, exePath, queuePath, cmdLine
+If WScript.Arguments.Count < 2 Then WScript.Quit 1
+exePath   = WScript.Arguments(0)
+queuePath = WScript.Arguments(1)
+Set sh = CreateObject("WScript.Shell")
+cmdLine = Chr(34) & exePath & Chr(34) & " --gui --files-from " & Chr(34) & queuePath & Chr(34)
+sh.Run cmdLine, 1, False
+"@
+    [System.IO.File]::WriteAllText($Path, $content, [System.Text.Encoding]::ASCII)
+}
+
+# ---------------------------------------------------------------
 # Runner: receives ONE selected file per call (Explorer legacy verbs).
 # Appends to a per-verb queue, waits for stability, then atomically wins
 # the right to run jpg2pdf. The single winner opens ONE visible console
@@ -286,11 +308,14 @@ set "VERB_ARGS=%~3"
 set "QUEUE=%~4"
 set "LOG=%~5"
 set "LAST_SIZE=-1"
-for /L %%I in (1,1,10) do (
+for /L %%I in (1,1,12) do (
   for %%A in ("!QUEUE!") do set "NOW_SIZE=%%~zA"
-  if "!NOW_SIZE!"=="!LAST_SIZE!" goto queue_ready
+  if "!NOW_SIZE!"=="!LAST_SIZE!" if %%I GTR 2 goto queue_ready
   set "LAST_SIZE=!NOW_SIZE!"
-  timeout /t 1 /nobreak >nul 2>nul
+  rem `timeout` aborts with "Input redirection is not supported" when stdin
+  rem is redirected (which happens under wscript-launched hidden cmd). Use
+  rem `ping` for a portable sub-second sleep that works in hidden mode.
+  ping -n 2 127.0.0.1 >nul 2>nul
 )
 :queue_ready
 set "WORK_NAME=!VERB_ID!-work-%RANDOM%%RANDOM%.lst"
@@ -302,7 +327,16 @@ if /I "!VERB_ID!"=="gui" (
   >>"!LOG!" echo [%DATE% %TIME%] gui verb=!VERB_ID! queue=!QUEUE!
   set "TARGET_EXE=!JPG2PDF_GUI_EXE!"
   if not exist "!TARGET_EXE!" set "TARGET_EXE=!JPG2PDF_EXE!"
-  start "" "!TARGET_EXE!" --gui --files-from "!QUEUE!"
+  rem Use the gui-launch.vbs sibling so the new process is created by
+  rem wscript with intWindowStyle=1 (normal visible window). Without this
+  rem the Tk window inherits the hidden state of our parent cmd and never
+  rem becomes visible on some Windows builds.
+  set "GUI_LAUNCH=%~dp0jpg2pdf-gui-launch.vbs"
+  if exist "!GUI_LAUNCH!" (
+    wscript.exe "!GUI_LAUNCH!" "!TARGET_EXE!" "!QUEUE!"
+  ) else (
+    start "" "!TARGET_EXE!" --gui --files-from "!QUEUE!"
+  )
   exit /b 0
 )
 
@@ -506,8 +540,10 @@ foreach ($stale in @("jpg2pdf-files-*.cmd")) {
 
 $selectedRunner   = Join-Path $binDir "jpg2pdf-selected-runner.cmd"
 $selectedLauncher = Join-Path $binDir "jpg2pdf-selected-launcher.vbs"
+$guiLaunch        = Join-Path $binDir "jpg2pdf-gui-launch.vbs"
 Write-SelectedFilesRunnerV2 -Path $selectedRunner -ExePath $exe -GuiExePath $guiExe
 Write-SelectedFilesLauncher -Path $selectedLauncher -RunnerPath $selectedRunner
+Write-GuiLaunchScript       -Path $guiLaunch
 
 Build-GroupedSubmenu -RootClass "Jpg2Pdf.FolderMenu" -Mode 'Folder'
 Build-GroupedSubmenu -RootClass "Jpg2Pdf.FilesMenu"  -Mode 'Files'
