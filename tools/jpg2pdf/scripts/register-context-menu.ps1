@@ -540,8 +540,10 @@ foreach ($stale in @("jpg2pdf-files-*.cmd")) {
 
 $selectedRunner   = Join-Path $binDir "jpg2pdf-selected-runner.cmd"
 $selectedLauncher = Join-Path $binDir "jpg2pdf-selected-launcher.vbs"
+$guiLaunch        = Join-Path $binDir "jpg2pdf-gui-launch.vbs"
 Write-SelectedFilesRunnerV2 -Path $selectedRunner -ExePath $exe -GuiExePath $guiExe
 Write-SelectedFilesLauncher -Path $selectedLauncher -RunnerPath $selectedRunner
+Write-GuiLaunchScript       -Path $guiLaunch
 
 Build-GroupedSubmenu -RootClass "Jpg2Pdf.FolderMenu" -Mode 'Folder'
 Build-GroupedSubmenu -RootClass "Jpg2Pdf.FilesMenu"  -Mode 'Files'
