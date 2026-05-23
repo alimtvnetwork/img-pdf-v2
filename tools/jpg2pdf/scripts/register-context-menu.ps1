@@ -138,6 +138,28 @@ sh.Run cmdLine, 0, False
 }
 
 # ---------------------------------------------------------------
+# GUI launcher VBS. Called by the runner's gui branch. Uses Shell.Run
+# with intWindowStyle=1 (normal visible) so the Tk window is created by
+# a process whose parent is wscript (foreground), not the hidden cmd that
+# the queueing flow runs under. Without this, the GUI window inherits the
+# hidden state of its grand-parent and never becomes visible on top.
+# ---------------------------------------------------------------
+function Write-GuiLaunchScript {
+    param([Parameter(Mandatory=$true)][string]$Path)
+    $content = @"
+Option Explicit
+Dim sh, exePath, queuePath, cmdLine
+If WScript.Arguments.Count < 2 Then WScript.Quit 1
+exePath   = WScript.Arguments(0)
+queuePath = WScript.Arguments(1)
+Set sh = CreateObject("WScript.Shell")
+cmdLine = Chr(34) & exePath & Chr(34) & " --gui --files-from " & Chr(34) & queuePath & Chr(34)
+sh.Run cmdLine, 1, False
+"@
+    [System.IO.File]::WriteAllText($Path, $content, [System.Text.Encoding]::ASCII)
+}
+
+# ---------------------------------------------------------------
 # Runner: receives ONE selected file per call (Explorer legacy verbs).
 # Appends to a per-verb queue, waits for stability, then atomically wins
 # the right to run jpg2pdf. The single winner opens ONE visible console
