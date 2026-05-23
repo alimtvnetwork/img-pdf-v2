@@ -305,10 +305,16 @@ if /I "!VERB_ID!"=="gui" (
   >>"!LOG!" echo [%DATE% %TIME%] gui verb=!VERB_ID! queue=!QUEUE!
   set "TARGET_EXE=!JPG2PDF_GUI_EXE!"
   if not exist "!TARGET_EXE!" set "TARGET_EXE=!JPG2PDF_EXE!"
-  rem Detach via explorer.exe so the GUI window is owned by the shell,
-  rem not by this hidden cmd. Without this the Tk window can open hidden
-  rem / behind because our parent cmd was started with intWindowStyle=0.
-  start "" explorer.exe "!TARGET_EXE!" --gui --files-from "!QUEUE!"
+  rem Use the gui-launch.vbs sibling so the new process is created by
+  rem wscript with intWindowStyle=1 (normal visible window). Without this
+  rem the Tk window inherits the hidden state of our parent cmd and never
+  rem becomes visible on some Windows builds.
+  set "GUI_LAUNCH=%~dp0jpg2pdf-gui-launch.vbs"
+  if exist "!GUI_LAUNCH!" (
+    wscript.exe "!GUI_LAUNCH!" "!TARGET_EXE!" "!QUEUE!"
+  ) else (
+    start "" "!TARGET_EXE!" --gui --files-from "!QUEUE!"
+  )
   exit /b 0
 )
 
