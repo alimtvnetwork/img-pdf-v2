@@ -4,6 +4,12 @@ All notable changes to `jpg2pdf` are documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.4] - 2026-05-25
+
+### Fixed
+- `Combine into PDF > UI` now launches a real visible GUI even when the dedicated `jpg2pdf-gui.exe` is opened directly with no arguments. The GUI PyInstaller entry now starts `jpg2pdf_app.gui.run()` instead of delegating to the CLI parser, while still supporting `--version`, `--gui`, `--files`, `--files-from`, and positional files/folders for context-menu preloading.
+- The selected-files UI launcher now uses `Shell.Application.ShellExecute(..., show=1)` first, with logging and a visible `WScript.Shell.Run(..., 1, False)` fallback, so Windows is forced to create the Tk window normally instead of inheriting the hidden queueing shell.
+
 ## [2.1.3] - 2026-05-23
 
 ### Fixed
