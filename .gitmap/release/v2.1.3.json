@@ -1,0 +1,16 @@
+{
+  "version": "2.1.3",
+  "branch": "release/v2.1.3",
+  "sourceBranch": "main",
+  "commit": "638c38a31b62043b07fe7f853a665693066309af",
+  "tag": "v2.1.3",
+  "assets": [],
+  "changelog": [
+    "`Combine into PDF \u003e UI \u003e Open in jpg2pdf UI...` now actually shows the Tk window when invoked from a multi-file selection. Two bugs were stacked together in v2.1.2:",
+    "`unregister-context-menu.ps1` now removes the new `jpg2pdf-gui-launch.vbs` shim."
+  ],
+  "isDraft": false,
+  "isPreRelease": false,
+  "createdAt": "2026-05-25T09:25:08Z",
+  "isLatest": false
+}
