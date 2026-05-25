@@ -148,13 +148,42 @@ function Write-GuiLaunchScript {
     param([Parameter(Mandatory=$true)][string]$Path)
     $content = @"
 Option Explicit
-Dim sh, exePath, queuePath, cmdLine
+Dim sh, app, exePath, queuePath, logPath, args, cmdLine
 If WScript.Arguments.Count < 2 Then WScript.Quit 1
 exePath   = WScript.Arguments(0)
 queuePath = WScript.Arguments(1)
+If WScript.Arguments.Count >= 3 Then logPath = WScript.Arguments(2) Else logPath = ""
+
+Sub LogLine(msg)
+  On Error Resume Next
+  If logPath <> "" Then
+    Dim fso, f
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    Set f = fso.OpenTextFile(logPath, 8, True)
+    f.WriteLine Now & " gui-launch " & msg
+    f.Close
+  End If
+End Sub
+
+Function Q(s)
+  Q = Chr(34) & Replace(s, Chr(34), Chr(34) & Chr(34)) & Chr(34)
+End Function
+
+args = "--gui --files-from " & Q(queuePath)
+LogLine "exe=" & exePath & " queue=" & queuePath
+On Error Resume Next
+Set app = CreateObject("Shell.Application")
+app.ShellExecute exePath, args, "", "open", 1
+If Err.Number = 0 Then WScript.Quit 0
+LogLine "ShellExecute failed: " & Err.Number & " " & Err.Description
+Err.Clear
 Set sh = CreateObject("WScript.Shell")
-cmdLine = Chr(34) & exePath & Chr(34) & " --gui --files-from " & Chr(34) & queuePath & Chr(34)
+cmdLine = Q(exePath) & " " & args
 sh.Run cmdLine, 1, False
+If Err.Number <> 0 Then
+  LogLine "Run failed: " & Err.Number & " " & Err.Description
+  WScript.Quit 1
+End If
 "@
     [System.IO.File]::WriteAllText($Path, $content, [System.Text.Encoding]::ASCII)
 }
@@ -333,7 +362,7 @@ if /I "!VERB_ID!"=="gui" (
   rem becomes visible on some Windows builds.
   set "GUI_LAUNCH=%~dp0jpg2pdf-gui-launch.vbs"
   if exist "!GUI_LAUNCH!" (
-    wscript.exe "!GUI_LAUNCH!" "!TARGET_EXE!" "!QUEUE!"
+    wscript.exe //nologo "!GUI_LAUNCH!" "!TARGET_EXE!" "!QUEUE!" "!LOG!"
   ) else (
     start "" "!TARGET_EXE!" --gui --files-from "!QUEUE!"
   )
