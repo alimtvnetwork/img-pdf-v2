@@ -205,7 +205,7 @@ a Release with `SHA256SUMS.txt`. macOS installs use the Python source fallback
 until macOS runners are restored:
 
 ```bash
-git tag v2.1.3 && git push origin v2.1.3
+git tag v2.1.4 && git push origin v2.1.4
 ```
 
 Released artifacts: `jpg2pdf-windows-x64.exe`, `jpg2pdf-linux-x64`,
