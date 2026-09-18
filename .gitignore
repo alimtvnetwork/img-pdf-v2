@@ -32,3 +32,10 @@ dist-ssr
 *.sw?
 .gitmap/release-assets
 release-assets
+
+# Python / Test artifacts / Caches
+__pycache__/
+*.py[cod]
+*$py.class
+tmp/
+.pytest_cache/
