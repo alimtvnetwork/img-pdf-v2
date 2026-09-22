@@ -4,6 +4,19 @@ All notable changes to `jpg2pdf` are documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-09-22
+
+### Added
+- YouTube thumbnail ingestion engine (`jpg2pdf_app.youtube`): extracts video IDs from all standard URL forms (watch, shorts, embed, live, youtu.be), resolves official video titles via public YouTube oEmbed without requiring API keys, converts titles to clean lowercase filesystem-safe slugs, and downloads the highest available resolution thumbnail (`maxresdefault` down to `default`) with validation to discard YouTube's ~1000 byte missing-thumbnail placeholders.
+- CLI flags `--youtube` (accepts multiple URLs or video IDs), `--open-dir` (opens output or thumbnail folder in native OS file explorer upon completion), and `--download-only` (downloads thumbnails without running PDF/image conversion).
+- Desktop GUI YouTube integration: `File -> Add YouTube URL(s)...` dialog, a `+ YouTube` toolbar button, automatic clipboard detection for pasted YouTube URLs (`Ctrl+V`), and a background worker thread that downloads thumbnails asynchronously and inserts them with `[ yt]` labels into the conversion queue.
+- Re-exports in `jpg2pdf_app.core` for `download_thumbnail`, `extract_video_id`, `fetch_video_title`, `get_default_thumbnail_dir`, `open_directory_in_explorer`, `resolve_youtube_thumbnails`, and `slugify_title`.
+- GitMap release integration: updated release metadata with `.gitmap/release/v2.1.4.json`, `.gitmap/release/v2.2.0.json`, and `.gitmap/release/latest.json`.
+
+### Fixed
+- Fixed Windows cp1252 `UnicodeDecodeError` by replacing non-ASCII em-dashes and symbols with pure ASCII equivalents across `jpg2pdf.py`, `core.py`, and `gui.py`.
+- Fixed unnecessary `pypdf` dependency requirement for single-chunk image-to-PDF generation by implementing direct Pillow PDF copying.
+
 ## [2.1.4] - 2026-05-25
 
 ### Fixed

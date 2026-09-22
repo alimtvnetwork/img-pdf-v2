@@ -1,0 +1,16 @@
+{
+  "version": "2.1.4",
+  "branch": "release/v2.1.4",
+  "sourceBranch": "main",
+  "commit": "a66f2c3d9b4b4566c3a19ffea6e3c0356c398335",
+  "tag": "v2.1.4",
+  "assets": [],
+  "changelog": [
+    "Combine into PDF > UI now launches a real visible GUI even when the dedicated jpg2pdf-gui.exe is opened directly with no arguments. The GUI PyInstaller entry now starts jpg2pdf_app.gui.run() instead of delegating to the CLI parser, while still supporting --version, --gui, --files, --files-from, and positional files/folders for context-menu preloading.",
+    "The selected-files UI launcher now uses Shell.Application.ShellExecute(..., show=1) first, with logging and a visible WScript.Shell.Run(..., 1, False) fallback, so Windows is forced to create the Tk window normally instead of inheriting the hidden queueing shell."
+  ],
+  "isDraft": false,
+  "isPreRelease": false,
+  "createdAt": "2026-05-25T10:00:00Z",
+  "isLatest": false
+}

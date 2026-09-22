@@ -31,6 +31,7 @@ dist-ssr
 *.sln
 *.sw?
 .gitmap/release-assets
+.gitmap/data/
 release-assets
 
 # Python / Test artifacts / Caches

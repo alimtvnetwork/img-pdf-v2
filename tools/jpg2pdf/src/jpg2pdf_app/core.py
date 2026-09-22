@@ -30,7 +30,7 @@ except ImportError:
         _engine = importlib.util.module_from_spec(_spec)
         _spec.loader.exec_module(_engine)
 
-# Public re-exports — keep this list in sync with the symbols the GUI uses.
+# Public re-exports -- keep this list in sync with the symbols the GUI uses.
 __version__ = _engine.__version__
 
 kind_of = _engine.kind_of
@@ -47,7 +47,18 @@ format_pdf_name = _engine.format_pdf_name
 load_prefs = _engine.load_prefs
 save_prefs = _engine.save_prefs
 
-# Raw engine module — escape hatch for callers that need symbols not
+# YouTube thumbnail integration
+from .youtube import (
+    download_thumbnail,
+    extract_video_id,
+    fetch_video_title,
+    get_default_thumbnail_dir,
+    open_directory_in_explorer,
+    resolve_youtube_thumbnails,
+    slugify_title,
+)
+
+# Raw engine module -- escape hatch for callers that need symbols not
 # explicitly re-exported above (e.g. future GUI experiments).
 engine = _engine
 
@@ -67,4 +78,12 @@ __all__ = [
     "format_pdf_name",
     "load_prefs",
     "save_prefs",
+    "download_thumbnail",
+    "extract_video_id",
+    "fetch_video_title",
+    "get_default_thumbnail_dir",
+    "open_directory_in_explorer",
+    "resolve_youtube_thumbnails",
+    "slugify_title",
 ]
+

@@ -26,7 +26,7 @@ PDF` -> `PDF` / `Image` submenus). Open a new terminal afterwards.
 Pin a version or skip optional pieces:
 
 ```powershell
-$env:JPG2PDF_VERSION         = "v1.6.0"; irm ... | iex
+$env:JPG2PDF_VERSION         = "v2.2.0"; irm ... | iex
 $env:JPG2PDF_NO_CONTEXT_MENU = "1";      irm ... | iex   # skip Explorer menu
 $env:JPG2PDF_NO_GUI          = "1";      irm ... | iex   # CLI only
 $env:JPG2PDF_NO_SHORTCUTS    = "1";      irm ... | iex   # CLI + GUI, no shortcuts
@@ -89,8 +89,8 @@ python -m jpg2pdf_app  # from a source checkout
 
 Features (see [`spec/GUI.md`](spec/GUI.md)):
 
-- Drag-and-drop, or **File -> Add files / Add folder**.
-- Reorderable list with **Up / Down / Remove / Clear** — selection order
+- Drag-and-drop, or **File -> Add files / Add folder / Add YouTube URL(s)...**
+- Toolbar actions: **Up / Down / Remove / + YouTube / Clear** -- selection order
   controls page order in the merged PDF.
 - Output options: mode (PDF, Stacked Image, Pencil PDF, Pencil Image),
   sort, page size + orientation, image fit, stack direction, pencil style
@@ -130,8 +130,12 @@ jpg2pdf . --size letter --fit cover --out album.pdf
 jpg2pdf . --size legal --orientation landscape --recursive
 jpg2pdf . --size a4 --style pencil           # faint pencil-on-paper look
 
-# Mixed selections — merged in the order given
+# Mixed selections -- merged in the order given
 jpg2pdf --files cover.jpg invoice.pdf notes.docx report.html --out bundle.pdf
+
+# YouTube thumbnails
+jpg2pdf --youtube "https://www.youtube.com/watch?v=dQw4w9WgXcQ" --out video.pdf
+jpg2pdf --youtube <url1> <url2> --download-only --open-dir
 
 # Output modes
 jpg2pdf --files a.jpg b.jpg c.jpg --output-mode image --out tall.png

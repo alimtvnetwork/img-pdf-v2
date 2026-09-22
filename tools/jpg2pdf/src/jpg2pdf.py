@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""jpg2pdf — Combine images into a single PDF.
+"""jpg2pdf -- Combine images into a single PDF.
 
 Two input modes:
   jpg2pdf <folder> [options]
@@ -16,9 +16,44 @@ import sys
 from pathlib import Path
 from PIL import Image, ImageChops, ImageEnhance, ImageFilter, ImageOps
 
-__version__ = "2.1.4"
+try:
+    from jpg2pdf_app.youtube import (
+        download_thumbnail,
+        extract_video_id,
+        fetch_video_title,
+        get_default_thumbnail_dir,
+        open_directory_in_explorer,
+        resolve_youtube_thumbnails,
+        slugify_title,
+    )
+except ImportError:
+    import sys as _sys
+    _app_dir = Path(__file__).resolve().parent
+    if str(_app_dir) not in _sys.path:
+        _sys.path.insert(0, str(_app_dir))
+    try:
+        from jpg2pdf_app.youtube import (
+            download_thumbnail,
+            extract_video_id,
+            fetch_video_title,
+            get_default_thumbnail_dir,
+            open_directory_in_explorer,
+            resolve_youtube_thumbnails,
+            slugify_title,
+        )
+    except ImportError:
+        download_thumbnail = None
+        extract_video_id = None
+        fetch_video_title = None
+        get_default_thumbnail_dir = None
+        open_directory_in_explorer = None
+        resolve_youtube_thumbnails = None
+        slugify_title = None
 
-# Pencil presets — tuned for faint handwritten text.
+__version__ = "2.2.0"
+
+
+# Pencil presets -- tuned for faint handwritten text.
 # Module-scope so prompt_pencil_strength() can render the live preview with
 # the same numbers main() will use for the real conversion.
 PENCIL_PRESETS = {
@@ -57,7 +92,7 @@ def save_prefs(prefs: dict) -> None:
 #   {style}     "none" or "pencil"
 #   {strength}  pencil strength preset name when --style pencil, else ""
 #   {date}      YYYY-MM-DD (local time)
-#   {time}      HHMMSS (local time, no separators — filesystem-safe)
+#   {time}      HHMMSS (local time, no separators -- filesystem-safe)
 #   {datetime}  YYYY-MM-DD_HHMMSS
 #   {y} {m} {d} {hh} {mm} {ss}   individual zero-padded parts
 NAME_PATTERN_TOKENS = (
@@ -107,7 +142,7 @@ def prompt_pencil_strength(default: str = "subtle", sample_path=None) -> str:
     """Show a Tk dropdown to pick pencil strength, with a LIVE preview.
 
     When `sample_path` points to a real image, a thumbnail of that image is
-    rendered with each preset on the fly — switching the dropdown immediately
+    rendered with each preset on the fly -- switching the dropdown immediately
     re-renders the preview so the user can pick the strength that makes
     faint text most readable before any PDF is written.
 
@@ -120,7 +155,7 @@ def prompt_pencil_strength(default: str = "subtle", sample_path=None) -> str:
     except Exception:
         return default
 
-    # ImageTk is part of Pillow's tk extras — gracefully degrade without it.
+    # ImageTk is part of Pillow's tk extras -- gracefully degrade without it.
     try:
         from PIL import ImageTk
         has_imagetk = True
@@ -130,9 +165,9 @@ def prompt_pencil_strength(default: str = "subtle", sample_path=None) -> str:
 
     choices = ["subtle", "normal", "extra"]
     descriptions = {
-        "subtle": "Subtle  — gentle, keeps paper texture (default)",
-        "normal": "Normal  — balanced ink + paper grain",
-        "extra":  "Extra visible — aggressive darkening for very faint pencil",
+        "subtle": "Subtle  -- gentle, keeps paper texture (default)",
+        "normal": "Normal  -- balanced ink + paper grain",
+        "extra":  "Extra visible -- aggressive darkening for very faint pencil",
     }
     result = {"value": default}
 
@@ -141,7 +176,7 @@ def prompt_pencil_strength(default: str = "subtle", sample_path=None) -> str:
     except Exception:
         return default
 
-    root.title("jpg2pdf — Pencil strength")
+    root.title("jpg2pdf -- Pencil strength")
     try:
         root.attributes("-topmost", True)
     except Exception:
@@ -173,7 +208,7 @@ def prompt_pencil_strength(default: str = "subtle", sample_path=None) -> str:
             preview_thumb = None
 
     if preview_thumb is not None:
-        ttk.Label(frm, text="Live preview (faint text gets clearer →):").grid(
+        ttk.Label(frm, text="Live preview (faint text gets clearer ->):").grid(
             row=2, column=0, columnspan=2, sticky="w", pady=(4, 4))
         preview_label = ttk.Label(frm, relief="solid", borderwidth=1)
         preview_label.grid(row=3, column=0, columnspan=2, pady=(0, 12))
@@ -260,7 +295,7 @@ def prompt_thumbnail_grid(images, thumb_px: int = 140, cols: int = 4):
     except Exception:
         return list(images)
 
-    root.title(f"jpg2pdf — confirm {len(images)} image(s)")
+    root.title(f"jpg2pdf -- confirm {len(images)} image(s)")
     try:
         root.attributes("-topmost", True)
     except Exception:
@@ -337,7 +372,7 @@ def prompt_thumbnail_grid(images, thumb_px: int = 140, cols: int = 4):
                       anchor="center").grid(row=0, column=0, ipady=thumb_px // 3)
         var = tk.BooleanVar(value=True)
         vars_.append((p, var))
-        name = p.name if len(p.name) <= 22 else p.name[:19] + "…"
+        name = p.name if len(p.name) <= 22 else p.name[:19] + "..."
         ttk.Checkbutton(cell, text=name, variable=var,
                         command=_refresh_counter).grid(row=1, column=0, sticky="w")
 
@@ -421,10 +456,10 @@ def collect_from_list(paths):
     return out
 
 
-# ---------- Per-type → PDF converters ----------
+# ---------- Per-type -> PDF converters ----------
 # Each returns a Path to a PDF file (either a freshly-written temp file or
 # the original input for already-PDF inputs). They never raise on missing
-# optional deps — they print a warning and return None so the caller can skip.
+# optional deps -- they print a warning and return None so the caller can skip.
 
 def html_to_pdf(src: Path, out_pdf: Path) -> Path | None:
     try:
@@ -441,7 +476,7 @@ def html_to_pdf(src: Path, out_pdf: Path) -> Path | None:
     with open(out_pdf, "wb") as f:
         result = pisa.CreatePDF(src=html, dest=f, encoding="utf-8")
     if result.err:
-        print(f"  skip {src.name}: HTML→PDF failed ({result.err} error(s))",
+        print(f"  skip {src.name}: HTML->PDF failed ({result.err} error(s))",
               file=sys.stderr)
         return None
     return out_pdf
@@ -458,12 +493,12 @@ def word_to_pdf(src: Path, out_pdf: Path) -> Path | None:
         # docx2pdf needs a real installed Word (Win) / LibreOffice (mac).
         _docx_convert(str(src), str(out_pdf))
     except Exception as e:
-        print(f"  skip {src.name}: Word→PDF failed ({e}). "
+        print(f"  skip {src.name}: Word->PDF failed ({e}). "
               "Install Microsoft Word (Windows) or LibreOffice.",
               file=sys.stderr)
         return None
     if not out_pdf.is_file():
-        print(f"  skip {src.name}: Word→PDF produced no output", file=sys.stderr)
+        print(f"  skip {src.name}: Word->PDF produced no output", file=sys.stderr)
         return None
     return out_pdf
 
@@ -489,7 +524,16 @@ def images_to_pdf_chunk(image_paths, out_pdf: Path, *, page_w_pt, page_h_pt,
 
 
 def merge_pdfs(pdf_paths, out: Path) -> None:
-    from pypdf import PdfWriter  # local import — heavy dep
+    if len(pdf_paths) == 1:
+        import shutil
+        shutil.copyfile(pdf_paths[0], out)
+        return
+    try:
+        from pypdf import PdfWriter  # local import -- heavy dep
+    except ImportError:
+        print("Error: 'pypdf' package is required to merge multiple PDF files.", file=sys.stderr)
+        print("Please install it with: pip install pypdf", file=sys.stderr)
+        sys.exit(1)
     writer = PdfWriter()
     for p in pdf_paths:
         writer.append(str(p))
@@ -504,7 +548,7 @@ def apply_pencil(im: Image.Image, opacity: float, brightness: float,
 
     Pipeline:
       1. Flatten onto white (kill any alpha haze) and convert to grayscale
-         using luminance — picks up colored ink/text as well as black.
+         using luminance -- picks up colored ink/text as well as black.
       2. Auto-stretch the histogram (1% / 99%) so a slightly grey scan is
          pulled to true white-paper range before the LUT runs. This is the
          single biggest quality win versus a naive contrast curve.
@@ -517,8 +561,8 @@ def apply_pencil(im: Image.Image, opacity: float, brightness: float,
          don't break up.
 
     opacity:    how aggressive the paper-whitening is (0..1).
-                Lower  → wider whitening band, cleaner page.
-                Default 0.25 → light_point ≈ 215, dark_point ≈ 70.
+                Lower  -> wider whitening band, cleaner page.
+                Default 0.25 -> light_point ~= 215, dark_point ~= 70.
     brightness: post brightness multiplier (1.0 = none).
     ink_threshold: pixel value (0..255) that defines "definitely ink".
                    Pixels at or below get the full ink_darken treatment.
@@ -528,7 +572,7 @@ def apply_pencil(im: Image.Image, opacity: float, brightness: float,
     brightness = max(0.1, brightness)
     ink_darken = max(0.05, min(1.0, ink_darken))
 
-    # 1. Flatten alpha → white, then luminance-grayscale.
+    # 1. Flatten alpha -> white, then luminance-grayscale.
     if im.mode in ("RGBA", "LA") or (im.mode == "P" and "transparency" in im.info):
         bg = Image.new("RGB", im.size, (255, 255, 255))
         bg.paste(im.convert("RGBA"), mask=im.convert("RGBA").split()[-1])
@@ -536,7 +580,7 @@ def apply_pencil(im: Image.Image, opacity: float, brightness: float,
     gray = im.convert("L")
     raw_gray = gray
 
-    # 2a. Background flattening — divide by a heavily-blurred copy of the page
+    # 2a. Background flattening -- divide by a heavily-blurred copy of the page
     # to remove uneven lighting / shadow gradients from phone photos. This is
     # the key trick that makes faint pencil pop: paper goes uniformly white,
     # so the LUT below has more room to darken the actual strokes.
@@ -550,7 +594,7 @@ def apply_pencil(im: Image.Image, opacity: float, brightness: float,
         a=gray, b=bg_safe,
     )
 
-    # 2a.1 Stroke-lift mask — recover very faint graphite/text before the
+    # 2a.1 Stroke-lift mask -- recover very faint graphite/text before the
     # histogram stretch can wash it away.  We compare the original pixels with
     # the local paper background; anything slightly darker than nearby paper is
     # amplified into a subtraction mask.  This gives pencil writing actual
@@ -569,7 +613,7 @@ def apply_pencil(im: Image.Image, opacity: float, brightness: float,
     # 2b. Auto-level (stretch 1%..99% to 0..255) so dingy scans go truly white.
     gray = ImageOps.autocontrast(gray, cutoff=(1, 1))
 
-    # 3. Edge sharpening — recovers crisp pencil-stroke contours.
+    # 3. Edge sharpening -- recovers crisp pencil-stroke contours.
     gray = gray.filter(ImageFilter.UnsharpMask(radius=1.4, percent=180, threshold=2))
 
     # 3b. Stroke-depth pass. A small MinFilter expands only dark strokes, then
@@ -583,7 +627,7 @@ def apply_pencil(im: Image.Image, opacity: float, brightness: float,
         stroke_shadow = Image.blend(stroke_shadow, wider_shadow, 0.10 + 0.18 * depth)
     gray = Image.blend(gray, stroke_shadow, 0.18 + 0.30 * depth)
 
-    # 3c. Gamma > 1 darkens midtones — pulls grey graphite toward black without
+    # 3c. Gamma > 1 darkens midtones -- pulls grey graphite toward black without
     # crushing paper (paper is already near 255 from the flatten step).
     gamma = 1.12 + 0.30 * depth
     gamma_lut = [int(round(((v / 255.0) ** gamma) * 255)) for v in range(256)]
@@ -593,7 +637,7 @@ def apply_pencil(im: Image.Image, opacity: float, brightness: float,
     dark_point  = max(0,   min(200, ink_threshold - 20))   # full-ink boundary
     light_point = max(dark_point + 10,
                       int(round(255 - 40 * opacity)))      # paper-white boundary
-                                                            # opacity 0 → 255, opacity 1 → 215
+                                                            # opacity 0 -> 255, opacity 1 -> 215
     span = max(1, light_point - dark_point)
 
     lut = []
@@ -605,7 +649,7 @@ def apply_pencil(im: Image.Image, opacity: float, brightness: float,
             # Paper.
             out = 255
         else:
-            # Smoothstep ramp ink → paper.
+            # Smoothstep ramp ink -> paper.
             t = (v - dark_point) / span
             s = t * t * (3 - 2 * t)                        # smoothstep
             ink_val   = v * ink_darken
@@ -631,8 +675,8 @@ def make_page(img_path: Path, page_w_pt: float, page_h_pt: float,
     """Render one PDF page at `dpi` DPI.
 
     rotate:      extra rotation applied to every image (0/90/180/270, CCW).
-    auto_rotate: 'cw'  -> rotate landscape images 90° clockwise to fit portrait page
-                 'ccw' -> rotate 90° counter-clockwise
+    auto_rotate: 'cw'  -> rotate landscape images 90 deg clockwise to fit portrait page
+                 'ccw' -> rotate 90 deg counter-clockwise
                  'off' -> never auto-rotate
     style:       'none' (default) or 'pencil' (text/dark strokes stay black,
                  paper & mid-tones fade out).
@@ -772,11 +816,17 @@ def main():
                     help="Launch the desktop GUI instead of running a CLI "
                          "conversion. All other flags are ignored.")
     ap.add_argument("folder", nargs="?", default=None,
-                    help="Folder of images (omit if using --files / --files-from)")
+                    help="Folder of images (omit if using --files / --files-from / --youtube)")
     ap.add_argument("--files", nargs="+", default=None,
                     help="Explicit list of image files (preserves order)")
     ap.add_argument("--files-from", default=None,
                     help="Text file with one image path per line (UTF-8)")
+    ap.add_argument("--youtube", nargs="+", default=None,
+                    help="One or more YouTube URLs or video IDs to download thumbnails from")
+    ap.add_argument("--open-dir", action="store_true",
+                    help="Open output/thumbnail directory in native file explorer after processing")
+    ap.add_argument("--download-only", action="store_true",
+                    help="Download YouTube thumbnails without converting to PDF or image")
     ap.add_argument("--size", choices=list(PAGE_SIZES), default="a4")
     ap.add_argument("--orientation",
                     choices=["portrait", "landscape"], default="portrait")
@@ -813,7 +863,7 @@ def main():
                     help="Pencil preset for faint text: "
                          "'subtle' (default, gentle, keeps paper texture), "
                          "'normal' (balanced ink + paper grain), "
-                         "'extra' (extra-visible — aggressive darkening for very faint pencil). "
+                         "'extra' (extra-visible -- aggressive darkening for very faint pencil). "
                          "Defaults to your last chosen value (saved in "
                          "~/.jpg2pdf/config.json), or 'subtle' on first run. "
                          "Individual --pencil-* flags override the preset.")
@@ -925,36 +975,82 @@ def main():
     folder_name = None   # used by {folder} in --name-pattern
     input_mode = None    # "files" | "folder" (drives --sort auto)
 
+    if args.youtube:
+        yt_target_dir = None
+        if args.out:
+            p = Path(args.out).expanduser()
+            if p.is_dir():
+                yt_target_dir = p
+            elif args.out.endswith(("/", "\\")):
+                yt_target_dir = p
+            else:
+                yt_target_dir = p.parent
+        elif args.folder:
+            f = Path(args.folder).expanduser()
+            if f.is_dir():
+                yt_target_dir = f
+
+        if yt_target_dir is None:
+            if get_default_thumbnail_dir:
+                yt_target_dir = get_default_thumbnail_dir()
+
+        if resolve_youtube_thumbnails:
+            if yt_target_dir:
+                yt_images = resolve_youtube_thumbnails(args.youtube, out_dir=yt_target_dir)
+                images.extend(yt_images)
+                out_dir = yt_target_dir
+                folder_name = yt_target_dir.name
+                input_mode = "files"
+
     if args.files_from:
         listfile = Path(args.files_from).expanduser().resolve()
         if not listfile.is_file():
-            print(f"List file not found: {listfile}", file=sys.stderr); sys.exit(1)
+            print(f"List file not found: {listfile}", file=sys.stderr)
+            sys.exit(1)
+
         lines = [ln.strip() for ln in listfile.read_text(encoding="utf-8").splitlines()
                  if ln.strip() and not ln.strip().startswith("#")]
-        images = collect_from_list(lines)
+        images.extend(collect_from_list(lines))
         input_mode = "files"
-        if images:
-            out_dir = images[0].parent
-            folder_name = images[0].parent.name
+        if not out_dir:
+            if images:
+                out_dir = images[0].parent
+                folder_name = images[0].parent.name
     elif args.files:
-        images = collect_from_list(args.files)
+        images.extend(collect_from_list(args.files))
         input_mode = "files"
-        if images:
-            out_dir = images[0].parent
-            folder_name = images[0].parent.name
+        if not out_dir:
+            if images:
+                out_dir = images[0].parent
+                folder_name = images[0].parent.name
     elif args.folder:
         folder = Path(args.folder).expanduser().resolve()
         if not folder.is_dir():
-            print(f"Not a folder: {folder}", file=sys.stderr); sys.exit(1)
-        images = collect_from_folder(folder, args.recursive)
+            print(f"Not a folder: {folder}", file=sys.stderr)
+            sys.exit(1)
+
+        images.extend(collect_from_folder(folder, args.recursive))
         input_mode = "folder"
-        out_dir = folder
-        folder_name = folder.name
+        if not out_dir:
+            out_dir = folder
+            folder_name = folder.name
     else:
-        ap.error("Provide a folder, or --files, or --files-from.")
+        if not args.youtube:
+            ap.error("Provide a folder, or --files, or --files-from, or --youtube.")
 
     if not images:
-        print("No images to convert.", file=sys.stderr); sys.exit(1)
+        print("No images to convert.", file=sys.stderr)
+        sys.exit(1)
+
+    if args.download_only:
+        if args.open_dir:
+            if out_dir:
+                if open_directory_in_explorer:
+                    open_directory_in_explorer(out_dir)
+
+        print(f"Downloaded {len(images)} thumbnail(s). Done.")
+
+        return
 
     # ---- Apply --sort. 'auto' = selection for files, name for folder mode.
     resolved_sort = args.sort
@@ -972,9 +1068,9 @@ def main():
             it = folder_p.rglob("*") if args.recursive else folder_p.iterdir()
             images = [p for p in it if p.is_file()
                       and p.suffix.lower() in SUPPORTED_EXTS]
-        # For files mode, 'folder' is meaningless — fall back to selection
+        # For files mode, 'folder' is meaningless -- fall back to selection
         # order (which is what `images` already holds).
-    # 'selection' → leave images as-is.
+    # 'selection' -> leave images as-is.
     args._resolved_sort = resolved_sort
 
 
@@ -986,7 +1082,7 @@ def main():
         if kept is None:
             print("Cancelled by user.", file=sys.stderr); sys.exit(130)
         if not kept:
-            print("No images selected — nothing to convert.", file=sys.stderr); sys.exit(1)
+            print("No images selected -- nothing to convert.", file=sys.stderr); sys.exit(1)
         if len(kept) != len(images):
             print(f"  preview-grid: kept {len(kept)} of {len(images)} image(s)")
         images = kept
@@ -1078,7 +1174,12 @@ def main():
             pencil_ink_threshold=args.pencil_ink_threshold,
             pencil_ink_darken=args.pencil_ink_darken,
         )
+        if args.open_dir:
+            if open_directory_in_explorer:
+                open_directory_in_explorer(out.parent)
+
         print(f"Done -> {out}")
+
         return
 
 
@@ -1137,13 +1238,17 @@ def main():
             print("Nothing was successfully converted.", file=sys.stderr)
             sys.exit(1)
 
-        if len(chunks) == 1 and chunks[0].suffix.lower() == ".pdf" \
-                and chunks[0].parent != tmp:
-            # Single pre-existing PDF input — copy to output instead of round-trip.
+        if len(chunks) == 1 and chunks[0].suffix.lower() == ".pdf":
+            # Single PDF chunk (pre-existing or generated from images) -- copy directly.
             import shutil
             shutil.copyfile(chunks[0], out)
         else:
             merge_pdfs(chunks, out)
+
+    if args.open_dir:
+        if open_directory_in_explorer:
+            open_directory_in_explorer(out.parent)
+
     print(f"Done -> {out}")
 
 

@@ -1,4 +1,4 @@
-"""jpg2pdf GUI — Tkinter shell.
+"""jpg2pdf GUI -- Tkinter shell.
 
 Steps 7-9 of the GUI roadmap (.lovable/plan.md): main window with menubar,
 drag-and-drop drop zone, reorderable file list, options panel, and status
@@ -18,7 +18,14 @@ import tkinter as tk
 from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 
-from jpg2pdf_app.core import __version__
+from jpg2pdf_app.core import (
+    __version__,
+    download_thumbnail,
+    extract_video_id,
+    get_default_thumbnail_dir,
+    open_directory_in_explorer,
+    resolve_youtube_thumbnails,
+)
 from jpg2pdf_app import settings as _settings
 
 
@@ -92,6 +99,7 @@ class Jpg2PdfApp:
         self.root.minsize(680, 440)
 
         self.inputs: list[str] = []   # ordered list of input paths
+        self._youtube_inputs: set[str] = set()
 
         # Load persisted preset (Step 17). Falls back to defaults on any error.
         self._settings = _settings.load()
@@ -113,6 +121,7 @@ class Jpg2PdfApp:
         self._build_menubar()
         self._build_layout()
         self._refresh_list()
+        self.root.bind("<Control-v>", self._on_paste)
         if dnd_const:
             self._wire_dnd()
             self._set_status(f"Ready. jpg2pdf {__version__}. Drag files in.")
@@ -142,6 +151,7 @@ class Jpg2PdfApp:
         file_menu = tk.Menu(menubar, tearoff=False)
         file_menu.add_command(label="Add files...", command=self.on_add_files)
         file_menu.add_command(label="Add folder...", command=self.on_add_folder)
+        file_menu.add_command(label="Add YouTube URL(s)...", command=self.on_add_youtube)
         file_menu.add_separator()
         self.recent_menu = tk.Menu(file_menu, tearoff=False)
         file_menu.add_cascade(label="Recent", menu=self.recent_menu)
@@ -248,7 +258,7 @@ class Jpg2PdfApp:
             self.drop_frame, text=DROP_ZONE_HINT, background="#fafafa",
             foreground="#777777", justify=tk.CENTER, wraplength=460)
 
-        # Toolbar: up/down/remove ---------------------------------------
+        # Toolbar: up/down/remove/youtube -------------------------------
         tools = ttk.Frame(left, padding=(0, 6, 0, 0))
         tools.pack(fill=tk.X)
         ttk.Button(tools, text="Up",     width=6,
@@ -257,6 +267,8 @@ class Jpg2PdfApp:
                    command=self.on_move_down).pack(side=tk.LEFT, padx=(4, 0))
         ttk.Button(tools, text="Remove", width=8,
                    command=self.on_remove).pack(side=tk.LEFT, padx=(4, 0))
+        ttk.Button(tools, text="+ YouTube", width=10,
+                   command=self.on_add_youtube).pack(side=tk.LEFT, padx=(4, 0))
         ttk.Button(tools, text="Clear",  width=6,
                    command=self.on_clear).pack(side=tk.RIGHT)
 
@@ -416,7 +428,7 @@ class Jpg2PdfApp:
     def _refresh_list(self) -> None:
         self.listbox.delete(0, tk.END)
         for p in self.inputs:
-            kind = classify(p)
+            kind = "yt" if p in self._youtube_inputs else classify(p)
             label = f"[{kind:>4}]  {p}"
             self.listbox.insert(tk.END, label)
         # Toggle the empty-state hint overlay.
@@ -468,8 +480,97 @@ class Jpg2PdfApp:
         if folder:
             self._add_paths([folder])
 
+    def _on_paste(self, event=None) -> None:
+        try:
+            clip = self.root.clipboard_get()
+        except Exception:
+            return
+
+        if "youtube.com" in clip or "youtu.be" in clip:
+            self.on_add_youtube(prefill=clip)
+
+    def on_add_youtube(self, prefill: str = "") -> None:
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Add YouTube URL(s)")
+        dialog.geometry("520x300")
+        dialog.minsize(420, 240)
+        dialog.transient(self.root)
+        dialog.grab_set()
+
+        lbl = ttk.Label(
+            dialog,
+            text="Enter one or more YouTube URLs or video IDs (one per line):",
+            padding=(10, 10, 10, 4),
+        )
+        lbl.pack(anchor=tk.W)
+
+        text_frame = ttk.Frame(dialog, padding=(10, 0, 10, 10))
+        text_frame.pack(fill=tk.BOTH, expand=True)
+
+        txt = tk.Text(text_frame, wrap=tk.WORD, height=8, font=("TkFixedFont", 9))
+        txt_sb = ttk.Scrollbar(text_frame, orient=tk.VERTICAL, command=txt.yview)
+        txt.configure(yscrollcommand=txt_sb.set)
+        txt.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        txt_sb.pack(side=tk.RIGHT, fill=tk.Y)
+
+        if prefill:
+            txt.insert("1.0", prefill.strip())
+            txt.see(tk.END)
+
+        txt.focus_set()
+
+        btn_box = ttk.Frame(dialog, padding=(10, 0, 10, 10))
+        btn_box.pack(fill=tk.X, side=tk.BOTTOM)
+
+        def do_download():
+            content = txt.get("1.0", tk.END).strip()
+            lines = [ln.strip() for ln in content.splitlines() if ln.strip()]
+            if not lines:
+                messagebox.showwarning(
+                    "YouTube",
+                    "Please enter at least one YouTube URL or ID.",
+                    parent=dialog)
+                return
+
+            dialog.destroy()
+            self._start_youtube_worker(lines)
+
+        ttk.Button(btn_box, text="Download Thumbnails", command=do_download).pack(side=tk.RIGHT)
+        ttk.Button(btn_box, text="Cancel", command=dialog.destroy).pack(side=tk.RIGHT, padx=(0, 6))
+
+    def _start_youtube_worker(self, urls: list[str]) -> None:
+        self._set_status("Downloading YouTube thumbnails in background...")
+        import threading
+
+        def worker():
+            target_dir = get_default_thumbnail_dir()
+            downloaded = resolve_youtube_thumbnails(urls, out_dir=target_dir)
+            self.root.after(0, lambda: self._on_youtube_done(downloaded))
+
+        t = threading.Thread(target=worker, daemon=True)
+        t.start()
+
+    def _on_youtube_done(self, downloaded_paths: list[Path]) -> None:
+        if not downloaded_paths:
+            self._set_status("No YouTube thumbnails downloaded.")
+            messagebox.showwarning(
+                "YouTube",
+                "No thumbnails could be downloaded for the provided URLs.")
+            return
+
+        for p in downloaded_paths:
+            s = str(p)
+            self._youtube_inputs.add(s)
+            if s not in self.inputs:
+                self.inputs.append(s)
+
+        self._set_status(
+            f"Added {len(downloaded_paths)} YouTube thumbnail(s). Total: {len(self.inputs)}.")
+        self._refresh_list()
+
     def on_clear(self) -> None:
         self.inputs.clear()
+        self._youtube_inputs.clear()
         self._set_status("Cleared.")
         self._refresh_list()
 
@@ -478,6 +579,8 @@ class Jpg2PdfApp:
         if not idxs:
             return
         for i in idxs:
+            p = self.inputs[i]
+            self._youtube_inputs.discard(p)
             del self.inputs[i]
         self._set_status(f"Removed {len(idxs)}.")
         self._refresh_list()
@@ -611,7 +714,7 @@ class Jpg2PdfApp:
         else:
             self._set_status(f"Failed: {summary}")
             messagebox.showerror(
-                "jpg2pdf — conversion failed",
+                "jpg2pdf -- conversion failed",
                 f"{summary}\n\n{detail[-1200:]}" if detail else summary)
 
 
@@ -620,12 +723,12 @@ class Jpg2PdfApp:
         messagebox.showinfo(
             "About jpg2pdf",
             f"jpg2pdf {__version__}\n\n"
-            "Combine images, PDFs, HTML, and Word docs into one PDF — "
+            "Combine images, PDFs, HTML, and Word docs into one PDF -- "
             "or stack images into a single PNG/JPG, optionally pencil-styled.")
 
 
 def run(initial_paths: list[str] | None = None) -> int:
-    """Entry point — create the root window (DnD-aware if possible)."""
+    """Entry point -- create the root window (DnD-aware if possible)."""
     TkCls, dnd_const = _try_load_dnd()
     try:
         root = TkCls() if TkCls else tk.Tk()

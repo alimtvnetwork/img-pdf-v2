@@ -38,6 +38,7 @@ opening 30 images one-by-one, "Print to PDF", merging, repeat.
 | 🖼️  **Quality-preserving** | Embeds the original JPEG bytes when possible — no recompression artifacts. |
 | 📐 **Smart sizing** | `a4`, `letter`, `legal` — with `fit cover/contain` and `--orientation`. |
 | ✏️  **Pencil mode** | Faint pencil-on-paper styling with **subtle / normal / extra-visible** depth. |
+| 📺 **YouTube Thumbnails** | Download highest resolution thumbnails with lowercase slug titles and merge to PDF. |
 | 🪟 **Windows context-menu** | Right-click any folder → *"Combine into PDF"*. One terminal, all files. |
 | 🍎 **macOS / Linux** | Drops into `~/.local/bin`; macOS falls back to Python source while binary runners are disabled. |
 | 🔁 **Recursive** | `--recursive` walks subfolders in natural sort order. |
@@ -64,7 +65,7 @@ and registers the Explorer right-click entries. Open a new terminal afterwards.
 ### 🪟 Windows · PowerShell · pin a specific version
 
 ```powershell
-$env:JPG2PDF_VERSION = "v2.1.4"; irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf-v2/main/install.ps1 | iex
+$env:JPG2PDF_VERSION = "v2.2.0"; irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf-v2/main/install.ps1 | iex
 ```
 
 ### 🐧 macOS · Linux · Bash
@@ -81,7 +82,7 @@ For installer diagnostics, add `--debug` or `JPG2PDF_DEBUG=1`. The installer pri
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/alimtvnetwork/img-pdf-v2/main/install.sh \
-  | JPG2PDF_VERSION=v2.1.4 JPG2PDF_PREFIX=$HOME/bin bash
+  | JPG2PDF_VERSION=v2.2.0 JPG2PDF_PREFIX=$HOME/bin bash
 ```
 
 If PowerShell blocks scripts, use a process-only bypass for the current shell first:
@@ -125,6 +126,10 @@ jpg2pdf --files cover.jpg invoice.pdf notes.docx report.html --out bundle.pdf
 # Pencil-on-paper styling for scanned notes / faint handwriting
 jpg2pdf ./notes --size a4 --style pencil
 jpg2pdf ./notes --size a4 --style pencil --ask-strength   # live preview, defaults to subtle
+
+# YouTube thumbnails -- download & merge into PDF or stacked image
+jpg2pdf --youtube "https://www.youtube.com/watch?v=dQw4w9WgXcQ" --out rickroll.pdf
+jpg2pdf --youtube <url1> <url2> --download-only --open-dir   # download and open folder
 ```
 
 Supported inputs (sorted naturally; mixed selections merged in order):
@@ -205,7 +210,7 @@ a Release with `SHA256SUMS.txt`. macOS installs use the Python source fallback
 until macOS runners are restored:
 
 ```bash
-git tag v2.1.4 && git push origin v2.1.4
+git tag v2.2.0 && git push origin v2.2.0
 ```
 
 Released artifacts: `jpg2pdf-windows-x64.exe`, `jpg2pdf-linux-x64`,

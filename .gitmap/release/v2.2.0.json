@@ -1,0 +1,19 @@
+{
+  "version": "2.2.0",
+  "branch": "release/v2.2.0",
+  "sourceBranch": "main",
+  "commit": "HEAD",
+  "tag": "v2.2.0",
+  "assets": [],
+  "changelog": [
+    "Added YouTube thumbnail ingestion engine with video title slugification to clean, lowercase, filesystem-safe slugs.",
+    "Added --youtube, --open-dir, and --download-only flags to jpg2pdf CLI.",
+    "Added 'Add YouTube URL(s)...' dialog, clipboard auto-detection, and background thumbnail worker to Desktop GUI.",
+    "Bypassed pypdf requirement for single-chunk image-to-PDF conversion with direct Pillow file copying.",
+    "Cleaned non-ASCII characters across engine and GUI to prevent Windows cp1252 UnicodeDecodeErrors."
+  ],
+  "isDraft": false,
+  "isPreRelease": false,
+  "createdAt": "2026-09-22T18:40:00Z",
+  "isLatest": true
+}
