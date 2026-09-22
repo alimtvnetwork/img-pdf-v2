@@ -410,7 +410,7 @@ function New-SelectedFilesCommand {
     param(
         [Parameter(Mandatory=$true)][string]$LauncherPath,
         [Parameter(Mandatory=$true)][string]$VerbId,
-        [Parameter(Mandatory=$true)][string]$VerbArgs
+        [Parameter(Mandatory=$false)][AllowEmptyString()][string]$VerbArgs = ""
     )
     $id = (Quote-CmdArg $VerbId)
     $a  = (Quote-CmdArg $VerbArgs)
@@ -418,17 +418,17 @@ function New-SelectedFilesCommand {
 }
 
 function New-Key($path) {
-    if (-not (Test-Path $path)) { New-Item -Path $path -Force | Out-Null }
+    if (-not (Test-Path -LiteralPath $path)) { New-Item -Path $path -Force | Out-Null }
 }
 
 function Set-DefaultValue($path, $value) {
-    Remove-ItemProperty -Path $path -Name "(default)" -ErrorAction SilentlyContinue
-    Set-Item -Path $path -Value $value
+    Remove-ItemProperty -LiteralPath $path -Name "(default)" -ErrorAction SilentlyContinue
+    Set-Item -LiteralPath $path -Value $value
 }
 
 function Remove-MenuParent($shellRoot) {
     $p = "$shellRoot\Jpg2PdfMenu"
-    if (Test-Path $p) { Remove-Item $p -Recurse -Force }
+    if (Test-Path -LiteralPath $p) { Remove-Item -LiteralPath $p -Recurse -Force }
 }
 
 function Remove-LegacyMenus {
@@ -467,11 +467,11 @@ function Add-LeafVerb {
     $k = "$BaseShell\$Id"
     New-Key $k
     Set-DefaultValue $k $Label
-    New-ItemProperty -Path $k -Name "MUIVerb" -Value $Label -PropertyType String -Force | Out-Null
-    New-ItemProperty -Path $k -Name "Icon"    -Value $exe   -PropertyType String -Force | Out-Null
+    New-ItemProperty -LiteralPath $k -Name "MUIVerb" -Value $Label -PropertyType String -Force | Out-Null
+    New-ItemProperty -LiteralPath $k -Name "Icon"    -Value $exe   -PropertyType String -Force | Out-Null
     if ($MultiSelect) {
         # CRITICAL: must live on each LEAF when using ExtendedSubCommandsKey
-        New-ItemProperty -Path $k -Name "MultiSelectModel" -Value "Player" -PropertyType String -Force | Out-Null
+        New-ItemProperty -LiteralPath $k -Name "MultiSelectModel" -Value "Player" -PropertyType String -Force | Out-Null
     }
     New-Key "$k\command"
     Set-DefaultValue "$k\command" $Command
@@ -487,10 +487,10 @@ function Add-GroupContainer {
     $k = "$BaseShell\$Id"
     New-Key $k
     Set-DefaultValue $k $Label
-    New-ItemProperty -Path $k -Name "MUIVerb"               -Value $Label          -PropertyType String -Force | Out-Null
-    New-ItemProperty -Path $k -Name "Icon"                  -Value $exe            -PropertyType String -Force | Out-Null
-    New-ItemProperty -Path $k -Name "SubCommands"           -Value ""              -PropertyType String -Force | Out-Null
-    New-ItemProperty -Path $k -Name "ExtendedSubCommandsKey" -Value $ChildClassName -PropertyType String -Force | Out-Null
+    New-ItemProperty -LiteralPath $k -Name "MUIVerb"               -Value $Label          -PropertyType String -Force | Out-Null
+    New-ItemProperty -LiteralPath $k -Name "Icon"                  -Value $exe            -PropertyType String -Force | Out-Null
+    New-ItemProperty -LiteralPath $k -Name "SubCommands"           -Value ""              -PropertyType String -Force | Out-Null
+    New-ItemProperty -LiteralPath $k -Name "ExtendedSubCommandsKey" -Value $ChildClassName -PropertyType String -Force | Out-Null
 }
 
 function Build-GroupedSubmenu {
@@ -501,7 +501,7 @@ function Build-GroupedSubmenu {
 
     foreach ($cls in @($RootClass, "$RootClass.PDF", "$RootClass.Image", "$RootClass.UI")) {
         $p = "HKCU:\Software\Classes\$cls"
-        if (Test-Path $p) { Remove-Item $p -Recurse -Force }
+        if (Test-Path -LiteralPath $p) { Remove-Item -LiteralPath $p -Recurse -Force }
     }
 
     $rootShell = "HKCU:\Software\Classes\$RootClass\shell"
@@ -524,7 +524,7 @@ function Build-GroupedSubmenu {
             $isGui  = ($v.Id -eq "gui")
             if ($Mode -eq 'Folder') {
                 if ($isGui) {
-                    $targetExe = if (Test-Path $guiExe) { $guiExe } else { $exe }
+                    $targetExe = if (Test-Path -LiteralPath $guiExe) { $guiExe } else { $exe }
                     $q = '"' + $targetExe + '"'
                     $cmd = $q + ' --gui "%V"'
                 } else {
@@ -543,15 +543,23 @@ function Build-GroupedSubmenu {
 }
 
 function Register-Parent {
-    param([string]$Root, [string]$ClassName)
+    param(
+        [Parameter(Mandatory=$true)][string]$Root,
+        [Parameter(Mandatory=$true)][string]$ClassName,
+        [Parameter(Mandatory=$false)][string]$AppliesTo = ""
+    )
     Remove-MenuParent $Root
     $parent = "$Root\Jpg2PdfMenu"
     New-Key $parent
     Set-DefaultValue $parent "Combine into PDF"
-    New-ItemProperty -Path $parent -Name "MUIVerb"  -Value "Combine into PDF" -PropertyType String -Force | Out-Null
-    New-ItemProperty -Path $parent -Name "Icon"     -Value $exe               -PropertyType String -Force | Out-Null
-    New-ItemProperty -Path $parent -Name "SubCommands" -Value "" -PropertyType String -Force | Out-Null
-    New-ItemProperty -Path $parent -Name "ExtendedSubCommandsKey" -Value $ClassName -PropertyType String -Force | Out-Null
+    New-ItemProperty -LiteralPath $parent -Name "MUIVerb"  -Value "Combine into PDF" -PropertyType String -Force | Out-Null
+    New-ItemProperty -LiteralPath $parent -Name "Icon"     -Value $exe               -PropertyType String -Force | Out-Null
+    New-ItemProperty -LiteralPath $parent -Name "SubCommands" -Value "" -PropertyType String -Force | Out-Null
+    New-ItemProperty -LiteralPath $parent -Name "ExtendedSubCommandsKey" -Value $ClassName -PropertyType String -Force | Out-Null
+    New-ItemProperty -LiteralPath $parent -Name "MultiSelectModel" -Value "Player" -PropertyType String -Force | Out-Null
+    if ($AppliesTo) {
+        New-ItemProperty -LiteralPath $parent -Name "AppliesTo" -Value $AppliesTo -PropertyType String -Force | Out-Null
+    }
 }
 
 Write-Host "[ctx] Registering context menu (HKCU)..." -ForegroundColor Cyan
@@ -582,6 +590,9 @@ Register-Parent "HKCU:\Software\Classes\Directory\Background\shell" "Jpg2Pdf.Fol
 
 $exts = @(".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff",
           ".pdf", ".html", ".htm", ".docx", ".doc")
+$appliesFilter = ($exts | ForEach-Object { "System.FileExtension:=" + $_ }) -join " OR "
+Register-Parent "HKCU:\Software\Classes\*\shell" "Jpg2Pdf.FilesMenu" -AppliesTo $appliesFilter
+
 foreach ($ext in $exts) {
     $legacyRoots = @("HKCU:\Software\Classes\SystemFileAssociations\$ext\shell\Jpg2PdfMenu")
     $oldProgId = (Get-ItemProperty -Path "HKCU:\Software\Classes\$ext" -ErrorAction SilentlyContinue)."(default)"
@@ -590,7 +601,7 @@ foreach ($ext in $exts) {
     }
     if ($oldProgId) { $legacyRoots += "HKCU:\Software\Classes\$oldProgId\shell\Jpg2PdfMenu" }
     foreach ($legacyRoot in $legacyRoots) {
-        if (Test-Path $legacyRoot) { Remove-Item $legacyRoot -Recurse -Force }
+        if (Test-Path -LiteralPath $legacyRoot) { Remove-Item -LiteralPath $legacyRoot -Recurse -Force }
     }
 
     $progId = (Get-ItemProperty -Path "HKCU:\Software\Classes\$ext" -ErrorAction SilentlyContinue)."(default)"
@@ -605,7 +616,21 @@ foreach ($ext in $exts) {
     }
 }
 
+function Broadcast-ShellChange {
+    try {
+        Add-Type -TypeDefinition @"
+using System;
+using System.Runtime.InteropServices;
+public class ShellNotify {
+    [DllImport("shell32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+    public static extern void SHChangeNotify(uint wEventId, uint uFlags, IntPtr dwItem1, IntPtr dwItem2);
+}
+"@ -ErrorAction SilentlyContinue
+        [ShellNotify]::SHChangeNotify(0x08000000, 0, [IntPtr]::Zero, [IntPtr]::Zero)
+    } catch { }
+}
+Broadcast-ShellChange
+
 Write-Host "[ctx] Done. Right-click any folder, folder background, or image file." -ForegroundColor Green
 Write-Host "[ctx] No more multiple flashing consoles - per-file calls are hidden, one window opens for the run." -ForegroundColor Green
-Write-Host "[ctx] If entries don't appear immediately, restart Explorer:" -ForegroundColor Yellow
-Write-Host "      Stop-Process -Name explorer -Force; Start-Process explorer" -ForegroundColor Yellow
+Write-Host "[ctx] Context menu associations refreshed." -ForegroundColor Green

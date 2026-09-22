@@ -28,14 +28,31 @@ function Warn($m){ Write-Host "[uninstall] $m" -ForegroundColor Yellow }
 function OK  ($m){ Write-Host "[uninstall] $m" -ForegroundColor Green }
 
 # ---------- 1. Unregister Explorer context menu ----------
-$unreg = Join-Path $InstallDir "tools\jpg2pdf\scripts\unregister-context-menu.ps1"
-if (Test-Path $unreg) {
+$unregCandidates = @(
+    (Join-Path $InstallDir "tools\jpg2pdf\scripts\unregister-context-menu.ps1"),
+    (Join-Path $PSScriptRoot "tools\jpg2pdf\scripts\unregister-context-menu.ps1")
+)
+$unreg = $unregCandidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+if ($unreg) {
     Info "Removing Explorer context menu..."
     try {
         & powershell -NoProfile -ExecutionPolicy Bypass -File $unreg
     } catch { Warn "Context-menu cleanup failed: $_" }
 } else {
-    Warn "Unregister script not found ($unreg). Skipping context-menu cleanup."
+    Warn "Unregister script not found ($unreg). Removing context menu registry keys directly..."
+    $directKeys = @(
+        "HKCU:\Software\Classes\*\shell\Jpg2PdfMenu",
+        "HKCU:\Software\Classes\AllFilesystemObjects\shell\Jpg2PdfMenu",
+        "HKCU:\Software\Classes\Directory\shell\Jpg2PdfMenu",
+        "HKCU:\Software\Classes\Directory\Background\shell\Jpg2PdfMenu",
+        "HKCU:\Software\Classes\Jpg2Pdf.FolderMenu",
+        "HKCU:\Software\Classes\Jpg2Pdf.FilesMenu"
+    )
+    foreach ($k in $directKeys) {
+        if (Test-Path -LiteralPath $k) {
+            Remove-Item -LiteralPath $k -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
 }
 
 # ---------- 2. Delete the exe / shim / GUI exe ----------

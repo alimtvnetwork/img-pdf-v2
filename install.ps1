@@ -176,9 +176,154 @@ function Test-SafePath($Path) {
 function Resolve-SafePath($Path) {
     try { return (Resolve-Path -LiteralPath $Path -ErrorAction Stop).Path } catch { Add-CrashReport "path:$Path" "Resolve-SafePath" "original path" $_; Warn "Path resolve failed safely: $_"; return $Path }
 }
+function Get-SafeTempDir() {
+    $safeTemp = Get-SafeEnv "TEMP"
+    if ($safeTemp) { return $safeTemp }
+    try {
+        $tmp = [System.IO.Path]::GetTempPath()
+        if ($tmp) { return $tmp }
+    } catch { Add-CrashReport "temp path" "Get-SafeTempDir" "current directory" $_ }
+    try { return (Get-Location).Path } catch { Add-CrashReport "Get-Location" "Get-SafeTempDir" "." $_; return "." }
+}
+
+function Get-Aria2cPath {
+    $cmd = Get-Command aria2c.exe -ErrorAction SilentlyContinue
+    if (-not $cmd) {
+        $cmd = Get-Command aria2c -ErrorAction SilentlyContinue
+    }
+    if ($cmd) {
+        return $cmd.Source
+    }
+
+    $commonPaths = @(
+        "C:\ProgramData\chocolatey\bin\aria2c.exe",
+        "$env:LOCALAPPDATA\Programs\aria2\aria2c.exe",
+        "$env:ProgramFiles\aria2\aria2c.exe",
+        "${env:ProgramFiles(x86)}\aria2\aria2c.exe",
+        "$env:USERPROFILE\scoop\shims\aria2c.exe",
+        (Join-Path (Get-SafeTempDir) "aria2c.exe")
+    )
+    foreach ($p in $commonPaths) {
+        if (Test-SafePath $p) {
+            return $p
+        }
+    }
+
+    return $null
+}
+
+function Invoke-FastDownload {
+    param(
+        [Parameter(Mandatory=$true)][string]$Url,
+        [Parameter(Mandatory=$true)][string]$DestinationPath
+    )
+
+    $destDir = Split-Path -Parent $DestinationPath
+    $destFile = Split-Path -Leaf $DestinationPath
+
+    if (-not (Test-SafePath $destDir)) {
+        Invoke-SafeBool "Create destination directory" { New-Item -ItemType Directory -Path $destDir -Force | Out-Null } | Out-Null
+    }
+
+    if (Test-SafePath $DestinationPath) {
+        Remove-Item -LiteralPath $DestinationPath -Force -ErrorAction SilentlyContinue
+    }
+    $aria2Control = "$DestinationPath.aria2"
+    if (Test-SafePath $aria2Control) {
+        Remove-Item -LiteralPath $aria2Control -Force -ErrorAction SilentlyContinue
+    }
+
+    # 1. Try aria2c with 80 parallel split connections and 1MB chunks
+    $aria2Bin = Get-Aria2cPath
+    if ($aria2Bin) {
+        Info "Accelerating download with aria2c (80 splits, 1MB chunks)..."
+        try {
+            $ariaArgs = @(
+                "--disable-ipv6=true",
+                "-x", "16",
+                "-s", "80",
+                "-j", "16",
+                "-k", "1M",
+                "--file-allocation=none",
+                "--allow-overwrite=true",
+                "--auto-file-renaming=false",
+                "--summary-interval=1",
+                "--console-log-level=warn",
+                "--dir=$destDir",
+                "-o", "$destFile",
+                "$Url"
+            )
+            & $aria2Bin @ariaArgs
+            if ($LASTEXITCODE -eq 0) {
+                if (Test-SafePath $DestinationPath) {
+                    $item = Get-Item -LiteralPath $DestinationPath
+                    if ($item.Length -gt 0) {
+                        Info "Download completed via aria2c ($($item.Length) bytes)."
+                        return $true
+                    }
+                }
+            }
+            Warn "aria2c finished with code $LASTEXITCODE; falling back to secondary downloader..."
+        } catch {
+            Warn "aria2c encountered an error: $_. Falling back..."
+        }
+    } else {
+        Debug2 "aria2c not found; proceeding with secondary downloader..."
+    }
+
+    # 2. Try curl.exe (built into modern Windows)
+    $curl = Get-Command curl.exe -ErrorAction SilentlyContinue
+    if ($curl) {
+        Info "Downloading with curl..."
+        try {
+            $curlArgs = @("-fSL", "--progress-bar", "--connect-timeout", "10", "--retry", "3", "-o", $DestinationPath, "$Url")
+            & $curl.Source @curlArgs
+            if ($LASTEXITCODE -eq 0) {
+                if (Test-SafePath $DestinationPath) {
+                    $item = Get-Item -LiteralPath $DestinationPath
+                    if ($item.Length -gt 0) {
+                        Info "Download completed via curl ($($item.Length) bytes)."
+                        return $true
+                    }
+                }
+            }
+            Warn "curl finished with code $LASTEXITCODE; falling back to Invoke-WebRequest..."
+        } catch {
+            Warn "curl encountered an error: $_. Falling back..."
+        }
+    }
+
+    # 3. Fallback to Invoke-WebRequest
+    Info "Downloading with Invoke-WebRequest..."
+    try { [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12 -bor [System.Net.SecurityProtocolType]::Tls13 } catch { }
+    $prevProgress = $ProgressPreference
+    $ProgressPreference = 'SilentlyContinue'
+    try {
+        Invoke-WebRequest -Uri $Url -OutFile $DestinationPath -UseBasicParsing -ErrorAction Stop
+        $ProgressPreference = $prevProgress
+        if (Test-SafePath $DestinationPath) {
+            $item = Get-Item -LiteralPath $DestinationPath
+            if ($item.Length -gt 0) {
+                Info "Download completed via Invoke-WebRequest ($($item.Length) bytes)."
+                return $true
+            }
+        }
+    } catch {
+        $ProgressPreference = $prevProgress
+        Warn "Invoke-WebRequest failed: $_"
+    }
+
+    return $false
+}
+
 function Save-SafeUrl($Description, $Uri, $OutFile) {
     Debug2 "GET $Uri ($Description)"
-    return Invoke-SafeBool $Description { Invoke-WebRequest -Headers $script:headers -Uri $Uri -OutFile $OutFile -UseBasicParsing -ErrorAction Stop }
+    $isDownloaded = Invoke-FastDownload -Url $Uri -DestinationPath $OutFile
+    if ($isDownloaded) {
+        return $true
+    }
+    Add-CrashReport "url:$Uri" $Description "false" "All downloaders failed"
+    return $false
 }
 function Convert-SafeJson($Description, $Raw) {
     try {
@@ -231,15 +376,6 @@ function Convert-SafeJson($Description, $Raw) {
         return Save-SafeUrl "Release download" $dlUrl $OutFile
     }
 
-    function Get-SafeTempDir() {
-        $safeTemp = Get-SafeEnv "TEMP"
-        if ($safeTemp) { return $safeTemp }
-        try {
-            $tmp = [System.IO.Path]::GetTempPath()
-            if ($tmp) { return $tmp }
-        } catch { Add-CrashReport "temp path" "Get-SafeTempDir" "current directory" $_ }
-        try { return (Get-Location).Path } catch { Add-CrashReport "Get-Location" "Get-SafeTempDir" "." $_; return "." }
-    }
 
     function Download-MainArtifact($Repo, $Asset, $OutFile) {
         Info "Looking for latest main-branch artifact named $Asset ..."
@@ -484,7 +620,7 @@ function Convert-SafeJson($Description, $Raw) {
                 $shortcut.TargetPath       = $script:guiExePath
                 $shortcut.WorkingDirectory = $script:binDir
                 $shortcut.IconLocation     = "$($script:guiExePath),0"
-                $shortcut.Description      = "jpg2pdf — combine images, PDFs, HTML and Word docs into one file"
+                $shortcut.Description      = "jpg2pdf - combine images, PDFs, HTML and Word docs into one file"
                 $shortcut.Save()
             } | Out-Null
             Info "Shortcut: $lnk"
@@ -511,12 +647,45 @@ function Convert-SafeJson($Description, $Raw) {
 
     Invoke-InstallerStep "Register context menu" {
         if (-not $script:NoContextMenu) {
-            $ctxRef = $(if ($script:Version) { $script:Version } else { "main" })
-            $ctxUrl  = "https://raw.githubusercontent.com/$script:Repo/$ctxRef/tools/jpg2pdf/scripts/register-context-menu.ps1"
-            $ctxFile = Join-SafePath (Get-SafeTempDir) "jpg2pdf-register-context-menu.ps1"
-            Info "Fetching context-menu registrar from $ctxUrl"
-            if (Save-SafeUrl "Context-menu registrar download" $ctxUrl $ctxFile) {
-                $null = Invoke-Safe "Context-menu registrar execution" { & powershell -NoProfile -ExecutionPolicy Bypass -File $ctxFile -ExePath $script:exePath } $null
+            $localRegistrar = $null
+            if ($PSScriptRoot) {
+                $candidateLocal = Join-SafePath $PSScriptRoot "tools\jpg2pdf\scripts\register-context-menu.ps1"
+                if (Test-SafePath $candidateLocal) {
+                    $localRegistrar = $candidateLocal
+                }
+            }
+            $ctxTarget = $null
+
+            if ($localRegistrar) {
+                Info "Using local context-menu registrar: $localRegistrar"
+                $ctxTarget = $localRegistrar
+            } else {
+                $ctxRef = $(if ($script:Version) { $script:Version } else { "main" })
+                $ctxUrl  = "https://raw.githubusercontent.com/$script:Repo/$ctxRef/tools/jpg2pdf/scripts/register-context-menu.ps1"
+                $ctxFile = Join-SafePath (Get-SafeTempDir) "jpg2pdf-register-context-menu.ps1"
+                Info "Fetching context-menu registrar from $ctxUrl"
+                $hasScript = Save-SafeUrl "Context-menu registrar download" $ctxUrl $ctxFile
+                if (-not $hasScript) {
+                    $mainUrl = "https://raw.githubusercontent.com/$script:Repo/main/tools/jpg2pdf/scripts/register-context-menu.ps1"
+                    Info "Retrying context-menu registrar from $mainUrl"
+                    $hasScript = Save-SafeUrl "Context-menu registrar main branch fallback" $mainUrl $ctxFile
+                }
+                if ($hasScript) {
+                    $ctxTarget = $ctxFile
+                }
+            }
+
+            if ($ctxTarget) {
+                Info "Executing context-menu registrar with target: $script:exePath"
+                $proc = Start-Process -FilePath "powershell.exe" -ArgumentList @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $ctxTarget, "-ExePath", $script:exePath) -NoNewWindow -Wait -PassThru
+                if ($proc.ExitCode -eq 0) {
+                    Info "Explorer context menu registered successfully."
+                } else {
+                    Add-CrashReport "register-context-menu" "Register context menu" "menu not registered" "exit code $($proc.ExitCode)"
+                    Warn "Context-menu registration exited with code $($proc.ExitCode)."
+                }
+            } else {
+                Warn "Could not obtain context-menu registrar script; skipping registration."
             }
         }
     } "skip context-menu registration" | Out-Null
