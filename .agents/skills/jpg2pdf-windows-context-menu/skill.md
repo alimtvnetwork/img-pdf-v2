@@ -10,24 +10,26 @@ This skill governs the Explorer right-click integration on Windows, registration
 ## Architectural Anchors
 - Registrar Script: `tools/jpg2pdf/scripts/register-context-menu.ps1`
 - Uninstaller Script: `tools/jpg2pdf/scripts/unregister-context-menu.ps1`
-- Queue Runner Generator: `Write-SelectedFilesRunnerV2` in `register-context-menu.ps1`
+- Integration Tests: `tools/jpg2pdf/tests/test_context_menu.py`
 - Hidden Launcher Generator: `Write-SelectedFilesLauncher` (`jpg2pdf-selected-launcher.vbs`)
 - GUI Launcher Generator: `Write-GuiLaunchScript` (`jpg2pdf-gui-launch.vbs`)
-- Registry Root: `HKCU:\Software\Classes` (Zero admin rights required)
+- Queue Runner Generator: `Write-SelectedFilesRunnerV2` (`jpg2pdf-selected-runner.cmd`)
+- Registry Root: `HKCU:\Software\Classes` (Zero admin elevation required)
 
-## Context Menu Hierarchy
+## Context Menu Registry Structure
 1. **Target Roots:**
-   - Folders: `Directory\shell` and `Directory\Background\shell`
-   - Files: `SystemFileAssociations\image\shell`, `SystemFileAssociations\.pdf\shell`, `SystemFileAssociations\.html\shell`, `SystemFileAssociations\.docx\shell`
+   - Folders: `Directory\shell\Jpg2PdfMenu` and `Directory\Background\shell\Jpg2PdfMenu`
+   - Files: `HKCU:\Software\Classes\*\shell\Jpg2PdfMenu`
+     - Uses `AppliesTo` filter: `System.FileExtension:=.jpg OR System.FileExtension:=.jpeg OR System.FileExtension:=.png OR System.FileExtension:=.webp OR System.FileExtension:=.bmp OR System.FileExtension:=.tif OR System.FileExtension:=.tiff OR System.FileExtension:=.pdf OR System.FileExtension:=.html OR System.FileExtension:=.htm OR System.FileExtension:=.docx OR System.FileExtension:=.doc`
 2. **Submenu Structure (Top level: `Combine into PDF ▸`):**
    - **`PDF ▸`:** Convert to A4, Convert to Letter, Convert to Legal, Convert to A4 (pencil/paper look).
    - **`Image ▸`:** Merge to single image (vertical/horizontal), Merge to pencil image.
    - **`UI ▸`:** `Open in jpg2pdf UI...` (launches desktop GUI with selection pre-loaded).
 
 ## Selection Queueing & Batching Architecture (CRITICAL UX)
-When a user selects 50 files in Explorer and clicks a context-menu verb, Explorer invokes the static verb **once per file**, passing `%1`.
-Without batching, this pops up 50 separate console windows.
-The solution implemented in `v2.1.2`–`v2.1.4` operates as follows:
+When a user selects multiple files in Explorer and clicks a context-menu verb, Explorer invokes the static verb **once per file**, passing `%1`.
+Without batching, this pops up multiple separate console windows.
+The multi-tier batching mechanism solves this:
 1. **The Hidden VBS Shim (`jpg2pdf-selected-launcher.vbs`):**
    - Invoked via `wscript.exe //nologo "...\jpg2pdf-selected-launcher.vbs" "<verb>" "%1"`.
    - Runs `jpg2pdf-selected-runner.cmd :queue <verb> "%1"` completely hidden (`intWindowStyle=0`).
@@ -42,13 +44,17 @@ The solution implemented in `v2.1.2`–`v2.1.4` operates as follows:
 1. **Registry Default Values:**
    - Explorer ONLY executes the unnamed/default value of a `command` key.
    - ALWAYS use `Set-Item -Value "..."` in PowerShell.
-   - NEVER use `Set-ItemProperty -Name "(default)"` — this creates a literal named property that Explorer ignores, resulting in silent click failures.
+   - NEVER use `Set-ItemProperty -Name "(default)"` -- this creates a literal named property that Explorer ignores, resulting in silent click failures.
 2. **MultiSelectModel:**
    - Always set `MultiSelectModel=Player` on leaf verb registry keys.
 3. **ASCII-Only:**
    - Plain ASCII characters only in `register-context-menu.ps1`, `unregister-context-menu.ps1`, `.cmd`, and `.vbs` files (`->`, `--`, `'`). PS 5.1 will mis-parse em-dashes and smart quotes.
 
 ## Verification Checklist
+- Run context menu integration test suite:
+  ```bash
+  python -m pytest -q tools/jpg2pdf/tests/test_context_menu.py
+  ```
 - Parse script syntax in PowerShell:
   ```powershell
   pwsh -NoProfile -Command "[System.Management.Automation.Language.Parser]::ParseFile('tools/jpg2pdf/scripts/register-context-menu.ps1', [ref]$null, [ref]$null)"

@@ -8,27 +8,26 @@ description: Running test suites, verifying regressions, handling subprocess enc
 This skill governs testing protocols, regression prevention, pytest execution, and cross-platform verification for `jpg2pdf`.
 
 ## Architectural Anchors
-- Pytest Suite: `tools/jpg2pdf/tests/test_smoke.py`
+- Pytest Smoke Suite: `tools/jpg2pdf/tests/test_smoke.py`
+- Context Menu Integration Suite: `tools/jpg2pdf/tests/test_context_menu.py`
 - Requirements: `tools/jpg2pdf/requirements.txt`
 - CI Test Job: `.github/workflows/release.yml` (`tests` job)
-- Known Issue Log: `.lovable/issues/01-non-ascii-em-dash-unicode-decode-error.md`
+- CI Failures History: `.ai-memory/cicd-issues/`
+- Known Issue Log: `.ai-memory/issues/01-non-ascii-em-dash-unicode-decode-error.md`
 
-## Test Matrix & Capabilities (`test_smoke.py`)
-1. **`test_settings_roundtrip_and_push_recent`:**
-   - Verifies GUI settings save and load cycle with mocked APPDATA/XDG/HOME.
-   - Asserts default pencil strength is strictly `"subtle"`.
-   - Tests deduplication and list capping (`MAX_RECENT = 12`).
-2. **`test_cli_version_matches_files`:**
-   - Asserts `jpg2pdf --version` matches the string in `tools/jpg2pdf/VERSION`.
-3. **`test_cli_png_to_pdf`:**
-   - Synthesizes a test PNG, executes `jpg2pdf --files ... --size a4 --out out.pdf`.
-   - Asserts returncode is 0 and output starts with `%PDF`.
-4. **`test_cli_stacked_image`:**
-   - Stacks two images into an output image with `--output-mode image --stack vertical`.
-   - Asserts valid PNG header bytes (`\x89PNG\r\n\x1a\n`).
-5. **`test_cli_html_to_pdf`:**
-   - Synthesizes HTML and verifies conversion via `xhtml2pdf`.
-   - Skips gracefully if `xhtml2pdf` is unavailable in the environment.
+## Test Matrix & Capabilities
+
+### 1. `test_smoke.py`
+- **`test_settings_roundtrip_and_push_recent`:** Verifies GUI settings save/load cycle with mocked APPDATA/XDG/HOME. Asserts default pencil strength is strictly `"subtle"`. Tests deduplication and capping (`MAX_RECENT = 12`).
+- **`test_cli_version_matches_files`:** Asserts `jpg2pdf --version` matches the string in `tools/jpg2pdf/VERSION`.
+- **`test_cli_png_to_pdf`:** Synthesizes a test PNG, executes `jpg2pdf --files ... --size a4 --out out.pdf`, asserts returncode 0 and `%PDF` header.
+- **`test_cli_stacked_image`:** Stacks two images into an output image with `--output-mode image --stack vertical`. Asserts valid PNG header bytes.
+- **`test_cli_html_to_pdf`:** Synthesizes HTML and verifies conversion via `xhtml2pdf` (skips gracefully if missing).
+
+### 2. `test_context_menu.py` (Windows Integration)
+- Tests `register-context-menu.ps1` with a dummy executable.
+- Verifies registry keys exist under `HKCU:\Software\Classes\*\shell\Jpg2PdfMenu` with valid `AppliesTo` filter, `Directory\shell\Jpg2PdfMenu`, and `Directory\Background\shell\Jpg2PdfMenu`.
+- Tests `unregister-context-menu.ps1` cleanly removes all registry keys without residue.
 
 ## Encoding & Subprocess Guardrails
 1. **Windows cp1252 Decoding Trap:**

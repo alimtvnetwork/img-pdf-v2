@@ -12,10 +12,23 @@ This skill governs the installation, local bootstrapping, and uninstallation scr
 - macOS / Linux Installer: `install.sh`
 - Local Developer Runner & PyInstaller Builder: `run.ps1`
 - System Uninstaller: `uninstall.ps1`
-- PowerShell Spec: `spec/02-powershell.md`
-- Bash Spec: `spec/03-bash-installer.md`
+- Context Menu Registrar: `tools/jpg2pdf/scripts/register-context-menu.ps1`
+- PowerShell Spec: `02-spec/02-powershell.md`
+- Bash Spec: `02-spec/03-bash-installer.md`
 
-## The 3-Tier Fallback Chain (Non-Negotiable Core Rule)
+## 3-Tier Multi-Connection Fast Download Architecture (`Invoke-FastDownload`)
+In `install.ps1`, asset and script downloads use a prioritized 3-tier downloader mechanism:
+1. **Tier 1: `aria2c` Multi-Connection Acceleration:**
+   - Detects `aria2c` on the system (`Get-Command aria2c.exe`).
+   - Executes with optimized parameters: `-x 16 -s 80 -j 16 -k 1M --file-allocation=none --allow-overwrite=true --auto-file-renaming=false --summary-interval=1 --console-log-level=warn`.
+   - Dramatically reduces download times on high-bandwidth connections.
+2. **Tier 2: `curl.exe` Native Downloader:**
+   - Uses built-in Windows `curl.exe` with arguments: `-fSL --progress-bar --connect-timeout 10 --retry 3`.
+3. **Tier 3: `Invoke-WebRequest` Fallback:**
+   - Enables TLS 1.2 / TLS 1.3 explicitly (`[System.Net.ServicePointManager]::SecurityProtocol`).
+   - Suppresses `$ProgressPreference` to prevent PowerShell slow byte-by-byte rendering bugs.
+
+## The 3-Tier Installation Fallback Chain (Non-Negotiable Core Rule)
 Every installer MUST attempt installation in this exact order, without early exits:
 1. **GitHub Release Binary Asset:**
    - Query GitHub API for release tag matching `$JPG2PDF_VERSION` (or `/releases/latest`).
@@ -29,8 +42,11 @@ Every installer MUST attempt installation in this exact order, without early exi
    - Write a lightweight executable wrapper (`jpg2pdf` or `jpg2pdf.cmd`) pointing to the local `tools/jpg2pdf/src/jpg2pdf.py`.
    - **Crucial Rule:** If the wrapper is created but verification (`jpg2pdf --version`) fails because Python packages are missing, the installer MUST NOT delete the wrapper or exit with failure. It logs a warning, prints the log path, and keeps the wrapper in place for manual dependency resolution.
 
+## Local vs Remote Context Menu Registrar
+- When `install.ps1` runs inside a cloned repository (local `$PSScriptRoot`), it prefers the local registrar `tools/jpg2pdf/scripts/register-context-menu.ps1` instead of downloading from GitHub.
+- When run as a one-liner (`irm ... | iex`), it downloads `register-context-menu.ps1` from the specific version tag, with a fallback to `main`.
+
 ## Bulletproof Startup Architecture
-The user complaint "the install script is still crashing" must never recur:
 1. **PowerShell (`install.ps1`, `run.ps1`):**
    - NEVER use `Set-StrictMode` at script startup.
    - Set `$ErrorActionPreference = 'Continue'` at the very top.
@@ -44,8 +60,8 @@ The user complaint "the install script is still crashing" must never recur:
    - On macOS: Automatically strip quarantine flag (`xattr -dr com.apple.quarantine`).
 
 ## PowerShell Encoding (Windows PS 5.1 Compatibility)
-- **ASCII Only:** All `.ps1` files must contain only standard 7-bit ASCII characters.
-- Non-ASCII characters (em-dashes `—`, arrows `→`, smart quotes `'`) will fail to parse under Windows 10/11 default PowerShell 5.1 unless saved with a UTF-8 BOM. Prefer ASCII (`--`, `->`, `'`).
+- **ASCII Only:** All `.ps1` files must contain only standard 7-bit ASCII characters (`--`, `->`, `'`).
+- Non-ASCII characters (em-dashes `—`, arrows `→`, smart quotes `'`) fail to parse under Windows default PowerShell 5.1 without a UTF-8 BOM.
 
 ## Local Dev Runner (`run.ps1`)
 - Bootstraps local environment: checks/installs Python 3 and Git via `winget`.
@@ -55,7 +71,7 @@ The user complaint "the install script is still crashing" must never recur:
 - Top-level `trap` handler prints last 40 log lines, creates `jpg2pdf-crash.log`, and pauses so double-clicked windows do not vanish.
 
 ## Verification Checklist
-- Validate PowerShell parser on Linux/macOS/Windows:
+- Validate PowerShell parser on Windows/Linux/macOS:
   ```powershell
   pwsh -NoProfile -Command "[System.Management.Automation.Language.Parser]::ParseFile('install.ps1', [ref]$null, [ref]$null)"
   pwsh -NoProfile -Command "[System.Management.Automation.Language.Parser]::ParseFile('run.ps1', [ref]$null, [ref]$null)"

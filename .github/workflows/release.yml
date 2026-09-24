@@ -239,12 +239,14 @@ jobs:
           name: ${{ matrix.asset }}
           path: dist/${{ matrix.asset }}
           if-no-files-found: error
+          retention-days: 1
       - name: Upload GUI artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.gui_asset }}
           path: dist/${{ matrix.gui_asset }}
           if-no-files-found: error
+          retention-days: 1
       - name: Upload macOS .app bundle
         if: matrix.bundle_asset != ''
         uses: actions/upload-artifact@v4
@@ -252,6 +254,7 @@ jobs:
           name: ${{ matrix.bundle_asset }}
           path: dist/${{ matrix.bundle_asset }}
           if-no-files-found: error
+          retention-days: 1
 
 
 
@@ -413,5 +416,13 @@ jobs:
             dist/SHA256SUMS.txt
             dist/install.ps1
             dist/install.sh
+
+      - name: Purge Run Artifacts Post-Release
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 03-ai-scripts/34-purge-github-actions-artifacts.py --repo "${{ github.repository }}" --artifacts-only || true
+
 
 
