@@ -322,7 +322,7 @@ Write or update `.ai-memory/coding-guidelines.md` and `.cursorrules` via `script
 
 ## TO AI
 
-Write the spec first in detail for this verbatim and the derived tasks. Plan first in memory and in `.ai-memory/plans/01-index.md` plus a plan file under `.ai-memory/plans/pending/`. Then implement only when the user says `next`, one phase at a time. If the task is large and needs iteration, list the remaining tasks at the end of each phase so `next` continues cleanly.
+Write the spec first in detail for this verbatim and the derived tasks. Plan first in memory and in `.ai-memory/plans/readme.md` plus a plan file under `.ai-memory/plans/pending/`. Then implement only when the user says `next`, one phase at a time. If the task is large and needs iteration, list the remaining tasks at the end of each phase so `next` continues cleanly.
 
 If you have any question or confusion, feel free to ask. If you are creating multiple tasks and any of them are big, structure them so that when the user says `next` you continue with the remaining tasks. Do you understand? Always add this same paragraph at the end of every proofread output, and repeat it when a `next` command is issued so the AI is reminded again and again.
 

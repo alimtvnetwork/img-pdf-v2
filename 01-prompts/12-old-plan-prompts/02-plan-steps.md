@@ -30,8 +30,8 @@ Planning IS the work. Go deep: read the repo, reconcile prior state, think end-t
 
 ## Lifecycle
 
-- New plan: write to `.ai-memory/plans/pending/01-<slug>.md` with `Status: pending`. Update `.ai-memory/plans/01-index.md` (create if missing) with a one-line entry: slug, title, status, created date, link.
-- Done: `mv` to `.ai-memory/plans/completed/01-<slug>.md`, flip `Status: completed` in the same move, update `.ai-memory/plans/01-index.md`. Never copy. Never duplicate.
+- New plan: write to `.ai-memory/plans/pending/01-<slug>.md` with `Status: pending`. Update `.ai-memory/plans/readme.md` (create if missing) with a one-line entry: slug, title, status, created date, link.
+- Done: `mv` to `.ai-memory/plans/completed/01-<slug>.md`, flip `Status: completed` in the same move, update `.ai-memory/plans/readme.md`. Never copy. Never duplicate.
 
 ## Release policy (READ THIS, IT IS LAW)
 
@@ -72,7 +72,7 @@ Route user input into the correct file BEFORE writing the plan, then link it fro
 | Command, new convention, "always do X", new CLI         | `.ai-memory/spec/commands/01-<slug>.md`         |
 | Bug, regression, broken behavior                        | `.ai-memory/issues/01-<slug>.md`                |
 | CI/CD-specific failure                                  | `.ai-memory/cicd-issues/01-<slug>.md`           |
-| Institutional knowledge (pattern, convention, decision) | `.ai-memory/memory/` + update `.ai-memory/memory/01-index.md` |
+| Institutional knowledge (pattern, convention, decision) | `.ai-memory/memory/` + update `.ai-memory/memory/readme.md` |
 | "Never do this again"                                   | `.ai-memory/strictly-avoid.md`                  |
 | Idea, not yet approved                                  | `.ai-memory/suggestions.md`                     |
 
@@ -82,7 +82,7 @@ Create missing folders on demand.
 
 Every attachment is REQUIRED input. Never leave one only in chat.
 
-1. Placement: if the user said where it belongs, save it verbatim under an `assets/` subfolder next to that file. Otherwise best-fit: UI/design reference to `assets/`; bug artifact to matching issue's `assets/`; ambiguity clarification to matching ambiguity's `assets/`; project-wide asset to `.ai-memory/assets/<slug>/` and note in `.ai-memory/memory/01-index.md`.
+1. Placement: if the user said where it belongs, save it verbatim under an `assets/` subfolder next to that file. Otherwise best-fit: UI/design reference to `assets/`; bug artifact to matching issue's `assets/`; ambiguity clarification to matching ambiguity's `assets/`; project-wide asset to `.ai-memory/assets/<slug>/` and note in `.ai-memory/memory/readme.md`.
 2. Name: lowercase-hyphenated, keep the original extension.
 3. Reference: the plan lists every asset in an `## Attachments` section, one bullet per file, with a one-line caption stating what the AI should take from it.
 4. Provenance: note when and by whom in the plan/spec.
@@ -148,7 +148,7 @@ Coding tasks (Go, Python, PHP, TS, any backend):
 ## Checklist before replying (every box)
 
 - [ ] `{{n}}` resolved (integer > 0); read this prompt end-to-end
-- [ ] Scanned `.ai-memory/` recursively; read `.ai-memory/plans/01-index.md`, every `pending/` file, `.ai-memory/memory/01-index.md` and referenced files, every open ambiguity, relevant `02-spec/<NN>-<slug>/`, error-management specs for code tasks; skimmed `completed/`
+- [ ] Scanned `.ai-memory/` recursively; read `.ai-memory/plans/readme.md`, every `pending/` file, `.ai-memory/memory/readme.md` and referenced files, every open ambiguity, relevant `02-spec/<NN>-<slug>/`, error-management specs for code tasks; skimmed `completed/`
 - [ ] Listed prior unresolved pending tasks for the plan
 - [ ] Captured new commands / issues / cicd-issues / ambiguities / memory / strictly-avoid to their files; moved answered ambiguities to `02-ambiguity-resolved/` with `## Resolution`
 - [ ] Verified anti-hallucination: stopped and asked clarifying questions if files/specs were missing
@@ -158,7 +158,7 @@ Coding tasks (Go, Python, PHP, TS, any backend):
 - [ ] EXACTLY `{{n}}` steps, counted twice; each concrete, verifiable; no filler
 - [ ] Verification section describes how each step is confirmed
 - [ ] Subtask files under `.ai-memory/plans/subtasks/01-<slug>/01-<subslug>.md` where depth was needed
-- [ ] `.ai-memory/plans/01-index.md` updated (created if missing)
+- [ ] `.ai-memory/plans/readme.md` updated (created if missing)
 - [ ] Nothing executed; no `plan--create`; no approval tool; no "should I proceed?"
 - [ ] No em dashes; no softened wording; no silently guessed ambiguity
 

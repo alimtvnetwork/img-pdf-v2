@@ -26,11 +26,11 @@ Inventorying IS the work this turn. Go deep: read every folder, open every pendi
 
 Walk each of these recursively. Missing = note it, continue.
 
-1. `.ai-memory/plans/01-index.md`
+1. `.ai-memory/plans/readme.md`
 2. `.ai-memory/plans/pending/` (every file with `01-`, `02-` sequence)
 3. `.ai-memory/plans/subtasks/` (every parent, every subtask file with `Status:` not `completed`)
 4. `.ai-memory/plan.md` if the project uses the single-file variant, `## Active` / non-`## Completed` sections
-5. `.ai-memory/memory/01-index.md` and every file it references, looking for pending work, TODOs, `⏳ Pending`, `🔄 In Progress`, `🚫 Blocked`
+5. `.ai-memory/memory/readme.md` and every file it references, looking for pending work, TODOs, `⏳ Pending`, `🔄 In Progress`, `🚫 Blocked`
 6. `.ai-memory/memory/workflow/` current workflow state
 7. `.ai-memory/memory/` for verbatim user directives not yet implemented
 8. `.ai-memory/spec/commands/` for commands / conventions not yet enforced in code

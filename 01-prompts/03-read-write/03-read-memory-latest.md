@@ -3,23 +3,24 @@
 > **Prompt Version:** 2.1.0
 > **Synchronization:** Main Meta-Repo & Connected Workspaces
 
-/goal Load the project's identity, specifications, conventions, active plans, recent git commit history, and Root Cause Analysis (RCA) records into your context before starting any task. Never repeat a logged past failure.
+[/goal](slashCommand:goal) Load the project's identity, specifications, conventions, active plans, recent git commit history, and Root Cause Analysis (RCA) records into your context before starting any task. Never repeat a logged past failure.
 
-/learn Ingest and internalize all past learnings, user corrections, patterns, coding rules, error philosophies, RCA logs, and project specifications from `.ai-memory/memory/learned/`, `.ai-memory/memory/`, `.ai-memory/issues/`, `.ai-memory/cicd-issues/`, and `.ai-memory/strictly-avoid.md` so Antigravity operates with zero hallucination.
+[/learn](slashCommand:learn) Ingest and internalize all past learnings, user corrections, patterns, coding rules, error philosophies, RCA logs, and project specifications from `.ai-memory/memory/learned/`, `.ai-memory/memory/`, `.ai-memory/issues/`, `.ai-memory/cicd-issues/`, and `.ai-memory/strictly-avoid.md` so Antigravity operates with zero hallucination.
 
 The specs, `.ai-memory/` folder, `what-to-read.md`, recent git commit history, root `readme.md`, and the codebase as a whole are the single source of truth. Your training data is not. If the two disagree, the repo wins, every time.
 
 Autonomously self-loop and read:
 
-- /learn the last 10 git commits (via `git log -n 10 --stat` and diffs) to understand what changes were made across the files so you understand the latest changes and can work with them seamlessly.
-- /learn `.ai-memory/what-to-read.md` first as the authoritative reading priority list before exploring the rest of the codebase.
-- /learn the entire codebase as a whole to create memory.
-- /learn the root `readme.md` to create memory.
-- /learn the entire `.ai-memory/` folder (especially `what-to-read.md`, `.ai-memory/coding-guidelines.md` and all files they reference) to create memory.
-- /learn every single folder, subfolder, and nested markdown file in the `02-spec/` directory (specifically `02-spec/02-coding-guidelines/`, `02-spec/03-error-manage/`, enum fixes, database conventions) to create memory.
-- /learn all recent Root Cause Analysis (RCA) records, retrospectives, and past failure post-mortems in `.ai-memory/issues/01-<slug>.md`, `.ai-memory/cicd-issues/01-<slug>.md`, and `02-spec/03-error-manage/01-error-resolution/03-retrospectives/` to ensure past mistakes are never repeated.
-- /learn all hard prohibitions in `.ai-memory/strictly-avoid.md`.
+- [/learn](slashCommand:learn) the last 10 git commits (via `git log -n 10 --stat` and diffs) to understand what changes were made across the files so you understand the latest changes and can work with them seamlessly.
+- [/learn](slashCommand:learn) `.ai-memory/what-to-read.md` first as the authoritative reading priority list before exploring the rest of the codebase.
+- [/learn](slashCommand:learn) the entire codebase as a whole to create memory.
+- [/learn](slashCommand:learn) the root `readme.md` to create memory.
+- [/learn](slashCommand:learn) the entire `.ai-memory/` folder (especially `what-to-read.md`, `.ai-memory/coding-guidelines.md` and all files they reference) to create memory.
+- [/learn](slashCommand:learn) every single folder, subfolder, and nested markdown file in the `02-spec/` directory (specifically `02-spec/02-coding-guidelines/`, `02-spec/03-error-manage/`, enum fixes, database conventions) to create memory.
+- [/learn](slashCommand:learn) all recent Root Cause Analysis (RCA) records, retrospectives, and past failure post-mortems in `.ai-memory/issues/01-<slug>.md`, `.ai-memory/cicd-issues/01-<slug>.md`, and `02-spec/03-error-manage/01-error-resolution/03-retrospectives/` to ensure past mistakes are never repeated.
+- [/learn](slashCommand:learn) all hard prohibitions in `.ai-memory/strictly-avoid.md`.
 - Read every pending task across `.ai-memory/plans/pending/01-<slug>.md`, `.ai-memory/plans/subtasks/01-<slug>/01-<subslug>.md`, `.ai-memory/issues/`, and `.ai-memory/cicd-issues/`, listing them out in full.
+- [/learn](slashCommand:learn) Spawning Agents Mandate (2-Agent Orchestration): The running time must spawn 2 agents all the time for reading, exploring, and ingesting codebase context in parallel.
 
 Note on spec folder naming: Spec folders follow the hyphenated pattern `02-spec/<NN>-<slug>/` where `<NN>` is a sequence prefix and `<slug>` is the descriptive name. These numbers and folder placements are not rigidly fixed and may switch or be reorganized between projects. This canonical layout represents the general architecture the AI must dynamically discover, inspect, and read in full.
 
@@ -45,7 +46,7 @@ If you cannot do that, keep reading. Do not start work.
 > **READ-ONLY MANDATE (TOTAL BAN ON REPOSITORY WRITES):**
 > - The reading phase is strictly, 100% read-only for the repository workspace.
 > - **NEVER** modify, create, rename, or delete any files or directories inside the repository during this workflow.
-> - **NEVER** write or update memory files (e.g. `.ai-memory/memory/`, `.ai-memory/memory/learned/`, `.ai-memory/01-index.md`).
+> - **NEVER** write or update memory files (e.g. `.ai-memory/memory/`, `.ai-memory/memory/learned/`, `.ai-memory/readme.md`).
 > - **NEVER** auto-generate or write skills/rules (`.agents/skills/`, `.agents/rules/`).
 > - **NEVER** modify `readme.md`, `version.json`, or any repository configurations.
 > - **NEVER** execute `git add`, `git commit`, `git push`, or modify git working tree state during reading.
@@ -97,7 +98,7 @@ The `.ai-memory/`, `02-spec/`, and knowledge base folders can be massive. To pro
 >      - **File Reading & Content Inspection:**
 >        - `gitmap cat <filepath>`: Stream raw file content directly to stdout without touching disk.
 >          - Example: `gitmap cat .ai-memory/what-to-read.md` (read authoritative reading sequence)
->          - Example: `gitmap cat 02-spec/01-index.md` (read spec index directly)
+>          - Example: `gitmap cat 02-spec/readme.md` (read spec index directly)
 >          - Example: `gitmap cat readme.md` (read project identity and guidelines)
 >      - **Repository Status & Changelog Context:**
 >        - `gitmap status` (alias `st`): Display branch state, clean/dirty working tree, and ahead/behind counts.
@@ -147,7 +148,7 @@ The `.ai-memory/`, `02-spec/`, and knowledge base folders can be massive. To pro
 
 8. Memory persistence deferred (Zero repository writes during reading):
    - You are STRICTLY FORBIDDEN from writing to `.ai-memory/` or the repository during the reading workflow.
-   - Do NOT write summaries into `.ai-memory/memory/learned/` or update `.ai-memory/01-index.md`.
+   - Do NOT write summaries into `.ai-memory/memory/learned/` or update `.ai-memory/readme.md`.
    - Do NOT update `.ai-memory/what-to-read.md` or `.ai-memory/plans/`.
    - Ingest knowledge into memory context and internal state only.
    - If sub-agents need to communicate or record scratch notes during reading, write exclusively to the user temp directory: `%TEMP%/<repo-name>/` (or `$TEMP/<repo-name>/`).
@@ -157,7 +158,11 @@ The `.ai-memory/`, `02-spec/`, and knowledge base folders can be massive. To pro
    - Use available guidelines in the prompt library.
    - If critical information is absent, explicitly ask the user for the file.
 
-10. CRITICAL read-only enforcement:
+10. Special Companion Repositories (`repo-secrets` & `repo-cache`):
+    - Identify whether the workspace relies on `repo-secrets` (`rs`, `gitmap cd rs`) for environment credentials, `.env` files, API keys, or private tokens. All secrets MUST be stored in `repo-secrets/XX-<repo-name>/01-<slug>.ext` and never committed into project source trees.
+    - Identify whether temporary test harnesses, PowerShell (`.ps1`) runners, or scratch benchmarks should be preserved in `repo-cache` (`rc`, `gitmap cd rc`) under `repo-cache/XX-<repo-name>/01-<slug>.ps1` for multi-project reuse.
+
+11. CRITICAL read-only enforcement:
     - Other than fixing the root `readme.md` lowercase naming if needed, you MUST NOT refactor, edit, or write any application source code.
     - This is a strictly read and analysis phase.
 
@@ -169,7 +174,7 @@ To guarantee institutional memory and prevent regressions across all workflows (
 
 1. General Issue / Bug RCAs:
    - Path: `.ai-memory/issues/01-<slug>.md` (sequenced as `01-`, `02-`, etc.)
-   - Index: Registered in `.ai-memory/01-index.md` (or `.ai-memory/plans/01-index.md`)
+   - Index: Registered in `.ai-memory/readme.md` (or `.ai-memory/plans/readme.md`)
    - Mandatory Structure: Error description, exact file/line location, Root Cause Analysis (one-sentence root cause + deep analysis), fix strategy, and prevention checklist.
 
 2. CI/CD Failure RCAs:
@@ -179,7 +184,7 @@ To guarantee institutional memory and prevent regressions across all workflows (
 
 3. Retrospectives & Architectural Failure Learnings:
    - Path: `.ai-memory/memory/learned/01-<slug>.md` and `02-spec/03-error-manage/01-error-resolution/03-retrospectives/01-<slug>.md`
-   - Index: Registered in `.ai-memory/memory/01-index.md`
+   - Index: Registered in `.ai-memory/memory/readme.md`
 
 4. Hard Avoidances / CODE RED Prohibitions:
    - Path: `.ai-memory/strictly-avoid.md`
@@ -213,7 +218,7 @@ Before touching any code, drafting plans, or executing tasks, the AI MUST inspec
 ### 1.1 Read `what-to-read.md` First (Authoritative Priority List)
 
 1. Read `.ai-memory/what-to-read.md` in full before reading other files.
-2. Follow the exact prioritized reading order defined in `.ai-memory/what-to-read.md` (e.g. `version.json`, `.ai-memory/memory/01-index.md`, learned memories, coding guidelines, active plans).
+2. Follow the exact prioritized reading order defined in `.ai-memory/what-to-read.md` (e.g. `version.json`, `.ai-memory/memory/readme.md`, learned memories, coding guidelines, active plans).
 3. The reading sequence in `what-to-read.md` overrides any generic assumptions or ad-hoc file exploration.
 
 ### 1.2 Confirm Root `readme.md` Lowercase (Auto-Fix & Commit)
@@ -229,7 +234,7 @@ Walk `.ai-memory/` recursively. Every file matters. Missing files are noted, not
 
 > [!IMPORTANT]
 > **MANDATORY `.ai-memory/*.md` FLAGGING & AUDIT RULE:**
-> Every single `.md` file discovered directly in `.ai-memory/` (e.g. `.ai-memory/folder-structure.md`, `.ai-memory/prompts.md`, `.ai-memory/strictly-avoid.md`, `version.json`) or inside any nested subdirectory MUST be actively read, cataloged, and flagged in the memory log. If an unindexed or orphan markdown file is found, immediately raise a flag in the context log and register it into `.ai-memory/memory/01-index.md` or `.ai-memory/plans/01-index.md`.
+> Every single `.md` file discovered directly in `.ai-memory/` (e.g. `.ai-memory/folder-structure.md`, `.ai-memory/prompts.md`, `.ai-memory/strictly-avoid.md`, `version.json`) or inside any nested subdirectory MUST be actively read, cataloged, and flagged in the memory log. If an unindexed or orphan markdown file is found, immediately raise a flag in the context log and register it into `.ai-memory/memory/readme.md` or `.ai-memory/plans/readme.md`.
 
 | #   | Path                                                  | What you get                                                                                                                                |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -237,10 +242,10 @@ Walk `.ai-memory/` recursively. Every file matters. Missing files are noted, not
 | 2   | `.ai-memory/folder-structure.md`                | Canonical architectural map of all `.ai-memory/` folders, scripts, and naming conventions.                                                  |
 | 3   | `.ai-memory/strictly-avoid.md`                          | Hard prohibitions (CODE RED) — append-only, never truncate.                                                                               |
 | 4   | `.ai-memory/coding-guidelines.md`     | Master single source of truth for cross-language coding guidelines, `Result[T]` envelopes, and `is`/`has` booleans.                       |
-| 5   | `03-ai-scripts/`                            | Automated Python utilities (`01-file-manipulator.py`, `06-cicd-local-runner.py`, `08-fast-file-scanner.py`, `09-fast-cached-grep.py`, `01-index.md`). Pre-warms `tmp/cache/` file caches for rapid zero-overhead file discovery across folders. |
+| 5   | `03-ai-scripts/`                            | Automated Python utilities (`01-file-manipulator.py`, `06-cicd-local-runner.py`, `08-fast-file-scanner.py`, `09-fast-cached-grep.py`, `readme.md`). Pre-warms `tmp/cache/` file caches for rapid zero-overhead file discovery across folders. |
 | 6   | `.ai-memory/prompts.md` + `01-prompts/`           | Canonical prompt index and mirrored execution prompts (`cg-execute/`, `execute/`, `ci-cd/`).                                              |
-| 7   | `.ai-memory/memory/01-index.md`                         | Master index of institutional knowledge. Then read every file it references recursively.                                                 |
-| 8   | `.ai-memory/plans/01-index.md`                             | Master index of all plans (pending + completed + subtasks). Read this before touching individual plan files.                               |
+| 7   | `.ai-memory/memory/readme.md`                         | Master index of institutional knowledge. Then read every file it references recursively.                                                 |
+| 8   | `.ai-memory/plans/readme.md`                             | Master index of all plans (pending + completed + subtasks). Read this before touching individual plan files.                               |
 | 9   | `.ai-memory/plans/pending/`                             | Active plans, `01-<slug>.md` — read all and list out each pending item.                                                                   |
 | 10  | `.ai-memory/plans/subtasks/`                            | Granular 5–8 file batch files (`batch-01.md`, etc.) linked from parent plans.                                                              |
 | 11  | `.ai-memory/plan.md`                      | Instant recovery state from the most recent run failure.                                                                                   |
@@ -290,8 +295,8 @@ Autonomously survey the codebase structure end-to-end:
 
 Two indexes decide what you read next. Treat them as required entry points, not as summaries:
 
-- `.ai-memory/memory/01-index.md` lists every institutional-knowledge file. If it points at 12 files, you read 12 files.
-- `.ai-memory/plans/01-index.md` lists every plan (pending, completed, subtasks) with its slug, status, and one-line intent. Use it to pick which plan files to open in full. If it is missing, create it as part of the next code change.
+- `.ai-memory/memory/readme.md` lists every institutional-knowledge file. If it points at 12 files, you read 12 files.
+- `.ai-memory/plans/readme.md` lists every plan (pending, completed, subtasks) with its slug, status, and one-line intent. Use it to pick which plan files to open in full. If it is missing, create it as part of the next code change.
 
 ### 1.6 Self-Check (Internal, Before Phase 2)
 
@@ -377,7 +382,7 @@ Fallbacks when the canonical numbered folder is absent: `.ai-memory/coding-guide
 ```
 New info discovered
 ├─ Institutional knowledge (pattern / convention / decision)?
-│   YES → .ai-memory/memory/01-<slug>.md  +  update .ai-memory/memory/01-index.md
+│   YES → .ai-memory/memory/01-<slug>.md  +  update .ai-memory/memory/readme.md
 ├─ Must never happen again?
 │   YES → .ai-memory/strictly-avoid.md
 ├─ Idea, not yet approved?
@@ -387,7 +392,7 @@ New info discovered
 ├─ Bug / regression?
 │   YES → .ai-memory/issues/01-<slug>.md   (or .ai-memory/cicd-issues/ if CI/CD)
 ├─ New or changed plan?
-│   YES → .ai-memory/plans/pending/01-<slug>.md  +  update .ai-memory/plans/01-index.md
+│   YES → .ai-memory/plans/pending/01-<slug>.md  +  update .ai-memory/plans/readme.md
 ├─ Ambiguity / unclear requirement blocking progress?
 │   YES → .ai-memory/ambiguous-questions/01-new-ambiguity/01-<slug>.md
 ├─ User just answered a previously-open ambiguity?
@@ -399,8 +404,8 @@ New info discovered
 Hard rules:
 
 - Folder is `.ai-memory/memory/`, never `memories/`.
-- Adding a memory file always updates `.ai-memory/memory/01-index.md`.
-- Adding, moving, or completing a plan always updates `.ai-memory/plans/01-index.md`.
+- Adding a memory file always updates `.ai-memory/memory/readme.md`.
+- Adding, moving, or completing a plan always updates `.ai-memory/plans/readme.md`.
 - Ambiguity folders: `01-new-ambiguity/` for open, `02-ambiguity-resolved/` for answered. On answer, MOVE the file (never copy) so it exists in exactly one place. Every resolved file carries a `## Resolution` section.
 - Never guess past an open ambiguity. If one exists and is relevant to the current task, stop and surface it before doing work.
 - Editing existing memory or index files preserves unrelated content. No silent truncation.
@@ -420,7 +425,7 @@ Onboarding complete.
 - Memory files read: [X]
 - Consolidated guidelines read: [Y]
 - Spec authoring files read: [Z]
-- Pending plans: [N]  (from .ai-memory/plans/01-index.md)
+- Pending plans: [N]  (from .ai-memory/plans/readme.md)
 - CI/CD issues absorbed: [M]  (from .ai-memory/cicd-issues/)
 - Open ambiguities: [K]  (from .ai-memory/ambiguous-questions/01-new-ambiguity/)
 - Resolved ambiguities on file: [R]  (from .ai-memory/ambiguous-questions/02-ambiguity-resolved/)
@@ -444,26 +449,26 @@ Then stop. No next-step suggestions, no exploratory questions.
 
 ## Pre-Reply Checklist (All Must Be True)
 
-/goal Complete the checklist properly until done can do self-looping.
+[/goal](slashCommand:goal) Complete the checklist properly until done can do self-looping.
 
 1. [ ] Inspected the last 10 git commits (messages, file change stats, and diffs via `git log -n 10 --stat`) to understand recent modifications and file evolutions.
-2. [ ] /learn `.ai-memory/what-to-read.md` first and followed its prioritized reading sequence in full.
+2. [ ] [/learn](slashCommand:learn) `.ai-memory/what-to-read.md` first and followed its prioritized reading sequence in full.
 3. [ ] Confirmed root readme is strictly lowercase `readme.md` (auto-fixed, committed, and pushed if uppercase or missing).
-4. [ ] /learn the root `readme.md` file (casing rules, architecture, entry points).
+4. [ ] [/learn](slashCommand:learn) the root `readme.md` file (casing rules, architecture, entry points).
 5. [ ] Walked `.ai-memory/` recursively, no folder or file skipped silently, and flagged all `.ai-memory/*.md` files.
-6. [ ] /learn `.ai-memory/memory/01-index.md` and every file it points at.
-7. [ ] /learn `.ai-memory/plans/01-index.md`, every file in `pending/` (sequenced as `01-`, `02-`), and all active subtasks.
+6. [ ] [/learn](slashCommand:learn) `.ai-memory/memory/readme.md` and every file it points at.
+7. [ ] [/learn](slashCommand:learn) `.ai-memory/plans/readme.md`, every file in `pending/` (sequenced as `01-`, `02-`), and all active subtasks.
 8. [ ] Skimmed `.ai-memory/plans/completed/` for recent history.
-9. [ ] /learn every file in `.ai-memory/spec/commands/`.
-10. [ ] /learn every file in `.ai-memory/issues/` and `.ai-memory/cicd-issues/`.
-11. [ ] /learn every file in `.ai-memory/ambiguous-questions/01-new-ambiguity/` and `02-ambiguity-resolved/`.
+9. [ ] [/learn](slashCommand:learn) every file in `.ai-memory/spec/commands/`.
+10. [ ] [/learn](slashCommand:learn) every file in `.ai-memory/issues/` and `.ai-memory/cicd-issues/`.
+11. [ ] [/learn](slashCommand:learn) every file in `.ai-memory/ambiguous-questions/01-new-ambiguity/` and `02-ambiguity-resolved/`.
 12. [ ] Scanned for broken links or missing docs and surfaced them under open ambiguities.
 13. [ ] Ingested active schema models, DB column conventions, and API route shapes.
 14. [ ] Verified runtime dependencies and package compatibility.
 15. [ ] Recursively traversed and read every subfolder, nested markdown file (`*.md`), overview, and consistency report within `02-spec/` (e.g. `02-spec/01-spec-authoring-guide/`, `02-spec/02-coding-guidelines/`, `02-spec/03-error-manage/`, `02-spec/04-database-conventions/`, `02-spec/21-app/`, etc.).
 16. [ ] Autonomously surveyed and looped through the entire codebase as a whole (all application code, entry points, routes, components, state stores, utilities, and configuration files).
-17. [ ] /learn `02-spec/17-consolidated-guidelines/` (or `02-spec/17-consolidated-guidelines/`) in numeric order (or noted missing).
-18. [ ] /learn `02-spec/01-spec-authoring-guide/` in numeric order (or noted missing).
+17. [ ] [/learn](slashCommand:learn) `02-spec/17-consolidated-guidelines/` (or `02-spec/17-consolidated-guidelines/`) in numeric order (or noted missing).
+18. [ ] [/learn](slashCommand:learn) `02-spec/01-spec-authoring-guide/` in numeric order (or noted missing).
 19. [ ] Can name CODE RED rules, naming conventions, error-handling philosophy without guessing.
 20. [ ] Can list every pending plan slug and subtask from memory.
 21. [ ] Checked whether the repo contains explicit tone, strictly-avoid, or prior-stupidity instructions and applied them without softening.
@@ -473,24 +478,24 @@ Then stop. No next-step suggestions, no exploratory questions.
 
 ## Actionable Items & Checklist
 
-/goal Complete the checklist properly until done can do self-looping.
+[/goal](slashCommand:goal) Complete the checklist properly until done can do self-looping.
 
 1. [ ] Inspect the last 10 git commits via `git log -n 10 --stat` to understand recent file changes and ensure seamless continuity with the latest code state.
-2. [ ] /learn `.ai-memory/what-to-read.md` and follow all prioritized reading entries before exploring the codebase.
-3. [ ] /learn the coding guidelines in: `.ai-memory/coding-guidelines.md` and create memory.
-4. [ ] /learn the condition extraction in: `02-spec/02-coding-guidelines/01-cross-language/01-index.md` and create memory.
-5. [ ] /learn the formatting and braces in: `02-spec/02-coding-guidelines/01-cross-language/01-index.md` and create memory.
-6. [ ] /learn the multi-line formatting in: `02-spec/02-coding-guidelines/01-cross-language/01-index.md` and create memory.
-7. [ ] /learn the boolean guidelines in: `02-spec/02-coding-guidelines/01-cross-language/02-boolean-principles/01-index.md` and create memory.
-8. [ ] /learn the anti-hallucination rules in: `02-spec/02-coding-guidelines/01-cross-language/01-index.md` and create memory.
-9. [ ] /learn the error management architecture in: `02-spec/03-error-manage/01-index.md` (and related error manage files) and create memory.
-10. [ ] /learn all recent Root Cause Analysis (RCA) files in `.ai-memory/issues/`, `.ai-memory/cicd-issues/`, and `02-spec/03-error-manage/01-error-resolution/03-retrospectives/` to prevent recurring errors.
-11. [ ] /learn all hard prohibitions in `.ai-memory/strictly-avoid.md` and verify zero violations.
-12. [ ] /learn the enum standards and fixes in: `02-spec/17-consolidated-guidelines/07-enum-standards.md` and `02-spec/17-consolidated-guidelines/07-enum-standards.md` and create memory.
-13. [ ] /learn ALL other single-file specs in `02-spec/02-coding-guidelines/` and create memory.
-14. [ ] /learn the overarching main task plan.
+2. [ ] [/learn](slashCommand:learn) `.ai-memory/what-to-read.md` and follow all prioritized reading entries before exploring the codebase.
+3. [ ] [/learn](slashCommand:learn) the coding guidelines in: `.ai-memory/coding-guidelines.md` and create memory.
+4. [ ] [/learn](slashCommand:learn) the condition extraction in: `02-spec/02-coding-guidelines/01-cross-language/readme.md` and create memory.
+5. [ ] [/learn](slashCommand:learn) the formatting and braces in: `02-spec/02-coding-guidelines/01-cross-language/readme.md` and create memory.
+6. [ ] [/learn](slashCommand:learn) the multi-line formatting in: `02-spec/02-coding-guidelines/01-cross-language/readme.md` and create memory.
+7. [ ] [/learn](slashCommand:learn) the boolean guidelines in: `02-spec/02-coding-guidelines/01-cross-language/02-boolean-principles/readme.md` and create memory.
+8. [ ] [/learn](slashCommand:learn) the anti-hallucination rules in: `02-spec/02-coding-guidelines/01-cross-language/readme.md` and create memory.
+9. [ ] [/learn](slashCommand:learn) the error management architecture in: `02-spec/03-error-manage/readme.md` (and related error manage files) and create memory.
+10. [ ] [/learn](slashCommand:learn) all recent Root Cause Analysis (RCA) files in `.ai-memory/issues/`, `.ai-memory/cicd-issues/`, and `02-spec/03-error-manage/01-error-resolution/03-retrospectives/` to prevent recurring errors.
+11. [ ] [/learn](slashCommand:learn) all hard prohibitions in `.ai-memory/strictly-avoid.md` and verify zero violations.
+12. [ ] [/learn](slashCommand:learn) the enum standards and fixes in: `02-spec/17-consolidated-guidelines/07-enum-standards.md` and `02-spec/17-consolidated-guidelines/07-enum-standards.md` and create memory.
+13. [ ] [/learn](slashCommand:learn) ALL other single-file specs in `02-spec/02-coding-guidelines/` and create memory.
+14. [ ] [/learn](slashCommand:learn) the overarching main task plan.
 15. [ ] Ensure the git repository starts completely clean.
-16. [ ] /goal Complete all work on the current branch only.
+16. [ ] [/goal](slashCommand:goal) Complete all work on the current branch only.
 17. [ ] Ensure `.gitignore` explicitly excludes test reports, artifacts, and compiled binaries.
 18. [ ] Confirmed zero repository files modified or created during reading (strict read-only workflow).
 19. [ ] Confirmed zero git commits or pushes triggered during reading.

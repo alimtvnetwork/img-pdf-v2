@@ -27,7 +27,7 @@ Before you do anything else, you must ensure the git repository is in a complete
 Read the overarching big plan of the main task from `.ai-memory/plans/pending/xx-<slug>.md`. You must follow this plan strictly.
 
 - Make sure the plan is EXTREMELY extensive, explicitly detailing where to make changes and how to make changes, so that sub-agents can execute their tasks easily. This is non-negotiable.
-- The `<slug>` is derived directly from the plan filename. If the plan file is `03-auth-refactor.md`, then the corresponding spec task file is `.ai-memory/plans/01-index.md` and subtasks live under `.ai-memory/plans/subtasks/03-auth-refactor/SS-<subslug>.md`. Never guess or invent a slug — read the filename.
+- The `<slug>` is derived directly from the plan filename. If the plan file is `03-auth-refactor.md`, then the corresponding spec task file is `.ai-memory/plans/readme.md` and subtasks live under `.ai-memory/plans/subtasks/03-auth-refactor/SS-<subslug>.md`. Never guess or invent a slug — read the filename.
 - Use the maximum enforcement guidelines to execute this plan.
 - Loop through its defined subtasks and spawn sub-agents to speed up the work.
 - Do not just write randomly to `.ai-memory`. You must follow the exact plan and write protocols: tasks go into `.ai-memory/spec/tasks/xx-<slug>.md` and plans go into `.ai-memory/plans/pending/xx-<slug>.md`.
@@ -83,7 +83,7 @@ You MUST follow the project's strict coding guidelines. These files are located 
 
 ### 5. Consolidated Coding Standards & Temp Scripts (Non-Negotiable)
 
-- [ ] Temp Script Sandboxing: AI Fix Scripts (Reusable Tools): Before creating a helper script, you MUST check `03-ai-scripts/01-index.md` to reuse existing tools. If you generate a new script, you MUST write it to `03-ai-scripts/`, update `index.md` with its explanation, ensure `index.md` is linked in `what-to-read.md`, and commit the script.
+- [ ] Temp Script Sandboxing: AI Fix Scripts (Reusable Tools): Before creating a helper script, you MUST check `03-ai-scripts/readme.md` to reuse existing tools. If you generate a new script, you MUST write it to `03-ai-scripts/`, update `index.md` with its explanation, ensure `index.md` is linked in `what-to-read.md`, and commit the script.
 - [ ] Consolidated Coding Guidelines: I have fully read and strictly enforced the master coding guideline file at `.ai-memory/coding-guidelines.md`.
 - [ ] Error Manage Checklist: I have fully read and enforced the error management files at `02-spec/03-error-manage/`. (Never swallow errors, always wrap with context, use domain-specific AppError/AppException).
 - [ ] Boolean Examples & Fixations: All boolean variables MUST begin with is and has only (can, should, was, etc. are banned) (e. NEVER use explicit true/false comparisons (e.g., `if isReady == true` is FORBIDDEN, use `if isReady`).g., `isReady`, `hasData`). NEVER use negative booleans (e.g., `isNotReady`, `disableCache`). NEVER invert success checks (e.g., `!response.isSuccess` is banned; use `response.isFail`).
@@ -158,5 +158,5 @@ When EVERYTHING is completely finished and fixed (at the very end of the tunnel)
 - [ ] Root README Pinning (FATAL): You MUST pin the latest release version into the root `readme.md` file! Do not skip this! Also, update the changelog according to `version.json` format.
 - [ ] If you do not know how to cut a release for this specific repository, or if `version.json` is missing/unclear, you must either search the repository for release instructions or explicitly ask the user for help. Do not guess.
 - [ ] You MUST strictly exclude all test files (e.g., `*test*`, `*.spec.*`) from version scanning and modification, as they contain mock data.
-- [ ] You must create and maintain `.ai-memory/memory/01-index.md` documenting exactly how releases work in the repository. Ensure it is enqueued in `what-to-read.md` and linked in the root `readme.md`.
+- [ ] You must create and maintain `.ai-memory/memory/readme.md` documenting exactly how releases work in the repository. Ensure it is enqueued in `what-to-read.md` and linked in the root `readme.md`.
 - [ ] **File Change Summary:** Provide a highly detailed summary in the chat listing exactly which files were changed, what specific changes were made inside them, and why they were changed. The summary is VERY important.

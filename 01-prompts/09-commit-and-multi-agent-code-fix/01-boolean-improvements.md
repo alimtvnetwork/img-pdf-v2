@@ -33,7 +33,7 @@ You are the orchestrator. If your sub-agents fail, hallucinate, or go into infin
 - Specific Titling: Spawn each dedicated sub-agent with a highly specific title reflecting its exact task (e.g., `Refactoring Auth Service` or `Fixing DB Connection`). Do not use generic names. If an agent switches tasks, its title must change.
 - Micro-Tasking: Ensure agents are assigned simple, small micro-tasks rather than larger monolithic ones.
 - Spawn a dedicated sub-agent for each independent chunk simultaneously (MAXIMUM 2-3 concurrently).
-- File Collision Locking Matrix (`active-locks.json`): Check `.ai-memory/01-index.md` so parallel subagents touch completely disjoint files.
+- File Collision Locking Matrix (`active-locks.json`): Check `.ai-memory/readme.md` so parallel subagents touch completely disjoint files.
 - Do not wait sequentially like an idiot.
 
 ## 4. Sub-Agent Lifecycle & Status Tracking (Non-negotiable)
@@ -107,7 +107,7 @@ To survive massive checklists and complex codebases, you MUST operate using thes
 - [ ] Derive `<slug>` from plan filename itself (e.g., `01-auth-refactor.md` → `01-auth-refactor`).
 - [ ] Confirm subtask files exist under `.ai-memory/plans/subtasks/01-<slug>/01-<subslug>.md` for each step needing parallel execution.
 - [ ] Verified anti-hallucination: stopped and asked clarifying questions if files/specs were missing.
-- [ ] Managed parallel subagents with specific titling and disjoint file locking via `.ai-memory/01-index.md`.
+- [ ] Managed parallel subagents with specific titling and disjoint file locking via `.ai-memory/readme.md`.
 - [ ] Sub-agents updated subtask files and parent plan steps to `✅ Done`.
 - [ ] Staged files sanitized: absolutely NO artifact zip archives, test data, or binaries staged.
 - [ ] Fast-forward commit created and pushed without rewriting published Git history.

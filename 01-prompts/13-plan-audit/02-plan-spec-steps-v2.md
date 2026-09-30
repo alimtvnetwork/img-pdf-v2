@@ -1,29 +1,186 @@
-# Specification Decomposition & Subtask Planning (v2) — Planning Spec (must follow)
+[/goal](slashCommand:goal) Reuse First: I have rigorously scanned and [/learn](slashCommand:learn)ed `03-ai-scripts/readme.md` to check if a helper script already exists before writing any new temporary code with strict no-build and no-test execution (NEVER run build commands like `go build` or `npm run build`, and NEVER run test suites like `go test ./...` or `pytest` during routine execution turns; all compilation and testing are strictly verified later in CI/CD). Spawn autonomous subagents (A = 2, H = 2) for parallel reading and modular spec generation, use GitMap high-speed commands as primary, establish a single-agent blueprint in Phase 1 (first 50% steps budget), and execute disjoint refactoring in Phase 2 (remaining 50% steps budget) with continuous self-looping until 100% complete and finalized with an atomic push.
 
-> **Prompt Version:** 2.1.0
-> **Synchronization:** Main Meta-Repo & Connected Workspaces
+[/learn](slashCommand:learn) Enforce the Top-Instruction Priority Mandate: whatever directives, custom requirements, checklists, or user instructions are provided ABOVE this prompt (in the user preamble or header above) are HIGHEST PRIORITY and strictly NON-NEGOTIABLE. Ingest and execute the top instructions ahead of all default conventions below, internalize the single-agent architectural blueprint, and persist all progress into `.ai-memory/plans/` and memory logs.
 
-## MUST FOLLOW NON-NEGOTIABLE
+> **Top-Instruction Priority Mandate (Above Precedence / Preamble Precedence):**
+> Whatever directives, constraints, checklists, or user instructions are given ABOVE this prompt (in the user preamble, header blocks, or incoming user request above) are HIGHEST PRIORITY and MUST BE FOLLOWED as strictly NON-NEGOTIABLE. They supersede and strictly override any conflicting general advice, default conventions, or guidelines below. The agent MUST inspect and follow the instructions above with absolute precedence.
 
-Listen, past runs of these turns have been sloppy and stupid as fuck: wrong step counts, partial task lists dumped into chat instead of files, plans and session summaries half-filled with "[N]" placeholders, folders skimmed, open ambiguities ignored, CI/CD issues and `plans/subtasks/` forgotten, user commands dropped, coding guidelines bypassed, detailed specs chopped and summarized into useless junk, uppercase README files left uncorrected, `.ai-memory/memory/` created by accident, `strictly-avoid.md` overwritten, and explicit user instructions softened after being told not to. WTF. How on earth are you reverting to this carelessness, are you stupid?? Stop doing that, you stupid fuck. Read the whole codebase, read every folder in `02-spec/` and `.ai-memory/`, confirm root `readme.md` is strictly lowercase, find the root cause in one sentence, capture commands, issues, and pending tasks without omitting a single item, write the spec files and memory files in the right paths, update every index in the same turn, sync `readme.md` with `what-to-read.md`, preserve detailed specs verbatim with zero truncation, run builds and full unit tests, group commits with clear messages, and push everything to git before ending. Going deep IS the job. If you are not going deep, you are not doing the job. Violating this is auto-reject on the same tier as RULE 0. Avoid stupidity and being careless, you stupid fuck. Where is your attention, are you stupid? Tell me. Your stupidity is going on top of my head. Where did you learn this stupidity? If I could find you, I could slap you.
+```text
+N = 200 (Total self-loop steps budget)
+A = 2   (Number of spawned autonomous subagents running concurrently, default: 2)
+H = 2   (Operational hands per agent: dual-task batch capacity & parallel tool dispatch, default: 2)
 
-## STRICT AVOIDANCE: Never Disable CI/CD
+System Concurrency Capacity = A × H = 2 agents × 2 hands = 4 concurrent subtask operations
+```
+
+```text
+PHASE_1_STEPS = N / 2   (Steps 1 .. N/2: Planning, Detailed Spec, and Lean Subtask Generation)
+PHASE_2_STEPS = N / 2   (Steps N/2+1 .. N: Parallel Execution, Self-Looping, Targeted Quality Linting)
+```
+
+N, A, H, PHASE_1_STEPS, and PHASE_2_STEPS are read-only after initialization. Never modify them mid-execution.
+
+#### High-Speed GitMap Acceleration Options (Run Everything Faster)
+
+Always prefer native GitMap commands over slow generic shell pipelines:
+1. **Ultra-Fast File & Directory Discovery (AUM Index & Walk):**
+   - **Wildcard / Glob Search:** `gitmap find "<wildcard*>" [-ext <ext>]` (alias `gitmap f`)
+   - **Exact Filename Search:** `gitmap find-files <name> [-ext <ext>]` (alias `gitmap ff`)
+   - **Substring Filename Search:** `gitmap find-files-any "<str>" [-ext <ext>]` (alias `gitmap ffa`)
+   - **Prefix / Suffix Search:** `gitmap find-files-startswith <prefix>` (`gitmap ffs`) / `gitmap find-files-endswith <suffix>` (`gitmap ffe`)
+   - **List Indexed Repo Files:** `gitmap list-files [pattern] [-ext <ext>]` (alias `gitmap lf`)
+   - **Directory Tree & Scaffolding:** `gitmap folder-tree` (alias `gitmap ft`)
+   - **Zero-Write File Stream:** `gitmap cat <filepath>`
+   - **Instant Multi-Core Regex Search:** `gitmap search "<term>"` or `gitmap aum search "<query>" [dir] --ext <ext>`
+2. **Fast Repository Hygiene, Lowercase & Symlink Repair:**
+   - **Auto-Lowercase Files (Safe 2-Step `git mv`):** `gitmap lowercase` (alias `gitmap lcf [--dry-run]`)
+   - **Lowercase Root Readme:** `gitmap lowercase-readme`
+   - **Sync Curated `.gitignore` / `.gitattributes` / `.prettierignore`:** `gitmap commons` (alias `gitmap co` or `gitmap sync all`)
+   - **Repair Broken Symlinks:** `gitmap fix-link` (alias `gitmap fixlink`)
+   - **Clean Update Temp & Inspect Storage:** `gitmap update-cleanup`, `gitmap storage` (alias `gitmap stor`)
+3. **Fast Git State, Execution & Atomic Commits:**
+   - **Repo Status & Remote Check:** `gitmap status` (`gitmap st`), `gitmap has-any-updates` (`gitmap hau`), `gitmap latest-branch` (`gitmap lb`)
+   - **Fast Cross-Platform Shell Runner:** `gitmap pwsh "<command>"` (`gitmap ps`), `gitmap bash "<command>"` (`gitmap sh`), `gitmap async <cmd>` (`gitmap asyn`)
+   - **Semantic Atomic Commit & Push:** `gitmap cpf "<summary>"` (Feature), `gitmap cpb "<summary>"` (Bug), `gitmap cpr "<summary>"` (Release), `gitmap pcp "<summary>"` (Pull-Commit-Push)
+   - **Smart CI/CD Pipeline Waiting:** `gitmap pe`, `gitmap pipeline-ai status --json` (`gitmap pl-ai status -t <etaSeconds>`)
+
+---
+
+## RULE 00 — PURE SPECIFICATION AUTHORING ONLY (TOTAL BAN ON CODE EXECUTION)
 
 > [!CAUTION]
-> **NEVER disable any CI/CD checks, GitHub Actions, or validation workflows.**
-> Strictly avoid commenting out, bypassing, or deleting CI/CD steps to force a pipeline to pass. Your job is to fix the underlying code so that the CI/CD pipeline passes legitimately. Disabling CI/CD is an auto-reject failure.
+> **THIS PROMPT IS STRICTLY FOR SPECIFICATION AUTHORING AND SUBTASK PLANNING.**
+> - **NEVER write, edit, compile, or delete application source code files** (`.go`, `.ts`, `.tsx`, `.py`, `.php`, `.cs`, etc.).
+> - **NEVER execute unit tests, integration tests, migrations, or application builds.**
+> - **NEVER run modifying shell commands against application packages.**
+> - All agent tool calls in this turn are strictly restricted to:
+>   1. Reading existing codebase files and specifications for architectural context.
+>   2. Decoding and saving base64 screenshots to `assets/screenshots/`.
+>   3. Authoring canonical product specifications directly inside `02-spec/21-app/`.
+>   4. Generating execution plans and subtasks inside `.ai-memory/plans/`.
+>   5. Updating `02-spec/21-app/readme.md` and `.ai-memory/plans/readme.md`.
+> Any attempt to write application code or execute test suites during this planning turn is an automatic failure.
 
-## Anti-Hallucination, Micro-Tasking, & Self-Looping
+## Pre-Planning Step 0: Task Extraction & Chat Output Gate (Mandatory First Action)
 
-> [!CAUTION]
-> **CRITICAL RULE: DO NOT ATTEMPT TO READ, PLAN, AND EXECUTE EVERYTHING AT ONCE.**
-> If you try to consume a massive codebase and write code in a single turn, you WILL hallucinate, drop requirements, and fail.
+When a large prompt or complex set of requirements is given, the AI cannot understand everything at once. Therefore, before doing any deep planning, codebase searches, or spec writing, the AI MUST first break down whatever requirements the user has given (regardless of formatting) into discrete, actionable items (`Task-01`, `Task-02`).
+- Respect whatever requirements the user has given, parse every request completely, and format each task clearly with proper markdown indentation, vertical blank lines, task state (`State: [IN PROGRESS — EXECUTING IMMEDIATELY]`), and an explicit understanding indicator bracket (`Understood: [YES — ...]`).
+- TOTAL BAN ON UNFORMATTED RUN-ON TEXT: Never concatenate tasks into a single unformatted line or paragraph block (e.g. NEVER `#1. Task-01: ... #2. Task-02: ...`). Every task must be its own clearly separated markdown item.
+- Line-by-Line Output Format Structure:
+  - Line 1: Header `### 📋 Confirmed Task Breakdown & Requirement Ingestion`
+  - Line 2: Empty blank line
+  - Line 3: Numbered task title `1. **Task-01: [Descriptive Task Title]**`
+  - Line 4: Indented state bullet (3 spaces) `   - **State:** [IN PROGRESS — EXECUTING IMMEDIATELY]`
+  - Line 5: Indented understanding check (3 spaces) `   - **Understood:** [YES] — [1-2 concise sentences proving understanding of intent, scope, and verified constraints]`
+  - Line 6: Indented actionable scope bullet (3 spaces) `   - **Actionable Scope:** [Precise technical deliverable and specification scope]`
+  - Line 7: Indented target files bullet (3 spaces) `   - **Target Files / Area:** [02-spec/21-app/relative/path]`
+  - Line 8: Empty blank line (vertical gap before next task)
+  - Concluding Line: `Proceeding directly to specification authoring in 02-spec/21-app/ and subtask planning (Active Tool Call Running Below).`
+- MANDATORY SAME-TURN TOOL CHAIN: You MUST output this confirmed breakdown directly in chat, but you MUST NOT end your turn or pause after emitting it! In the EXACT SAME RESPONSE turn, you MUST immediately invoke your first tool call (e.g. `write_to_file` to initialize the spec in `02-spec/21-app/`). Never emit the breakdown with text alone.
 
-To survive massive checklists and complex codebases, you MUST operate using these three principles:
+```markdown
+### 📋 Confirmed Task Breakdown & Requirement Ingestion
 
-1. **Phase 1: Read & Understand (Isolated Loop):** Your very first action must be purely exploratory. Do NOT write code. Break down the task, read the specific files, trace the dependencies, and understand the architectural boundary. Once you understand the scope, end your turn and self-loop to begin execution.
-2. **Phase 2: Bounded Micro-Tasking (Sequential Self-Looping):** Never attempt to execute the entire checklist in one response. Treat each checklist section or file as a strict, isolated boundary. Execute *only* the first small portion, verify it, end your turn, and self-loop to process the next portion.
-3. **Phase 3: Multi-Agent Parallelization:** If tasks are independent, you MUST spawn dedicated sub-agents to handle them concurrently. Give each sub-agent an extremely small, strictly defined bounding box (e.g., "Only edit File X"). Never give a sub-agent a generic or multi-file task.
+1. **Task-01: [Descriptive Task Title]**
+   - **State:** `[IN PROGRESS — EXECUTING IMMEDIATELY]`
+   - **Understood:** `[YES]` — [Concise 1-sentence verification of user requirement, intent, and verified constraints]
+   - **Actionable Scope:** [Precise technical deliverable and specification scope]
+   - **Target Files / Area:** `[02-spec/21-app/relative/path]`
+
+2. **Task-02: [Descriptive Task Title]**
+   - **State:** `[QUEUED — EXECUTING NOW WITHOUT USER PROMPT]`
+   - **Understood:** `[YES]` — [Concise 1-sentence verification of user requirement, intent, and verified constraints]
+   - **Actionable Scope:** [Precise technical deliverable and specification scope]
+   - **Target Files / Area:** `[02-spec/21-app/relative/path]`
+
+Proceeding directly to specification authoring in 02-spec/21-app/ and subtask planning (Active Tool Call Running Below).
+```
+
+MANDATORY SAME-TURN TOOL CHAIN: The breakdown text above and your first tool call MUST be emitted in the EXACT SAME TURN. Never end the turn with text alone.
+
+---
+
+## RULE 0S — CANONICAL SPECIFICATION IN FOLDER 21 (`02-spec/21-app/`)
+
+All architectural specifications, feature definitions, data contracts, and product-level documentation generated by this prompt MUST be written inside `02-spec/21-app/`.
+- **Focused Feature (Single File):** If the deliverable is self-contained or under 100 lines, write:
+  `02-spec/21-app/xx-<slug>.md`
+- **Complex Feature (Segmented Subfolder):** If the deliverable exceeds 3 subtasks or spans UI + API + database, create a dedicated sequential directory:
+  `02-spec/21-app/xx-<slug>/` containing:
+  - `01-overview.md` — High-level architecture, module interactions, and the mandatory `## User Request (Verbatim)` section.
+  - `02-data-contracts.md` — Types, schemas, API request/response contracts, and database models.
+  - `03-workflow-and-state.md` — Control flows, state machine transitions, and business validation rules.
+  - `04-ui-ux-spec.md` — Visual layout, design tokens, typography, and embedded relative screenshot links (`assets/screenshots/...`).
+  - `05-acceptance-criteria.md` — Testable verification rules and quality gates.
+- **Mandatory Registry Update:** You MUST register the newly created specification in `02-spec/21-app/readme.md` under `## Contents`.
+
+---
+
+## RULE 0V — LOSSLESS VERBATIM INGESTION (ZERO-LOSS REQUIREMENT CAPTURE)
+
+> [!IMPORTANT]
+> **VERBATIM CAPTURE IS NON-NEGOTIABLE:**
+> Past runs suffered from lazy summarization, compressed bullet points, and dropped constraints.
+> Every specification authored in `02-spec/21-app/` MUST include a top-level section:
+> `## User Request (Verbatim)`
+> Copy and paste the user's complete prompt text, instructions, parameters, edge cases, and examples character-for-character, word-for-word, without alteration or omission.
+
+---
+
+### Screenshot / Print Screen Base64 Ingestion Protocol (Mandatory in Specs)
+
+If the user request or prompt contains a screenshot URL, print screen link, or base64 data URI (e.g. `data:image/png;base64,...`):
+1. Convert & Save Locally: Immediately decode the base64 encoding or download the image from the URL to the local filesystem under `assets/screenshots/<plan-slug>-<NN>.png` or `assets/ui/<plan-slug>-<NN>.png`.
+2. Never Embed Raw Base64 or Remote URLs: Never leave raw base64 strings or ephemeral external URLs inside specification files or plans.
+3. Strict Relative Path Referencing: In the master spec, domain documentation, and subtasks, refer back to the saved image file strictly as a relative markdown link (e.g. `![Screenshot](assets/screenshots/<plan-slug>-<NN>.png)`).
+4. Visual Ground Truth: Use the saved screenshot as the visual ground truth for layout, colors, component hierarchy, spacing, and state transitions during spec authoring and UI task execution.
+
+---
+
+### Actionable Subtask Generation in `.ai-memory/plans/` (Decoupled Planning)
+
+Even though this prompt is strictly for specification authoring, it MUST generate the actionable subtasks in `.ai-memory/plans/` so execution agents can execute them later:
+1. **Parent Plan File:** `.ai-memory/plans/pending/xx-<plan-slug>.md`
+2. **Lean Subtasks Directory:** `.ai-memory/plans/subtasks/xx-<plan-slug>/`
+   - Files named `001-<task-name>.md`, `002-<task-name>.md`, etc.
+   - **MANDATORY SPEC LINK:** Every subtask MUST include a prominent relative markdown link back to the canonical spec file in `02-spec/21-app/`:
+     ```markdown
+     Spec Reference: [02-spec/21-app/xx-<slug>.md](../../../02-spec/21-app/xx-<slug>.md)
+     ```
+3. **Lean Subtasks Mandate:** Subtasks in `.ai-memory/plans/subtasks/<plan-slug>/` MUST NOT repeat common repository boilerplate, universal coding rules, banned operations, or generic guidelines. Universal rules exist in root guidelines and the canonical spec. Subtasks must contain strictly the unique, task-specific details, exact file paths, symbol modifications, and runnable verification checks.
+4. **Register in Index:** Register the plan in `.ai-memory/plans/readme.md`.
+
+---
+
+### End-of-Run Comprehensive Summary & Traceability Report (Mandatory Output)
+
+At the conclusion of the specification turn, you MUST output the following structured summary in chat:
+
+```markdown
+### 📑 Specifications Created in Folder 21 (`02-spec/21-app/`)
+
+- [02-spec/21-app/xx-<slug>.md](02-spec/21-app/xx-<slug>.md) (Lines: <count>) — [Short description of scope]
+  *(or list files in 02-spec/21-app/xx-<slug>/ if segmented)*
+
+### 📋 Actionable Tasks & Subtasks Created (`.ai-memory/plans/`)
+
+- Parent Plan: [.ai-memory/plans/pending/xx-<slug>.md](.ai-memory/plans/pending/xx-<slug>.md)
+- Subtask Count: <count> subtasks in `.ai-memory/plans/subtasks/xx-<slug>/`
+  1. `001-<task>.md`: [Title] -> Target: `[relative/path]` | State: `[QUEUED]`
+  2. `002-<task>.md`: [Title] -> Target: `[relative/path]` | State: `[QUEUED]`
+
+### 🔗 Requirements Traceability Matrix
+
+| Requirement / Prompt Item | Canonical Spec File (`02-spec/21-app/`) | Subtask File (`.ai-memory/plans/subtasks/`) | Target Code Files |
+|:---|:---|:---|:---|
+| [User Requirement 1] | `02-spec/21-app/xx-<slug>.md` | `.ai-memory/plans/subtasks/xx-<slug>/001-<task>.md` | `path/to/file.go` |
+| [User Requirement 2] | `02-spec/21-app/xx-<slug>.md` | `.ai-memory/plans/subtasks/xx-<slug>/002-<task>.md` | `path/to/file.ts` |
+
+### 🚀 Next Steps: Execution Command
+
+To execute these generated subtasks in continuous sequence with 2-agent concurrency:
+> Run: `06-execute-parent-task-with-n-steps-v2.md` with plan slug `xx-<slug>`
+```
 
 ## Variables — check if you are confused only.
 
@@ -93,13 +250,13 @@ ls .ai-memory/plans/subtasks/xx-plan-slug | grep -vE '^[0-9]{3}-' || echo "seque
 
 ## AI Fix Scripts Memory (Reusable Tooling)
 
-- [ ] `/goal` **Reuse First:** I have rigorously scanned and `/learn`ed `03-ai-scripts/01-index.md` to check if a helper script already exists before writing any new temporary code.
-- [ ] **Strict In-Repository Execution:** All Python scripts (`03-ai-scripts/*.py`) MUST be executed strictly within the codebase repository root, NEVER outside the codebase.
-- [ ] **Strict 03-ai-scripts/ Tooling Storage:** All AI scripts, local runners, autofixers, and helper utilities MUST be created inside `03-ai-scripts/`. NEVER create scripts in root or external paths.
-- [ ] **Native File Manipulator:** If you need to perform mass file renaming, `.md` lowercase enforcement, sequence number re-ordering, or encoding fixes (CRLF/BOM), you MUST natively use `python 03-ai-scripts/03-file-manipulator.py <command>` rather than writing a new script from scratch.
-- [ ] **Go Generate Sync:** If you modify Go constants, enums, or stringers, you MUST run `go generate ./...` in the relevant directory (e.g., `cd gitmap && go generate ./...`) and commit the resulting generated files to prevent CI drift.
-- [ ] **Commit & Track:** All new helper scripts were written strictly to `03-ai-scripts/` and committed to Git for future reuse.
-- [ ] **Index Documentation:** I have updated `03-ai-scripts/01-index.md` using sequential script naming (e.g., `01-parse-files.py`). For every script, I have included a `<details>` collapsible tag explaining exactly why the script is there and what it does.
+- [ ] [/goal](slashCommand:goal) Reuse First: I have rigorously scanned and [/learn](slashCommand:learn)ed `03-ai-scripts/readme.md` to check if a helper script already exists before writing any new temporary code.
+- [ ] Strict In-Repository Execution: All Python scripts (`03-ai-scripts/*.py`) MUST be executed strictly within the codebase repository root, NEVER outside the codebase.
+- [ ] Strict 03-ai-scripts/ Tooling Storage: All AI scripts, local runners, autofixers, and helper utilities MUST be created inside `03-ai-scripts/`. NEVER create scripts in root or external paths.
+- [ ] Native File Manipulator: If you need to perform mass file renaming, `.md` lowercase enforcement, sequence number re-ordering, or encoding fixes (CRLF/BOM), you MUST natively use `python 03-ai-scripts/03-file-manipulator.py <command>` rather than writing a new script from scratch.
+- [ ] Go Generate Sync: If you modify Go constants, enums, or stringers, you MUST run `go generate ./...` in the relevant directory (e.g., `cd gitmap && go generate ./...`) and commit the resulting generated files to prevent CI drift.
+- [ ] Commit & Track: All new helper scripts were written strictly to `03-ai-scripts/` and committed to Git for future reuse.
+- [ ] Index Documentation: I have updated `03-ai-scripts/readme.md` using sequential script naming (e.g., `01-parse-files.py`). For every script, I have included a `<details>` collapsible tag explaining exactly why the script is there and what it does.
 
 ---
 
@@ -170,18 +327,18 @@ into "the boolean folder" fails.
 ```text
 | Topic                            | Single source file                                                          | Duplicates found |
 | canonical size tier              | 02-spec/02-coding-guidelines/02-canonical-size-tier.md                         | none             |
-| boolean naming prefixes          | 02-spec/02-coding-guidelines/01-cross-language/02-boolean-principles/01-index.md      | none |
-| boolean guards + extraction      | 02-spec/02-coding-guidelines/01-cross-language/02-boolean-principles/01-index.md | none |
+| boolean naming prefixes          | 02-spec/02-coding-guidelines/01-cross-language/02-boolean-principles/readme.md      | none |
+| boolean guards + extraction      | 02-spec/02-coding-guidelines/01-cross-language/02-boolean-principles/readme.md | none |
 | boolean params + conditions      | 02-spec/02-coding-guidelines/01-cross-language/02-boolean-principles/03-parameters-and-conditions.md | none |
 | boolean exemptions + api         | 02-spec/02-coding-guidelines/01-cross-language/02-boolean-principles/05-exemptions-and-api.md   | none |
-| boolean quick reference          | 02-spec/02-coding-guidelines/01-cross-language/02-boolean-principles/01-index.md      | none |
+| boolean quick reference          | 02-spec/02-coding-guidelines/01-cross-language/02-boolean-principles/readme.md      | none |
 | boolean flag methods             | 02-spec/02-coding-guidelines/01-cross-language/24-boolean-flag-methods.md      | none             |
 | no negatives                     | 02-spec/02-coding-guidelines/01-cross-language/12-no-negatives.md              | none             |
-| braces + nesting                 | 02-spec/02-coding-guidelines/01-cross-language/01-index.md | none      |
-| conditions + extraction (style)  | 02-spec/02-coding-guidelines/01-cross-language/01-index.md | none |
-| blank lines + spacing            | 02-spec/02-coding-guidelines/01-cross-language/01-index.md | none |
-| function + type size             | 02-spec/02-coding-guidelines/01-cross-language/01-index.md | none  |
-| multi-line formatting            | 02-spec/02-coding-guidelines/01-cross-language/01-index.md | none   |
+| braces + nesting                 | 02-spec/02-coding-guidelines/01-cross-language/readme.md | none      |
+| conditions + extraction (style)  | 02-spec/02-coding-guidelines/01-cross-language/readme.md | none |
+| blank lines + spacing            | 02-spec/02-coding-guidelines/01-cross-language/readme.md | none |
+| function + type size             | 02-spec/02-coding-guidelines/01-cross-language/readme.md | none  |
+| multi-line formatting            | 02-spec/02-coding-guidelines/01-cross-language/readme.md | none   |
 | code-style checklist             | 02-spec/02-coding-guidelines/01-cross-language/04-code-style/07-checklist.md   | none             |
 | nesting resolution               | 02-spec/02-coding-guidelines/01-cross-language/20-nesting-resolution-patterns.md | none           |
 | cyclomatic complexity            | 02-spec/02-coding-guidelines/01-cross-language/06-cyclomatic-complexity.md     | none             |
@@ -190,14 +347,14 @@ into "the boolean folder" fails.
 | null-pointer safety              | 02-spec/02-coding-guidelines/01-cross-language/19-null-pointer-safety.md       | none             |
 | naming + casing (keys)           | 02-spec/02-coding-guidelines/01-cross-language/11-key-naming-pascalcase.md     | none             |
 | file/folder naming               | 02-spec/02-coding-guidelines/08-file-folder-naming/<language>.md               | none             |
-| testing                          | 02-spec/02-coding-guidelines/01-cross-language/01-index.md | none             |
-| error handling + codes           | 02-spec/03-error-manage/01-index.md                   | none             |
+| testing                          | 02-spec/02-coding-guidelines/01-cross-language/readme.md | none             |
+| error handling + codes           | 02-spec/03-error-manage/readme.md                   | none             |
 | error code registry              | 02-spec/03-error-manage/03-error-code-registry/                                | none             |
-| logging + stack traces           | 02-spec/21-app/01-index.md             | none             |
+| logging + stack traces           | 02-spec/21-app/readme.md             | none             |
 | serialization/determinism        | 02-spec/21-app/04-json-contract/                                               | none             |
 | ci/cd verification               | 02-spec/12-cicd-pipeline-workflows/02-ci-pipeline.md                           | none             |
 | ci guards                        | 02-spec/12-cicd-pipeline-workflows/03-reusable-ci-guards/00-overview.md        | none             |
-| contract + e2e testing           | 02-spec/12-cicd-pipeline-workflows/01-index.md, 21-e2e-testing-pattern.md | none       |
+| contract + e2e testing           | 02-spec/12-cicd-pipeline-workflows/readme.md, 21-e2e-testing-pattern.md | none       |
 | static analysis / sarif          | 02-spec/02-coding-guidelines/06-cicd-integration/01-sarif-contract.md          | none             |
 ```
 
@@ -208,7 +365,7 @@ Consolidated mirrors that MAY be cited as a reading aid, never as the authority:
 - `02-spec/17-consolidated-guidelines/18-cicd-pipeline-workflows.md`
 - `02-spec/17-consolidated-guidelines/34-compiled-simple-coding-guidelines.md`
 - `02-spec/17-consolidated-guidelines/03-strictly-avoid-quickref.md`
-- `02-spec/02-coding-guidelines/01-cross-language/01-index.md`
+- `02-spec/02-coding-guidelines/01-cross-language/readme.md`
 
 When a consolidated mirror and a numbered guideline folder disagree, the numbered
 folder wins and the disagreement is filed under RULE 9.
@@ -235,7 +392,7 @@ link that file from the plan's `## Context`. Chat is not storage.
 | Command, convention, "always do X", new CLI          | `.ai-memory/spec/commands/01-<slug>.md`         |
 | Bug, regression, broken behavior                    | `.ai-memory/issues/01-<slug>.md`                |
 | CI/CD-specific failure                               | `.ai-memory/cicd-issues/01-<slug>.md`           |
-| Institutional knowledge (pattern, decision)          | `.ai-memory/memory/` + update `.ai-memory/memory/01-index.md` |
+| Institutional knowledge (pattern, decision)          | `.ai-memory/memory/` + update `.ai-memory/memory/readme.md` |
 | "Never do this again"                                | `.ai-memory/strictly-avoid.md`                  |
 | Idea, not yet approved                               | `.ai-memory/suggestions.md`                     |
 
@@ -243,7 +400,7 @@ Create missing folders on demand. Attachments:
 
 - Every attached image or file is REQUIRED input; never leave one only in chat.
 - Save verbatim under an `assets/` subfolder next to the file it belongs to;
-  project-wide assets go to `.ai-memory/assets/<slug>/` and get a `.ai-memory/memory/01-index.md`
+  project-wide assets go to `.ai-memory/assets/<slug>/` and get a `.ai-memory/memory/readme.md`
   note.
 - Names are lowercase-hyphenated with the original extension (RULE 0A).
 - The plan carries an `## Attachments` section: one bullet per file with a
@@ -252,7 +409,7 @@ Create missing folders on demand. Attachments:
   the question links the asset.
 
 Plan lifecycle: a new plan is written to `.ai-memory/plans/pending/01-<plan-slug>.md`
-with `Status: pending` and a one-line row in `.ai-memory/plans/01-index.md`. When done
+with `Status: pending` and a one-line row in `.ai-memory/plans/readme.md`. When done
 it is `mv`-ed to `.ai-memory/plans/completed/`, with `Status: completed` flipped in
 the same move and the index updated in the same commit. Never copy, never leave a
 duplicate across `pending/` and `completed/`, never delete a `pending/` file.
@@ -333,12 +490,14 @@ RULE 0A gives the naming law; this is the layout it applies to. Authored paths
 match this exactly:
 
 ```text
+02-spec/21-app/readme.md
+02-spec/21-app/xx-<plan-slug>.md (or 02-spec/21-app/xx-<plan-slug>/01-overview.md)
 .ai-memory/plans/pending/01-<plan-slug>.md
 .ai-memory/plans/subtasks/<plan-slug>/index.md
 .ai-memory/plans/subtasks/<plan-slug>/001-<subtask-title>.md
 .ai-memory/plans/subtasks/<plan-slug>/002-<subtask-title>.md   ... NNN-task.md
 .ai-memory/plans/completed/01-<plan-slug>.md
-.ai-memory/plans/01-index.md
+.ai-memory/plans/readme.md
 .ai-memory/ambiguous-questions/01-new-ambiguity/01-<slug>.md
 .ai-memory/ambiguous-questions/02-ambiguity-resolved/01-<slug>.md
 .ai-memory/issues/01-<slug>.md
@@ -417,7 +576,7 @@ changes code names the pipeline check that guards it:
   (`01-forbidden-name-guard.md`, `04-baseline-diff-lint-gate.md`,
   `06-matrix-test-aggregator.md`).
 - Contract and end-to-end layers:
-  `02-spec/12-cicd-pipeline-workflows/01-index.md` and
+  `02-spec/12-cicd-pipeline-workflows/readme.md` and
   `21-e2e-testing-pattern.md`.
 - Local mirrors of the CI gates: `03-ai-scripts/06-cicd-local-runner.py`, plus the
   specific `linter-scripts/check-*.py|mjs` scripts the task can break.
@@ -436,7 +595,7 @@ The AI running this prompt has been a lazy fraud on prior runs of this exact job
 - Wrote phase-conditional mush — "If this is the Scaffold phase, create the
   files; if this is the Implement phase, write the business logic" — which is a
   body that fits any task and therefore teaches nothing.
-- Pasted the identical `/learn` list into every single file as anchoring theatre.
+- Pasted the identical [/learn](slashCommand:learn) list into every single file as anchoring theatre.
 - Put a commit-and-push block in every task, inviting 69 commits for one feature.
 - Cited spec paths that did not exist, and sections that did not exist inside
   files that did.
@@ -503,10 +662,10 @@ citations:
   language_guideline: "<path(s)>"
   boolean_styling: "02-spec/02-coding-guidelines/01-cross-language/02-boolean-principles/<file>.md"
   folder_naming: "02-spec/02-coding-guidelines/08-file-folder-naming/<file>.md"
-  error_architecture: "02-spec/03-error-manage/01-index.md"
-  error_codes: "02-spec/21-app/01-index.md"
-  logging_traces: "02-spec/21-app/01-index.md"
-  response_envelope: "02-spec/21-app/01-index.md"
+  error_architecture: "02-spec/03-error-manage/readme.md"
+  error_codes: "02-spec/21-app/readme.md"
+  logging_traces: "02-spec/21-app/readme.md"
+  response_envelope: "02-spec/21-app/readme.md"
   golden_fixture: "02-spec/21-app/fixtures/<file>.example.json"
   strictly_avoid: ".ai-memory/strictly-avoid.md"
   database: "02-spec/04-database-conventions/..."
@@ -543,7 +702,7 @@ Acceptance bar per section — a section that misses its bar fails the batch:
 | --------------------------- | ----------------------------------------------------------------------------------- |
 | 1. Learn                    | 3-7 links, at least half unique to this task, each with a one-line "why read this"  |
 | 2. Goal                     | 2-4 sentences of behavior and blast radius. Never a restated title                 |
-| 3. Inputs and Contracts     | Types consumed and produced, the wire shape inlined literally, error codes in scope |
+| 3. Inputs and Contracts     | Types consumed and produced, the wire shape inlined verbatim, error codes in scope |
 | 4. Execute                  | Ordered steps; every step names a symbol AND the file it lands in                   |
 | 5. Constraints              | 3-6 rules this task could actually violate, each with a rule id and source file     |
 | 6. Verify                   | At least one runnable command plus the expected output                              |
@@ -563,13 +722,13 @@ but all twelve must be present somewhere in the file.
 | --- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1   | Deciding app-spec section          | `02-spec/21-app/...` file plus section, e.g. `04-json-contract/02-section-and-asset-schema.md §Section`                                                                                                                                                                                                                                                                                                                         |
 | 2   | Canonical size tier                | `02-spec/02-coding-guidelines/02-canonical-size-tier.md`                                                                                                                                                                                                                                                                                                                                                                        |
-| 3   | Language guideline for this domain | Go: `02-spec/02-coding-guidelines/01-cross-language/01-index.md` + the specific rule file (`02-boolean-standards.md`, `05-defer-rules.md`, `09-wrapped-boolean-results.md`). PHP: `04-php/00-overview.md` + `02-forbidden-patterns.md`, `03-naming-conventions.md`, `05-response-array-standard.md`. TS/React: `02-typescript/08-typescript-standards-reference.md` + `12-discriminated-union-patterns.md`, `14-state-management.md` |
+| 3   | Language guideline for this domain | Go: `02-spec/02-coding-guidelines/01-cross-language/readme.md` + the specific rule file (`02-boolean-standards.md`, `05-defer-rules.md`, `09-wrapped-boolean-results.md`). PHP: `04-php/00-overview.md` + `02-forbidden-patterns.md`, `03-naming-conventions.md`, `05-response-array-standard.md`. TS/React: `02-typescript/08-typescript-standards-reference.md` + `12-discriminated-union-patterns.md`, `14-state-management.md` |
 | 4   | File and folder naming             | `02-spec/02-coding-guidelines/08-file-folder-naming/` — `03-golang.md`, `02-php-wordpress.md`, or `04-typescript-javascript.md` for the language this task writes                                                                                                                                                                                                                                                               |
-| 5   | Error architecture                 | `02-spec/03-error-manage/01-index.md` plus `06-apperror-package/` (Go) or `05-response-envelope/` (transport)                                                                                                                                                                                                                                                                                          |
-| 6   | Error code range                   | `02-spec/21-app/01-index.md` — quote the symbolic and numeric codes this task may emit                                                                                                                                                                                                                                                                                                     |
-| 7   | Logging and stack traces           | `02-spec/21-app/01-index.md` for anything that can fail                                                                                                                                                                                                                                                                                                                                 |
-| 8   | Response envelope                  | `02-spec/21-app/01-index.md` for any REST or CLI output surface                                                                                                                                                                                                                                                                                                                                |
-| 9   | Golden fixture                     | `02-spec/21-app/fixtures/<file>.example.json` plus `02-spec/21-app/01-index.md` for any task touching a wire format                                                                                                                                                                                                                                                                                                    |
+| 5   | Error architecture                 | `02-spec/03-error-manage/readme.md` plus `06-apperror-package/` (Go) or `05-response-envelope/` (transport)                                                                                                                                                                                                                                                                                          |
+| 6   | Error code range                   | `02-spec/21-app/readme.md` — quote the symbolic and numeric codes this task may emit                                                                                                                                                                                                                                                                                                     |
+| 7   | Logging and stack traces           | `02-spec/21-app/readme.md` for anything that can fail                                                                                                                                                                                                                                                                                                                                 |
+| 8   | Response envelope                  | `02-spec/21-app/readme.md` for any REST or CLI output surface                                                                                                                                                                                                                                                                                                                                |
+| 9   | Golden fixture                     | `02-spec/21-app/fixtures/<file>.example.json` plus `02-spec/21-app/readme.md` for any task touching a wire format                                                                                                                                                                                                                                                                                                    |
 | 10  | Strictly-avoid rules               | `.ai-memory/strictly-avoid.md` — name the specific rules this task could break, not the whole file                                                                                                                                                                                                                                                                                                                             |
 | 11  | Exact target files                 | Repo-relative paths, created or edited, in the header                                                                                                                                                                                                                                                                                                                                                                        |
 | 12  | Exact symbols                      | Struct / class / function / component names with signatures or field lists                                                                                                                                                                                                                                                                                                                                                   |
@@ -633,7 +792,7 @@ rg -o --no-filename `02-spec/[A-Za-z0-9/._-]+' .ai-memory/plans/subtasks/xx-plan
 | "implemented correctly", "works as expected" | Unverifiable                                   | A command plus expected output                                          |
 | "Review the code"                            | Not a check                                    | A test name or linter invocation                                        |
 | "max 80-100 lines per function"              | Contradicts the canonical tier                 | Cite `02-spec/02-coding-guidelines/02-canonical-size-tier.md`              |
-| The same `/learn` list in every task         | Anchoring theatre                              | 3-7 links chosen for this task                                          |
+| The same [/learn](slashCommand:learn) list in every task         | Anchoring theatre                              | 3-7 links chosen for this task                                          |
 | A commit or release block in a task          | Invites one commit per task                    | See RULE 8                                                              |
 
 ---
@@ -647,7 +806,7 @@ this batch, in full:
   the plan and the task range, e.g. `feat(cli): tasks 012-018 frontier + parser`.
 - The commit happens after the batch's verification commands pass, not before.
 - Tasks move to `.ai-memory/plans/completed/` in the same commit that lands their
-  code, and `.ai-memory/plans/01-index.md` is updated in that same commit.
+  code, and `.ai-memory/plans/readme.md` is updated in that same commit.
 - A release (tag, changelog entry, artifact build) fires only when every task
   of `plan-file` has moved to `.ai-memory/plans/completed/` with
   `Status: completed`. Releasing mid-plan is forbidden.
@@ -695,7 +854,7 @@ in section 2.
 - [ ] Dependency graph is acyclic.
 - [ ] No banned phrasing from RULE 7 anywhere in the batch.
 - [ ] No task file contains a commit, push, tag, or release instruction.
-- [ ] Plan task table, `.ai-memory/plans/01-index.md`, and the memory index updated.
+- [ ] Plan task table, `.ai-memory/plans/readme.md`, and the memory index updated.
 - [ ] RULE 0A naming check ran; output printed; zero uppercase/space/underscore paths, every ordered file carries its zero-padded prefix.
 - [ ] RULE 0C respected: audit slots exist with correct names and empty bodies; no audit was scored during authoring; no task contains an audit step.
 - [ ] RULE 0D footer present verbatim in every task file; plan file states one step per run and self-loop; no task implies batching steps.
@@ -708,7 +867,7 @@ in section 2.
 - [ ] RULE 0E applied: every command, issue, cicd-issue, memory item, strictly-avoid entry and attachment written to its file and linked from Context; nothing left only in chat; every attachment has a caption.
 - [ ] RULE 0F release policy quoted in the plan's Context; no task touches version, changelog, release notes, or the readme version pin.
 - [ ] RULE 0G respected: zero question marks, "assume", "probably" or "TBD" left in plan or task bodies; each became an ambiguity file with an interim default.
-- [ ] RULE 0H layout matched exactly; `.ai-memory/plans/01-index.md` row present; no unnumbered sibling in a numbered folder.
+- [ ] RULE 0H layout matched exactly; `.ai-memory/plans/readme.md` row present; no unnumbered sibling in a numbered folder.
 - [ ] RULE 0I: every bug-driven step links an issue file with a complete RCA record, including `Prevention` and `Regression check`.
 - [ ] RULE 0J counts printed: citations total, missing files = 0, missing sections = 0, unreferenced required guideline files = 0; `check-spec-folder-refs.py` output pasted.
 - [ ] RULE 0J: plan has a `## CI/CD verification` section, and every code task names the CI job or linter script that guards it.
@@ -763,15 +922,14 @@ Spec gaps filed: <list or none>
 
 To prevent cross-task pollution and ensure seamless agent communication, every task MUST create a dedicated subfolder in `.ai-memory/temp-agents/xx-<task-name>/`:
 
-1. **Per-Task Isolation:** On task start, the assigned subagent creates its isolated directory `.ai-memory/temp-agents/xx-<task-name>/`.
-2. **State & Progress Tracking:** Create `.ai-memory/temp-agents/xx-<task-name>/state.md` documenting:
+1. Per-Task Isolation: On task start, the assigned subagent creates its isolated directory `.ai-memory/temp-agents/xx-<task-name>/`.
+2. State & Progress Tracking: Create `.ai-memory/temp-agents/xx-<task-name>/state.md` documenting:
    - `TASK_NAME`: `<task-name>`
    - `STATUS`: `IN_PROGRESS` | `DONE` | `FAILED`
    - `ASSIGNED_AGENT`: Agent identifier and thread index
    - `CURRENT_STEP`: Detailed micro-step description
-3. **Inter-Agent Communication & Handoff:**
+3. Inter-Agent Communication & Handoff:
    - All intermediate findings, scratch outputs, and dependency handoffs between agents working on this task MUST be written inside `.ai-memory/temp-agents/xx-<task-name>/`.
    - Sibling or successor agents MUST inspect this dedicated folder before resuming work or fixing errors.
-4. **On Error/Crash:** Append the exact error, root cause, and `STATUS: FAILED` to `.ai-memory/temp-agents/xx-<task-name>/state.md` before exiting.
-5. **On Success:** Mark `STATUS: DONE` in `.ai-memory/temp-agents/xx-<task-name>/state.md`, aggregate findings to the master plan, and clean up or archive the folder.
-
+4. On Error/Crash: Append the exact error, root cause, and `STATUS: FAILED` to `.ai-memory/temp-agents/xx-<task-name>/state.md` before exiting.
+5. On Success: Mark `STATUS: DONE` in `.ai-memory/temp-agents/xx-<task-name>/state.md`, aggregate findings to the master plan, and clean up or archive the folder.

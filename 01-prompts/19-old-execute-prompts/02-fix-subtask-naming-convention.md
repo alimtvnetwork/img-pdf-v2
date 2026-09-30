@@ -3,7 +3,7 @@
 > **Prompt Version:** 2.1.0
 > **Synchronization:** Main Meta-Repo & Connected Workspaces
 
-/goal Your objective is to deeply audit the `.ai-memory/plans/` directory for any subtask files that incorrectly use the `SS-` or `SS-XX-` prefix and fix them. The correct prefix MUST always be strictly `xx-<subslug>.md` (where `XX` is the zero-padded sequence number).
+[/goal](slashCommand:goal) Your objective is to deeply audit the `.ai-memory/plans/` directory for any subtask files that incorrectly use the `SS-` or `SS-XX-` prefix and fix them. The correct prefix MUST always be strictly `xx-<subslug>.md` (where `XX` is the zero-padded sequence number).
 You must also update all markdown files that reference the old filenames, and update the project's memory.
 
 ## MUST FOLLOW NON-NEGOTIABLE
@@ -15,7 +15,7 @@ Listen, past runs of these turns have been sloppy and stupid as fuck: wrong step
 Scan the `.ai-memory/plans/subtasks/` directory recursively.
 
 - If you find any file starting with `SS-` or `SS-XX-` (e.g., `SS-01-fix-auth.md` or `SS-fix-auth.md`), rename it to the correct format: `xx-<subslug>.md` (e.g., `01-fix-auth.md`).
-- After renaming, you MUST recursively search `.ai-memory/plans/pending/`, `.ai-memory/plans/completed/`, `.ai-memory/plans/01-index.md`, and `.ai-memory/memory/` for any text references to the old filenames.
+- After renaming, you MUST recursively search `.ai-memory/plans/pending/`, `.ai-memory/plans/completed/`, `.ai-memory/plans/readme.md`, and `.ai-memory/memory/` for any text references to the old filenames.
 - Replace those old references with the new correct filenames.
 
 ## 2. Memory Update
@@ -23,7 +23,7 @@ Scan the `.ai-memory/plans/subtasks/` directory recursively.
 You must write a memory entry to ensure this rule is persisted and no other AI makes this mistake again.
 
 - Create a file inside `.ai-memory/memory/learned/` (or update an existing one) detailing the rule: "Subtasks must NEVER be prefixed with 'SS-'. They must strictly follow the 'xx-<slug>.md' sequence."
-- Update `.ai-memory/memory/01-index.md` to reference this newly added/updated memory file.
+- Update `.ai-memory/memory/readme.md` to reference this newly added/updated memory file.
 - Add a note explicitly stating how the project is following all guidelines and enforcing this strict naming.
 
 ## 3. High-Stakes Code Standards & Coding Guidelines
@@ -38,13 +38,13 @@ You MUST follow the project's strict coding guidelines. These files are located 
 
 2. Code Style & File Size Limits (80-100 lines max)
 
-- `02-spec/02-coding-guidelines/01-cross-language/01-index.md`
+- `02-spec/02-coding-guidelines/01-cross-language/readme.md`
 - `02-spec/02-coding-guidelines/01-cross-language/20-nesting-resolution-patterns.md`
 - `02-spec/02-coding-guidelines/01-cross-language/06-cyclomatic-complexity.md`
 
 3. Boolean Conditions & Samples
 
-- `02-spec/02-coding-guidelines/01-cross-language/02-boolean-principles/01-index.md`
+- `02-spec/02-coding-guidelines/01-cross-language/02-boolean-principles/readme.md`
 - `02-spec/02-coding-guidelines/01-cross-language/12-no-negatives.md`
 - `02-spec/02-coding-guidelines/01-cross-language/24-boolean-flag-methods.md`
 
@@ -75,9 +75,9 @@ Listen, past turns have been sloppy as fuck: wrong file names, leaving broken re
 
 - [ ] Scan `.ai-memory/plans/subtasks/` for files starting with `SS-` or `SS-XX-`.
 - [ ] Rename those files to the correct `xx-<slug>.md` pattern.
-- [ ] Find and correct all file path references to the old names in `.ai-memory/plans/pending/`, `.ai-memory/plans/completed/`, `.ai-memory/plans/01-index.md`, and memory files.
+- [ ] Find and correct all file path references to the old names in `.ai-memory/plans/pending/`, `.ai-memory/plans/completed/`, `.ai-memory/plans/readme.md`, and memory files.
 - [ ] Add a memory entry under `.ai-memory/memory/learned/` enforcing this naming convention and confirming how the project is following all guidelines.
-- [ ] Update `.ai-memory/memory/01-index.md` with the new memory file.
+- [ ] Update `.ai-memory/memory/readme.md` with the new memory file.
 - [ ] Audit your work against the Master Consolidated Guide, Code Style, Boolean Conditions, and Variable Naming rules.
 - [ ] Make a single logical Git commit including all changes and push it to the repository immediately.
 

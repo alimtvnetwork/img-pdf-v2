@@ -1,6 +1,6 @@
 # Release Deployment & Version Bump — Release Management (must follow)
 
-> **Prompt Version:** 2.1.0
+> **Prompt Version:** 2.2.0
 > **Synchronization:** Main Meta-Repo & Connected Workspaces
 
 Trigger phrases: `release`, `bump version`, `bump version + add changelog + pin to root readme`, `abump version ...` (typo variants count).
@@ -32,9 +32,21 @@ Before any execution, check if this prompt is installed as a native Antigravity 
 
 ---
 
-## Fast File Discovery via Python Toolchain (Mandatory Acceleration)
+## Fast File Discovery & Release Context Toolchain (Mandatory Acceleration)
 
-To rapidly discover version manifests, changelog entries, release notes, and install scripts without hitting 50-result tool caps, the AI agent MUST utilize the Python discovery scripts first:
+To rapidly discover version manifests, changelog entries, release notes, and install scripts without hitting 50-result tool caps, the AI agent MUST utilize the 2-tier toolchain:
+
+### Tier 1: GitMap AUM Acceleration (PRIMARY)
+- **Universal File Search:** `gitmap find "*version*" [-ext <ext>]` (alias `gitmap f`)
+- **Inspect Changelog & Release Notes:** `gitmap changelog` (alias `gitmap cl [ver]`)
+- **List Prior Release Tags:** `gitmap list-versions --limit 5` (alias `gitmap lv`)
+- **Remote Pipeline AI Status (<50ms):** `gitmap pipeline-ai status --json` (or alias `gitmap pl-ai status --json`)
+- **Remote Dynamic Timeout Wait:** `gitmap pipeline-ai status -t <etaSeconds>` (or alias `gitmap pl-ai status -t <sec>`)
+- **Extract Failing Step Error Logs:** `gitmap pipeline error-logs` (or alias `gitmap pe`, clear with `gitmap pe clear -y`)
+- **Pipeline Runner Targets & Cache Table:** `gitmap pipeline details` (or alias `gitmap pd`)
+- **Stream Manifest or Config:** `gitmap cat version.json` (zero disk writes)
+
+### Tier 2: Fast Cached Python Toolchain (FALLBACK)
 - **Inventory Manifests & Version Files:** `python 03-ai-scripts/11-fast-file-scanner.py --search "version" --limit 20`
 - **Fast Grep Across Version Pins:** `python 03-ai-scripts/12-fast-cached-grep.py --pattern "<version>" --limit 20`
 - **Explore Release Artifacts & Folders:** `python 03-ai-scripts/17-fast-file-reader.py --list-folder .ai-memory/release --limit 20`
@@ -58,7 +70,7 @@ To rapidly discover version manifests, changelog entries, release notes, and ins
 Deviations (only when the trigger explicitly says so):
 
 - MAJOR = `(MAJOR+1).0.0` if the user said the change is breaking (storage schema, prompt schema, public SDK, extension contract).
-- PATCH = `MAJOR.MINOR.(PATCH+1)` only if the user literally said `patch bump` or `patch release`.
+- PATCH = `MAJOR.MINOR.(PATCH+1)` only if the user explicitly said `patch bump` or `patch release`.
 
 When in doubt: MINOR.
 
@@ -67,7 +79,7 @@ When in doubt: MINOR.
 - [ ] Changelog Formatting (version.json): You MUST read the `"changelog"` configuration from `version.json` (e.g., `file_path` and `format`). If it exists, you MUST follow its exact instructions for where to write the changelog and how to format the header. If it does not exist, fallback to the hardcoded format below.
 - [ ] Root README Pinning (Fatal if missed): You MUST pin the latest release version into the root `readme.md` file. It is a fatal failure if you skip updating the badges or version pins in the root README file!
 - [ ] Test File Ban: You MUST NOT read, scan, or modify test files (e.g., `*_test.*`, `*.spec.*`, `test/*`) when discovering or updating versions. Test files contain mock data, and updating mock data corrupts the tests.
-- Release Architecture Memory: You must dynamically build a map of how the release works in this codebase (where the version lives, how it propagates) and write it to `.ai-memory/memory/01-index.md`. You must then enqueue this file inside `.ai-memory/what-to-read.md` and link it in the root `readme.md`.
+- Release Architecture Memory: You must dynamically build a map of how the release works in this codebase (where the version lives, how it propagates) and write it to `.ai-memory/memory/readme.md`. You must then enqueue this file inside `.ai-memory/what-to-read.md` and link it in the root `readme.md`.
 - [ ] Version Inheritance Protocol: The root `version.json` file is the strict Single Source of Truth. It may contain components (e.g. `frontend`, `backend`) whose version is set to `"inherit"`. If a component's version is `"inherit"`, DO NOT bump it independently; it automatically scales with the global version. Always bump the global root `"version"` property unless the user explicitly asks to bump an unlinked sub-component.
 - [ ] All version pin sites move in lock-step. Partial bumps are rejected.
 - [ ] The previous version string MUST NOT appear anywhere in the repo after this turn EXCEPT in historic files: `changelog.md`, `release_notes.md`, anything under `.ai-memory/release/`, and any dated archive folder.
@@ -94,9 +106,9 @@ When in doubt: MINOR.
 >    - Coding Guidelines Mirror: `.ai-memory/coding-guidelines.md`.
 > 3. **Worker Pool & Log Aggregation Architecture:** All pre-release verification gates, tests, and build orchestrators must run tasks concurrently using a worker pool (2–3 workers via `ThreadPoolExecutor`), announce enqueued tasks upfront, show real-time progress, handle failures gracefully without canceling sibling workers, and print a consolidated final summary with full stdout/stderr error logs.
 > 4. **`force` Keyword Support:** If the user wrote `force`, `force rebuild`, or `force create` on top of the prompt or trigger: **ALWAYS recreate/regenerate the Python release scripts (`bump_versions.py`, `06-cicd-local-runner.py`) from scratch**, regardless of whether the file already exists on disk.
-> 5. **Strict Relative Git Paths (TOTAL BAN on Absolute Paths / `file:///` URIs):** All file paths, markdown links, citations, and subtask paths inside plans, RCA logs (`.ai-memory/memory/issues/`), scripts, and code comments MUST be strictly relative paths from the git root (e.g., `02-spec/03-error-manage/01-index.md`, `.ai-memory/plans/01-index.md`, `cmd/main.go`). NEVER write absolute OS paths (`/absolute/path/to/...`, `/absolute/path/to/...`, `/home/...`) or absolute file URIs (`file:///...`).
+> 5. **Strict Relative Git Paths (TOTAL BAN on Absolute Paths / `file:///` URIs):** All file paths, markdown links, citations, and subtask paths inside plans, RCA logs (`.ai-memory/memory/issues/`), scripts, and code comments MUST be strictly relative paths from the git root (e.g., `02-spec/03-error-manage/readme.md`, `.ai-memory/plans/readme.md`, `cmd/main.go`). NEVER write absolute OS paths (`/absolute/path/to/...`, `/absolute/path/to/...`, `/home/...`) or absolute file URIs (`file:///...`).
 >    - ❌ **BAD:** `[SSH Commands](file:///absolute/path/to/...)`
->    - ✅ **GOOD:** `[SSH Commands](02-spec/13-generic-cli/01-index.md)`
+>    - ✅ **GOOD:** `[SSH Commands](02-spec/13-generic-cli/readme.md)`
 > 6. **No External or Random File Creation:** NEVER write scripts, temporary test scripts, or scratch files to root, `/tmp`, global system paths, or outside the repository boundary.
 
 ---
@@ -117,23 +129,20 @@ Past release turns were sloppy: guessed the version, bumped PATCH instead of MIN
 
 1. Read the current version from the canonical version source. Print previous and new version. Confirm PATCH digit is `0`.
 
-2. **Version Bumping (The Python Auto-Bumper Bootstrap)**:
-   You MUST NOT manually hunt and replace versions using `rg` in every release. Instead, rely on a dedicated python script: `.ai-memory/release/bump_versions.py`.
-
-   **First-Time Bootstrap (If `.ai-memory/release/bump_versions.py` or `.ai-memory/memory/01-index.md` do NOT exist, or user said `force`):**
-
-   ### CRITICAL PERFORMANCE RULE: NO GLOBAL RIPGREP SEARCHES
-
-   You MUST NEVER use `rg`, `grep`, or `find` to globally search the entire repository for version strings.
-
-   You MUST follow this strict chain:
-   1. **Primary:** Run `python 03-ai-scripts/29-release-orchestrator.py --tier <minor|patch|major>` (see `01-prompts/17-release-management/06-release-orchestrator.md`). This handles SemVer bumping, release commit, `release/vX.Y.Z` branch creation, tagging, pushing, and restores the original starting branch. Alternatively, run `.ai-memory/release/bump_versions.py --type <major|minor|patch> --create-release`.
-   2. **Fallback 1 (Read Docs):** If script is missing, read `.ai-memory/release/release-method.md` to learn which files contain versions. Generate `29-release-orchestrator.py` or `bump_versions.py` and run it.
-
-   - **CRITICAL ADAPTATION RULE:** The `bump_versions.py` script is shipped via the installer as a baseline. When you run this command on a NEW project for the first time, you MUST review and update its internal `FILES_TO_BUMP` array to match the target repository's architecture before running it.
-3. **Fallback 2 (Efficient Search):**
-   - **CRITICAL SCRIPT RECOVERY:** If you have to recreate `bump_versions.py` from scratch, you MUST include the `subprocess` logic that handles `git checkout -b release/vX.Y.Z`, `git commit`, `git tag`, `git push`, and detecting `gh` / `glab` CLI to create the platform release. If `release-method.md` is missing, perform a highly efficient, OS-agnostic search (e.g., Python `os.walk` ignoring `.git`, `node_modules`, `.venv`, `.ai-memory`). Create `release-method.md` documenting the pin sites, create `bump_versions.py`, and run it.
-   4. **Fallback 3 (Ask User):** If you cannot find the files, stop and ask the user to specify them.
+2. **Mandatory 5-Step Release Branching Lifecycle:**
+   All releases MUST follow this strict 5-step Git release lifecycle:
+   - **Step 1: Create & Switch to Release Branch:**
+     Create and checkout the dedicated release branch first: `git checkout -b release/vX.Y.Z`. Releases MUST NOT be committed directly to `main` without a release branch.
+   - **Step 2: Bump Version on Release Branch via Python Script:**
+     Execute the dedicated Python bump script (`03-ai-scripts/37-bump-version.py` or `.ai-memory/release/bump_versions.py`) on the release branch.
+      - **CRITICAL REPOSITORY ADAPTATION & SCRIPT REPAIR:** The bump version script MUST be inspected, created, or adapted based on the target repository architecture. The agent MUST identify where versions are defined (`version.json`, `package.json`, `Cargo.toml`, `pyproject.toml`, `go.mod`, etc.), where they will change (`readme.md`, `changelog.md`, badges, install scripts), and what sync operations run (`npm run sync`, `go generate ./...`). If the bump script is missing, outdated, or lacks support for this repository's version pin sites, **the agent MUST fix or recreate the Python bump script immediately** before running the release!
+      - **Execution:** Run `python 03-ai-scripts/29-release-orchestrator.py --tier <tier>` or `python 03-ai-scripts/37-bump-version.py --tier <tier>` or `.ai-memory/release/bump_versions.py --type <tier>`.
+   - **Step 3: Commit in Release Branch:**
+     Stage and commit all version bump and generated release files on the release branch: `git commit -m "release: vX.Y.Z <scope>"`.
+   - **Step 4: Create Annotated Git Tag:**
+     Create the annotated tag on that release commit: `git tag -a vX.Y.Z -m "Release vX.Y.Z"`.
+   - **Step 5: Put Commit Back to Main Branch & Push:**
+     Switch to `main` (`git checkout main`), merge the release branch commit (`git merge release/vX.Y.Z`), push `main`, `release/vX.Y.Z`, and tag `vX.Y.Z` to `origin`, then restore the starting branch if different from `main`.
 
 3. Pin the new version in `readme.md` (lowercase filename, MUST). Rewrite every occurrence of the previous version (`vX.Y.Z` and bare `X.Y.Z`) in badges, install snippets, "current version" lines, release-branch examples, zip filenames, inline references. After this step, `grep "<previous-version>" readme.md` MUST return nothing.
 
@@ -166,7 +175,13 @@ Past release turns were sloppy: guessed the version, bumped PATCH instead of MIN
 
 7. Verify version sync. Run the project's version-sync check script if one exists (discover: `scripts/check-version-sync.*`, `scripts/verify-versions.*`). It MUST exit 0. Non-zero = release is INVALID: log an issue, fix, re-run. If no such script exists, re-run the step 2 `rg` and confirm only historic files (see Hard rules allow-list) still reference the previous version.
 
-8. Tag, commit, and push (if git-tracked). Commit message: `release: vX.Y.Z <headline>`. Tag: `git tag vX.Y.Z`. You MUST push the commit and tag to the remote repository (e.g., `git push` followed by `git push origin vX.Y.Z`). Because you synced and committed pending changes in Pre-flight, the working tree should only contain release-related file changes.
+8. **Execute 5-Step Git Release Operations:**
+   Follow the 5-step release branching lifecycle:
+   - Checkout `release/vX.Y.Z`
+   - Bump version on release branch via Python script
+   - Commit on release branch: `git commit -m "release: vX.Y.Z <headline>"`
+   - Tag on release branch commit: `git tag -a vX.Y.Z -m "Release vX.Y.Z"`
+   - Checkout `main`, merge `release/vX.Y.Z`, push `main`, `release/vX.Y.Z`, and tag `vX.Y.Z` to `origin`. Restore starting branch.
 
 9. **Publish Platform Release with Quick Install One-Liners (FATAL IF MISSED ON GITHUB/GITLAB):**
    When creating the GitHub / GitLab release (via `bump_versions.py --create-release` or CLI):
@@ -265,11 +280,14 @@ When answered: `mv` from `01-new-ambiguity/` to `02-ambiguity-resolved/`, flip `
 ## Actionable Items & Checklist
 
 - [ ] Read the overarching main task plan.
-- [ ] Ensure the git repository starts completely clean.
-- [ ] Complete all work on the current branch only.
+- [ ] Ensure the git repository starts completely clean (`git status`, commit pending work, `git pull`).
+- [ ] Inspect repository architecture and adapt/fix the Python bump script (`03-ai-scripts/37-bump-version.py` or `.ai-memory/release/bump_versions.py`) based on where versions are tracked and how they change.
+- [ ] Step 1: Create and switch to dedicated release branch: `git checkout -b release/vX.Y.Z`.
+- [ ] Step 2: Bump version on release branch using the repository-aware Python bump script (`python 03-ai-scripts/37-bump-version.py` or `python .ai-memory/release/bump_versions.py`).
+- [ ] Step 3: Stage and commit all release changes on release branch: `git commit -m "release: vX.Y.Z <scope>"`.
+- [ ] Step 4: Create annotated tag on release commit: `git tag -a vX.Y.Z -m "Release vX.Y.Z"`.
+- [ ] Step 5: Switch to `main`, merge `release/vX.Y.Z`, push `main`, `release/vX.Y.Z`, and tag `vX.Y.Z` to `origin`, then restore starting branch.
 - [ ] Ensure `.gitignore` explicitly excludes test reports, artifacts, and compiled binaries.
-- [ ] Group all completed work into a single logical commit.
-- [ ] Push the commit to the remote repository.
 - [ ] **File Change Summary:** Provide a highly detailed summary in the chat listing exactly which files were changed, what specific changes were made inside them, and why they were changed. The summary is VERY important.
 
 #
@@ -302,10 +320,11 @@ To survive massive checklists and complex codebases, you MUST operate using thes
 - [ ] Explicitly state previous and new version in the reply.
 - [ ] Update version in standard files (e.g., `package.json`, `version.json`, etc.).
 - [ ] AVOID: Do NOT touch or modify any files inside the `.gitmap` folder.
-- [ ] Execute `git add .`
-- [ ] Execute `git commit -m "chore(release): bump version to <new_version>"`
-- [ ] Execute `git push`
-- [ ] AVOID: Do NOT create a git tag (e.g., `git tag`). Tags are managed externally by Git Map.
+- [ ] Step 1: Create dedicated release branch: `git checkout -b release/v<new_version>`.
+- [ ] Step 2: Bump version on release branch using repository-aware Python bump script (`03-ai-scripts/37-bump-version.py` or `.ai-memory/release/bump_versions.py`).
+- [ ] Step 3: Stage and commit on release branch: `git commit -m "release: v<new_version> <scope>"`.
+- [ ] Step 4: Create annotated tag on release commit: `git tag -a v<new_version> -m "Release v<new_version>"`.
+- [ ] Step 5: Switch to `main`, merge `release/v<new_version>`, push `main`, `release/v<new_version>`, and tag `v<new_version>` to `origin`, and restore starting branch.
 
 ---
 
@@ -313,4 +332,3 @@ To survive massive checklists and complex codebases, you MUST operate using thes
 
 - [ ] **MANDATORY FINAL COMMIT & PUSH TO GIT (ANYHOW):** At the completion of the release workflow, after version bumping, release notes generation, and tagging, verify that the release branch, release tag, and updated main branch are all pushed to `origin`.
 - [ ] **TOTAL BAN ON PER-FILE COMMITS (DO NOT COMMIT EACH FILE INDIVIDUALLY):** You MUST NOT create separate git commits for each individual file as you edit them. All modified files across the turn MUST be accumulated and committed together in a SINGLE grouped atomic commit at the final step before pushing!
-

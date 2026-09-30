@@ -539,6 +539,4 @@ Listen, past runs of these turns have been sloppy and stupid as fuck: wrong step
 
 --
 
-## 🚨 Highest Priority Instructions (Appended User Tasks & Instructions Below)
-
-[PASTE USER REQUEST / TASK INSTRUCTIONS HERE — THE AGENT MUST EXECUTE WHATEVER IS WRITTEN BELOW WITH ABSOLUTE PRIORITY AND PRECEDENCE OVER ALL GENERAL GUIDELINES ABOVE]
+## 🚨 High Priority Instructions Below

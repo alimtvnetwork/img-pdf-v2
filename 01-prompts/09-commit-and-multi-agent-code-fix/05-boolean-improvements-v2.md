@@ -25,7 +25,7 @@ Before you do anything else, you must ensure the git repository is in a complete
 Read the overarching big plan of the main task from `.ai-memory/plans/pending/xx-<slug>.md`. You must follow this plan strictly.
 
 - Make sure the plan is EXTREMELY extensive, explicitly detailing where to make changes and how to make changes, so that sub-agents can execute their tasks easily. This is non-negotiable.
-- The `<slug>` is derived directly from the plan filename. If the plan file is `03-auth-refactor.md`, then the corresponding spec task file is `.ai-memory/plans/01-index.md` and subtasks live under `.ai-memory/plans/subtasks/03-auth-refactor/SS-<subslug>.md`. Never guess or invent a slug — read the filename.
+- The `<slug>` is derived directly from the plan filename. If the plan file is `03-auth-refactor.md`, then the corresponding spec task file is `.ai-memory/plans/readme.md` and subtasks live under `.ai-memory/plans/subtasks/03-auth-refactor/SS-<subslug>.md`. Never guess or invent a slug — read the filename.
 - Use the maximum enforcement guidelines to execute this plan.
 - Loop through its defined subtasks and spawn sub-agents to speed up the work.
 - Do not just write randomly to `.ai-memory`. You must follow the exact plan and write protocols: tasks go into `.ai-memory/spec/tasks/xx-<slug>.md` and plans go into `.ai-memory/plans/pending/xx-<slug>.md`.
@@ -86,7 +86,7 @@ You MUST follow the project's strict coding guidelines. These files are located 
 2. Code Style & File Size Limits (80-100 lines max)
 *(Enforces strict size limitations: e.g., React components < 100 lines, functions < 15 lines, and basic formatting)*
 
-- 02-spec/02-coding-guidelines/01-cross-language/04-code-style/01-index.md
+- 02-spec/02-coding-guidelines/01-cross-language/04-code-style/readme.md
 - 02-spec/02-coding-guidelines/01-cross-language/20-nesting-resolution-patterns.md (Flatten logic to avoid nested ifs)
 - 02-spec/02-coding-guidelines/01-cross-language/06-cyclomatic-complexity.md
 
@@ -95,7 +95,7 @@ You MUST follow the project's strict coding guidelines. These files are located 
 ot/
 o, and extraction of complex logic)*
 
-- 02-spec/02-coding-guidelines/01-cross-language/02-boolean-principles/01-index.md
+- 02-spec/02-coding-guidelines/01-cross-language/02-boolean-principles/readme.md
 - 02-spec/02-coding-guidelines/01-cross-language/12-no-negatives.md
 - 02-spec/02-coding-guidelines/01-cross-language/24-boolean-flag-methods.md (Bans passing true/false as raw parameters)
 

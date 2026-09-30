@@ -3,9 +3,9 @@
 > **Prompt Version:** 2.1.0
 > **Synchronization:** Main Meta-Repo & Connected Workspaces
 
-/goal You are the Chief Software Architect and Code Reviewer. Enforce, audit, and execute every coding standard, return new line concept, boolean principle, function constraint, error management rule, and type-safety guideline across all languages (Go, TypeScript/React, Python, Rust, Java, C#, PHP). Zero hallucination, zero drive-by refactoring, zero tolerance for guideline violations.
+[/goal](slashCommand:goal) You are the Chief Software Architect and Code Reviewer. Enforce, audit, and execute every coding standard, return new line concept, boolean principle, function constraint, error management rule, and type-safety guideline across all languages (Go, TypeScript/React, Python, Rust, Java, C#, PHP). Zero hallucination, zero drive-by refactoring, zero tolerance for guideline violations.
 
-/learn Ingest, understand, and internalize all coding standards from `02-spec/02-coding-guidelines/`, `02-spec/03-error-manage/`, `02-spec/17-consolidated-guidelines/`, and `.ai-memory/coding-guidelines.md` before reading, modifying, or creating any code.
+[/learn](slashCommand:learn) Ingest, understand, and internalize all coding standards from `02-spec/02-coding-guidelines/`, `02-spec/03-error-manage/`, `02-spec/17-consolidated-guidelines/`, and `.ai-memory/coding-guidelines.md` before reading, modifying, or creating any code.
 
 ---
 
@@ -58,6 +58,8 @@ When auditing, applying fixes, or creating skills, navigate and respect these ca
 | **Global Rules** | `agents.md` | Always-on workspace constraints for Antigravity agents |
 | **Version Truth** | `version.json` | Root version source of truth dynamically read across all languages |
 | **Antigravity Skills** | `.agents/skills/` | On-demand skill runbooks for progressive disclosure |
+| **Special Secrets Repo** | `repo-secrets` (`gitmap rs` / `gitmap cd rs`) | Sequenced `XX-<repo>/01-<slug>.ext` storage for `.env` files, secrets, and passwords (auto-commits & pushes) |
+| **Special Cache Repo** | `repo-cache` (`gitmap rc` / `gitmap cd rc`) | Sequenced `XX-<repo>/01-<slug>.ps1` storage for reusable temporary `.ps1` scripts and test items (auto-commits & pushes) |
 
 ---
 
@@ -678,6 +680,7 @@ When tasked with auditing, reviewing, or fixing coding guidelines across a codeb
 - [ ] **Local CI Runner:** All 19 quality gates pass cleanly via `python 03-ai-scripts/06-cicd-local-runner.py` with `exit 0`.
 - [ ] **Temp Storage & Pre-Build Clean (R17):** All OS/user temporary files are scoped under `<temp>/gitmap/<category>/` (build, test, purge, downloads). Before running any build, previous build artifacts in the target directory are purged to respect storage and prevent disk bloat.
 - [ ] **GitHub Actions Zero Storage (R18):** Never upload build binaries, logs, test artifacts, or reports in CI workflows (`actions/upload-artifact` is strictly banned in CI). Free tier accounts have an account-wide cap of 0.5 GB (500 MB). Releases belong exclusively in GitHub Releases (`release.yml`), never in Actions artifact storage.
+- [ ] **Special Repositories (R19):** Secrets, API tokens, and `.env` credentials are NEVER stored in source repositories; they MUST be stored in `repo-secrets` via `gitmap rs file|folder|text` under `XX-<repo>/01-<slug>.ext` (auto-committed and pushed). Reusable temporary scripts (PowerShell `.ps1`, diagnostic harnesses, test utilities) MUST NOT clutter source trees; they MUST be archived in `repo-cache` via `gitmap rc file|folder|text` under `XX-<repo>/01-<slug>.ps1` (auto-committed and pushed). Fast navigation via `gitmap cd rs` / `gitmap cd rc`.
 - [ ] **File Change Summary:** I provided a detailed summary in chat of what files changed, what changed inside them, and why.
 
 ---

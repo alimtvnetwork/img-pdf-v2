@@ -33,7 +33,7 @@ All dates are UTC. All filenames are lowercase kebab-case with a two-digit zero-
     21-app/ ... 24-app-ui-design-system/ # Application-specific business features & schemas
 
   .ai-memory/                            # AI metadata, cognitive memory, and automation layer
-    01-index.md                        # Master repository index and directory router
+    readme.md                        # Master repository index and directory router
     02-user-preferences                # Explicit user communication preferences
     03-strictly-avoid.md               # Universal hard prohibitions & CODE RED constraints
     04-suggestions.md                  # Architectural suggestions & pending improvements
@@ -42,18 +42,18 @@ All dates are UTC. All filenames are lowercase kebab-case with a two-digit zero-
     folder-structure.md                # 📄 AUTHORITATIVE SINGLE SOURCE OF TRUTH FOR FOLDER STRUCTURE
 
     ai-fix-scripts/                    # Reusable high-speed Python automation toolchain
-      01-index.md                      # Master catalog & search tag registry
+      readme.md                      # Master catalog & search tag registry
       02-shared-engine.py              # Central engine: constants, lazy regex, locks, cache
       03..20-*.py                      # Specialized linters, fixers, and local CI runners
 
     plans/                             # Micro-task execution center
-      01-index.md                      # Master registry of active and completed plans
+      readme.md                      # Master registry of active and completed plans
       pending/                         # High-level active parent plans (xx-<slug>.md)
       subtasks/                        # Bounded micro-tasks (xx-<slug>/01-step.md)
       completed/                       # Archived completed parent plans & subtasks
 
     memory/                            # Long-term institutional cognitive memory (SINGULAR)
-      01-index.md                      # Master table of contents & CODE RED rules
+      readme.md                      # Master table of contents & CODE RED rules
       architecture/                    # System architecture decisions & split-DB patterns
       constraints/                     # Non-negotiable technical constraints
       done/                            # Historical completed milestones
@@ -81,7 +81,7 @@ All dates are UTC. All filenames are lowercase kebab-case with a two-digit zero-
       task-counter.md                  # Task iteration metrics
 
     suggestions/                       # Detailed suggestion proposals
-      01-index.md                      # Index of active suggestions
+      readme.md                      # Index of active suggestions
       completed/                       # Archived implemented proposals
 
     cicd-issues/                       # CI pipeline failure diagnostics and RCAs
@@ -97,6 +97,23 @@ All dates are UTC. All filenames are lowercase kebab-case with a two-digit zero-
 3. Plans: `XX-` is monotonic across `pending/`, `subtasks/`, and `completed/` combined.
 
 ---
+
+## Special Default Companion Repositories (`repo-secrets` = `rs` & `repo-cache` = `rc`)
+
+Every workspace operates alongside two fixed special repositories in the work directory (`gitmap settings`):
+
+1. **`repo-secrets` (shortcut: `rs` / `gitmap cd rs`):**
+   - Stores all repository secrets, `.env` files, tokens, and passwords under `XX-<repo-name>/01-<slug>.ext` (`01-gitmap/01-env.txt`, `02-coding-guidelines/01-api-keys.json`) so standard repositories remain 100% free of secrets and safe to open-source.
+   - Commands (`auto-commits & pushes` automatically):
+     - `gitmap rs file <filepath>`
+     - `gitmap rs folder <folderpath>`
+     - `gitmap rs text "<secret-text>" [--slug <slug>]`
+2. **`repo-cache` / `repo-storage` (shortcut: `rc` / `gitmap cd rc`):**
+   - Stores reusable temporary scripts (`.ps1` PowerShell scripts, shell utilities, diagnostic test items, and benchmark harnesses) under `XX-<repo-name>/01-<slug>.ps1` so any project can reuse them without leaving temporary files in application repositories.
+   - Commands (`auto-commits & pushes` automatically):
+     - `gitmap rc file <script.ps1>`
+     - `gitmap rc folder <folderpath>`
+     - `gitmap rc text "<script-body>" --slug <slug> --ext .ps1`
 
 ## Hard Rules & Prohibitions
 

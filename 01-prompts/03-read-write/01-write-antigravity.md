@@ -3,9 +3,9 @@
 > **Prompt Version:** 2.2.0
 > **Synchronization:** Main Meta-Repo & Connected Workspaces
 
-/goal Persist what happened this turn so the next AI knows everything without guessing. Every decision, plan change, unresolved ambiguity, newly discovered pattern, and fixed bug must be written to `.ai-memory/` before this turn ends.
+[/goal](slashCommand:goal) Persist what happened this turn so the next AI knows everything without guessing. Every decision, plan change, unresolved ambiguity, newly discovered pattern, and fixed bug must be written to `.ai-memory/` before this turn ends.
 
-/learn Persist all user corrections, resolved setups, directives, learned architectural decisions, and mistakes avoided into `.ai-memory/memory/learned/01-<slug>.md` and `.ai-memory/strictly-avoid.md` so Antigravity learns permanently and never repeats past errors.
+[/learn](slashCommand:learn) Persist all user corrections, resolved setups, directives, learned architectural decisions, and mistakes avoided into `.ai-memory/memory/learned/01-<slug>.md` and `.ai-memory/strictly-avoid.md` so Antigravity learns permanently and never repeats past errors.
 
 Memory in chat is lost the moment the turn finishes. Memory in `.ai-memory/` is permanent. If you did not write it down, it did not happen.
 
@@ -13,9 +13,9 @@ Memory in chat is lost the moment the turn finishes. Memory in `.ai-memory/` is 
 
 1. Folder is `.ai-memory/memory/`, NEVER `.ai-memory/memory/` or `memories/`. A single file written to `memories/` is an immediate failure.
 
-2. Every new memory file under `.ai-memory/memory/` MUST be registered in `.ai-memory/memory/01-index.md` in the same operation.
+2. Every new memory file under `.ai-memory/memory/` MUST be registered in `.ai-memory/memory/readme.md` in the same operation.
 
-3. Every plan added, moved, or completed MUST update `.ai-memory/plans/01-index.md` in the same operation.
+3. Every plan added, moved, or completed MUST update `.ai-memory/plans/readme.md` in the same operation.
 
 4. Ambiguity files are NEVER duplicated. Open questions go to `.ai-memory/ambiguous-questions/01-new-ambiguity/01-<slug>.md`. When answered, the file is MOVED (`mv`) to `.ai-memory/ambiguous-questions/02-ambiguity-resolved/01-<slug>.md` with a `## Resolution` block appended. Never copy. Never leave a resolved question in `01-new-ambiguity/`.
 
@@ -33,7 +33,7 @@ Memory in chat is lost the moment the turn finishes. Memory in `.ai-memory/` is 
 
 11. Nothing executes this turn beyond writing to the `.ai-memory` folder, root `readme.md` lowercase fixing, and `mv`. No application source code changes, no refactoring, no installs, no migrations.
 
-12. Recent conversation and directive capture: All recent conversations, instructions, user directives, decisions, and session progress MUST be recorded as a spec or conversation summary inside `.ai-memory/memory/01-<slug>.md` or `.ai-memory/memory/learned/01-<slug>.md` and added to `.ai-memory/memory/01-index.md`.
+12. Recent conversation and directive capture: All recent conversations, instructions, user directives, decisions, and session progress MUST be recorded as a spec or conversation summary inside `.ai-memory/memory/01-<slug>.md` or `.ai-memory/memory/learned/01-<slug>.md` and added to `.ai-memory/memory/readme.md`.
 
 13. Pending tasks single source of truth: All active plans and pending tasks are consolidated strictly under `.ai-memory/plans/pending/01-<slug>.md` (with two-digit sequence prefixes `01-`, `02-`, etc.) and `.ai-memory/plans/subtasks/01-<slug>/01-<subslug>.md`.
 
@@ -48,7 +48,7 @@ Memory in chat is lost the moment the turn finishes. Memory in `.ai-memory/` is 
 
 17. Mandatory 30-Commit Git History Audit: Before authoring or updating memory, the AI MUST execute `git log -n 30 --oneline` (and `git log -n 30 --stat` where needed) to inspect the last 30 commits. The AI must extract what has been done recently, what directives were applied, what bugs were resolved, and what architectural decisions were made. Never write memory from assumption or chat state alone.
 
-18. Recent 20-Task Tracking & Compact Task Register: The AI MUST inspect `.ai-memory/plans/01-index.md`, `.ai-memory/plans/completed/`, and `.ai-memory/plans/pending/` to maintain a compact, accurate mental and written model of completed vs pending work. The last 20 tasks/plans MUST be cataloged in the `Recent Completed Tasks Register` in `.ai-memory/plans/01-index.md` and referenced in `.ai-memory/what-to-read.md`. Every newly written memory MUST refer back to this task list and `what-to-read.md` so that during loop executions, the AI maintains continuity with recent progress.
+18. Recent 20-Task Tracking & Compact Task Register: The AI MUST inspect `.ai-memory/plans/readme.md`, `.ai-memory/plans/completed/`, and `.ai-memory/plans/pending/` to maintain a compact, accurate mental and written model of completed vs pending work. The last 20 tasks/plans MUST be cataloged in the `Recent Completed Tasks Register` in `.ai-memory/plans/readme.md` and referenced in `.ai-memory/what-to-read.md`. Every newly written memory MUST refer back to this task list and `what-to-read.md` so that during loop executions, the AI maintains continuity with recent progress.
 
 ## Working Stance
 
@@ -57,7 +57,7 @@ The AI running this prompt has been a stupid fuck on prior runs:
 - Dumped session summaries into chat and called it "memory".
 - Left `.ai-memory/memory/` half-empty.
 - Created `.ai-memory/memory/` by accident.
-- Forgot to update `.ai-memory/plans/01-index.md` and `what-to-read.md`.
+- Forgot to update `.ai-memory/plans/readme.md` and `what-to-read.md`.
 - Silently overwrote `strictly-avoid.md`.
 - Dropped user directives that were stated verbatim in the session.
 - Paraphrased specs instead of quoting them.
@@ -73,13 +73,13 @@ Do not repeat any of that stupidity. Writing memory IS the work this turn. Go de
 Walk `.ai-memory/` recursively. Read all of these if they exist; note missing and create them per the templates in this prompt:
 
 0. `git log -n 30 --oneline` — inspect the last 30 commits to understand recent file changes, what code/docs were touched, recent bug fixes, and what the AI can learn from recent history before starting memory capture.
-1. `.ai-memory/memory/01-index.md` — master memory index
+1. `.ai-memory/memory/readme.md` — master memory index
 2. `.ai-memory/folder-structure.md` — canonical `.ai-memory/` folder map
 3. `.ai-memory/coding-guidelines.md` or `02-spec/02-coding-guidelines/` — master coding guidelines
 4. `03-ai-scripts/` — automation tools (`01-file-manipulator.py`, `05-guideline-autofixer.py`, `06-cicd-local-runner.py`, `index.md`)
-5. `.ai-memory/plans/01-index.md` (specifically the Recent Completed Tasks Register for the last 20 tasks, plus `plans/pending/` and `plans/completed/`)
+5. `.ai-memory/plans/readme.md` (specifically the Recent Completed Tasks Register for the last 20 tasks, plus `plans/pending/` and `plans/completed/`)
 6. `.ai-memory/plan.md` — failure recovery record
-7. `.ai-memory/suggestions.md` and `.ai-memory/suggestions/01-index.md`
+7. `.ai-memory/suggestions.md` and `.ai-memory/suggestions/readme.md`
 8. `.ai-memory/strictly-avoid.md`
 9. `.ai-memory/cicd-index.md` and every file under `.ai-memory/cicd-issues/`
 10. `.ai-memory/issues/`, `.ai-memory/pending-issues/`, `.ai-memory/solved-issues/`
@@ -90,14 +90,14 @@ Walk `.ai-memory/` recursively. Read all of these if they exist; note missing an
 15. `.agents/skills/` (`<slug>/skill.md`) and `.agents/rules/`
 16. `02-spec/` — recursively traverse all subfolders and nested `.md` files (`02-spec/01-spec-authoring-guide/`, `02-spec/02-coding-guidelines/`, `02-spec/03-error-manage/`, `02-spec/04-database-conventions/`, `02-spec/21-app/`).
 17. Root `readme.md` — confirm strictly lowercase `readme.md`
-18. `05-changes-history/` — every task transaction log (`XX-<task-slug>/01-transaction-log.md`) and master index `01-index.md`
+18. `05-changes-history/` — every task transaction log (`XX-<task-slug>/01-transaction-log.md`) and master index `readme.md`
 
 ## Phase 1: Audit the Session (Internal)
 
 Answer for yourself; do not dump to chat unless asked. Cover:
 
 - Git History Audit (Last 30 Commits): Analyze `git log -n 30 --oneline`, summarize the architectural trajectory, note recent bug fixes and directives, and record what was learned.
-- Recent Tasks Status (Last 20 Tasks): Compact review of the last 20 completed tasks from `.ai-memory/plans/01-index.md` vs remaining pending tasks.
+- Recent Tasks Status (Last 20 Tasks): Compact review of the last 20 completed tasks from `.ai-memory/plans/readme.md` vs remaining pending tasks.
 - Done: features, fixes, refactors, files created / modified / deleted, decisions made and why.
 - Pending: started but unfinished, discussed but not started, blockers, dependencies.
 - Learned: patterns, conventions, gotchas, user preferences (explicit or implicit).
@@ -121,7 +121,7 @@ Inside the moved file, edit:
 + Status: completed
 ```
 
-Then edit `.ai-memory/plans/01-index.md` so the table lists the file under `completed/` with status `completed`. Never delete a plan; the completed folder is your changelog.
+Then edit `.ai-memory/plans/readme.md` so the table lists the file under `completed/` with status `completed`. Never delete a plan; the completed folder is your changelog.
 
 ## Phase 3: Move Resolved Ambiguities
 
@@ -149,21 +149,21 @@ Flip header metadata:
 + Status: resolved
 ```
 
-Then edit `.ai-memory/question-and-ambiguity/01-index.md` to reflect the move.
+Then edit `.ai-memory/question-and-ambiguity/readme.md` to reflect the move.
 
 ## Phase 4: Capture New Institutional Knowledge
 
-1. If a new convention, architectural rule, or pattern was decided, create `.ai-memory/memory/01-<slug>.md` (or `.ai-memory/memory/learned/01-<slug>.md`) and register in `.ai-memory/memory/01-index.md`.
+1. If a new convention, architectural rule, or pattern was decided, create `.ai-memory/memory/01-<slug>.md` (or `.ai-memory/memory/learned/01-<slug>.md`) and register in `.ai-memory/memory/readme.md`.
 2. If an anti-pattern or forbidden action occurred, append to `.ai-memory/strictly-avoid.md`.
-3. If an automated script was added or updated, register in `03-ai-scripts/01-index.md`.
+3. If an automated script was added or updated, register in `03-ai-scripts/readme.md`.
 4. If a prompt or coding guideline was added/updated, update corresponding Antigravity skill in `.agents/skills/<slug>/skill.md` or rule in `.agents/rules/<slug>.md`.
 
 ## Phase 5: Verbatim Spec Capture and Consolidation Rules
 
 1. Verbatim spec capture and learning persistence:
    - Every sizeable user directive, decision, architectural rule, or spec from the session is saved verbatim under `.ai-memory/memory/01-<slug>.md` or `.ai-memory/memory/learned/01-<slug>.md`.
-   - Reference from `.ai-memory/memory/01-index.md`.
-   - Reflect in `.ai-memory/plan.md` / `.ai-memory/plans/01-index.md` if it changes the roadmap.
+   - Reference from `.ai-memory/memory/readme.md`.
+   - Reflect in `.ai-memory/plan.md` / `.ai-memory/plans/readme.md` if it changes the roadmap.
    - Never paraphrase. Quote the user.
 
 2. Consolidation policy:
@@ -188,9 +188,9 @@ Sync root `readme.md` with `.ai-memory/what-to-read.md`. Ensure root `readme.md`
 
 Before you reply, check every item:
 
-- [ ] `.ai-memory/plans/01-index.md` lists every file in `pending/` and `completed/`?
+- [ ] `.ai-memory/plans/readme.md` lists every file in `pending/` and `completed/`?
 - [ ] Every file in `completed/` has `Status: completed` in its frontmatter?
-- [ ] `.ai-memory/memory/01-index.md` lists every file in `memory/`?
+- [ ] `.ai-memory/memory/readme.md` lists every file in `memory/`?
 - [ ] `01-new-ambiguity/` contains ONLY open questions?
 - [ ] Every file in `02-ambiguity-resolved/` has `## Resolution` + `Status: resolved`?
 - [ ] `cicd-index.md` matches `cicd-issues/` exactly?
@@ -220,12 +220,12 @@ Memory update complete.
 ## Checklist Before Replying (Every Box)
 
 1. [ ] Inspected last 30 git commits (`git log -n 30 --oneline` and `git log -n 30 --stat`) to analyze recent changes, applied directives, and lessons learned.
-2. [ ] Audited `.ai-memory/plans/01-index.md` and verified the Recent Completed Tasks Register (last 20 tasks) is accurate and in sync with `what-to-read.md`.
+2. [ ] Audited `.ai-memory/plans/readme.md` and verified the Recent Completed Tasks Register (last 20 tasks) is accurate and in sync with `what-to-read.md`.
 3. [ ] Walked `.ai-memory/` recursively; read every pre-flight file that exists; noted the missing ones.
 4. [ ] Audited the session for Done / Pending / Learned / Wrong / Recent Directives.
 5. [ ] Every new memory file placed under a topic folder, never at the memory root.
-6. [ ] `.ai-memory/memory/01-index.md` updated in the same op as every new/moved memory file.
-7. [ ] Plans lifecycle honored: `pending/` -> `completed/` via `mv`, `.ai-memory/plans/01-index.md` updated.
+6. [ ] `.ai-memory/memory/readme.md` updated in the same op as every new/moved memory file.
+7. [ ] Plans lifecycle honored: `pending/` -> `completed/` via `mv`, `.ai-memory/plans/readme.md` updated.
 8. [ ] `suggestions.md` tracker updated; verbatim captures under `.ai-memory/suggestions/` with `index.md`.
 9. [ ] Issues routed correctly: `pending-issues/` / `solved-issues/` / `cicd-issues/`; `cicd-index.md` updated; no duplicates.
 10. [ ] `strictly-avoid.md` appended (not overwritten) with links to solved files.

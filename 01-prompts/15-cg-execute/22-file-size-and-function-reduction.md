@@ -1,17 +1,48 @@
-# File Size & Function Size Reduction — Coding Guideline Execution (must follow)
+[/goal](slashCommand:goal) Autonomously scan, plan, decompose, and refactor files exceeding the 100-line cap (recommended <= 80 lines) and functions exceeding 8–15 lines across the codebase. Enforce a two-part decomposition strategy (functions first, then files), preserve all formatting and whitespace (zero line-compression cheating), utilize wrapper objects for multi-value returns, enforce boolean conventions, and defer build verification strictly to the final step without running intermediate tests or builds with strict no-build and no-test execution (NEVER run build commands like `go build` or `npm run build`, and NEVER run test suites like `go test ./...` or `pytest` during routine execution turns; all compilation and testing are strictly verified later in CI/CD). Spawn autonomous subagents (A = 2, H = 2) for parallel reading and modular spec generation, use GitMap high-speed commands as primary, establish a single-agent blueprint in Phase 1 (first 50% steps budget), and execute disjoint refactoring in Phase 2 (remaining 50% steps budget) with continuous self-looping until 100% complete and finalized with an atomic push.
 
-Trigger Keywords & Aliases: `cg-size-reduction`, `cg-file-reduction`, `cg-function-reduction`, `cg-execute size`, `reduce file size`, `split large files`, `decompose functions`, `audit file sizes`
+[/learn](slashCommand:learn) Enforce the Top-Instruction Priority Mandate: whatever directives, custom requirements, checklists, or user instructions are provided ABOVE this prompt (in the user preamble or header above) are HIGHEST PRIORITY and strictly NON-NEGOTIABLE. Ingest and execute the top instructions ahead of all default conventions below, internalize the single-agent architectural blueprint, and persist all progress into `.ai-memory/plans/` and memory logs.
 
-> **Prompt Version:** 2.2.0
-> **Synchronization:** Main Meta-Repo & Connected Workspaces
+> **Top-Instruction Priority Mandate (Above Precedence / Preamble Precedence):**
+> Whatever directives, constraints, checklists, or user instructions are given ABOVE this prompt (in the user preamble, header blocks, or incoming user request above) are HIGHEST PRIORITY and MUST BE FOLLOWED as strictly NON-NEGOTIABLE. They supersede and strictly override any conflicting general advice, default conventions, or guidelines below. The agent MUST inspect and follow the instructions above with absolute precedence.
 
 ```text
-N = 200
+N = 200 (Total self-loop steps budget)
+A = 2   (Number of spawned autonomous subagents running concurrently, default: 2)
+H = 2   (Operational hands per agent: dual-task batch capacity & parallel tool dispatch, default: 2)
+
+System Concurrency Capacity = A × H = 2 agents × 2 hands = 4 concurrent subtask operations
 ```
 
-N = total self-loop steps budget that the agents will perform (configurable per run).
+```text
+PHASE_1_STEPS = N / 2   (Steps 1 .. N/2: Planning, Detailed Spec, and Lean Subtask Generation)
+PHASE_2_STEPS = N / 2   (Steps N/2+1 .. N: Parallel Execution, Self-Looping, Targeted Quality Linting)
+```
 
-/goal Autonomously scan, plan, decompose, and refactor files exceeding the 100-line cap (recommended <= 80 lines) and functions exceeding 8–15 lines across the codebase. Enforce a two-part decomposition strategy (functions first, then files), preserve all formatting and whitespace (zero line-compression cheating), utilize wrapper objects for multi-value returns, enforce boolean conventions, and defer build verification strictly to the final step without running intermediate tests or builds.
+N, A, H, PHASE_1_STEPS, and PHASE_2_STEPS are read-only after initialization. Never modify them mid-execution.
+
+#### High-Speed GitMap Acceleration Options (Run Everything Faster)
+
+Always prefer native GitMap commands over slow generic shell pipelines:
+1. **Ultra-Fast File & Directory Discovery (AUM Index & Walk):**
+   - **Wildcard / Glob Search:** `gitmap find "<wildcard*>" [-ext <ext>]` (alias `gitmap f`)
+   - **Exact Filename Search:** `gitmap find-files <name> [-ext <ext>]` (alias `gitmap ff`)
+   - **Substring Filename Search:** `gitmap find-files-any "<str>" [-ext <ext>]` (alias `gitmap ffa`)
+   - **Prefix / Suffix Search:** `gitmap find-files-startswith <prefix>` (`gitmap ffs`) / `gitmap find-files-endswith <suffix>` (`gitmap ffe`)
+   - **List Indexed Repo Files:** `gitmap list-files [pattern] [-ext <ext>]` (alias `gitmap lf`)
+   - **Directory Tree & Scaffolding:** `gitmap folder-tree` (alias `gitmap ft`)
+   - **Zero-Write File Stream:** `gitmap cat <filepath>`
+   - **Instant Multi-Core Regex Search:** `gitmap search "<term>"` or `gitmap aum search "<query>" [dir] --ext <ext>`
+2. **Fast Repository Hygiene, Lowercase & Symlink Repair:**
+   - **Auto-Lowercase Files (Safe 2-Step `git mv`):** `gitmap lowercase` (alias `gitmap lcf [--dry-run]`)
+   - **Lowercase Root Readme:** `gitmap lowercase-readme`
+   - **Sync Curated `.gitignore` / `.gitattributes` / `.prettierignore`:** `gitmap commons` (alias `gitmap co` or `gitmap sync all`)
+   - **Repair Broken Symlinks:** `gitmap fix-link` (alias `gitmap fixlink`)
+   - **Clean Update Temp & Inspect Storage:** `gitmap update-cleanup`, `gitmap storage` (alias `gitmap stor`)
+3. **Fast Git State, Execution & Atomic Commits:**
+   - **Repo Status & Remote Check:** `gitmap status` (`gitmap st`), `gitmap has-any-updates` (`gitmap hau`), `gitmap latest-branch` (`gitmap lb`)
+   - **Fast Cross-Platform Shell Runner:** `gitmap pwsh "<command>"` (`gitmap ps`), `gitmap bash "<command>"` (`gitmap sh`), `gitmap async <cmd>` (`gitmap asyn`)
+   - **Semantic Atomic Commit & Push:** `gitmap cpf "<summary>"` (Feature), `gitmap cpb "<summary>"` (Bug), `gitmap cpr "<summary>"` (Release), `gitmap pcp "<summary>"` (Pull-Commit-Push)
+   - **Smart CI/CD Pipeline Waiting:** `gitmap pe`, `gitmap pipeline-ai status --json` (`gitmap pl-ai status -t <etaSeconds>`)
 
 ---
 
@@ -27,22 +58,22 @@ PHASE_2_STEPS = N / 2   (Steps N/2+1 .. N: Parallel Function & File Extraction, 
 
 ### Master Task Checklist (Atomic Numbered Steps)
 
-1. [ ] /goal Phase 1 (Step A - Discovery & Inventory): Deeply scan the target codebase using the fast Python discovery tools (`11-fast-file-scanner.py`, `12-fast-cached-grep.py`, `17-fast-file-reader.py` with `--limit`) to inventory all architectural violations and anti-patterns without truncation.
-2. [ ] /goal Phase 1 (Step B - Master Plan Generation): Write the master architectural specification into `.ai-memory/plans/pending/xx-size-reduction.md` with an exhaustive Violation Ledger table (File, Initial Lines, Functions to Extract, Planned Destination Files, Wrapper Structs Needed).
-3. [ ] /goal Phase 1 (Step C - Subtask Decomposition): Decompose the master plan into lean, single-responsibility subtask files in `.ai-memory/plans/subtasks/xx-size-reduction/01-<subtask>.md`, `02-<subtask>.md`, etc.
-4. [ ] /goal Phase 1 (Step D - Mandatory Auto-Loop): As soon as Phase 1 planning completes, the master orchestrator **MUST NOT STOP or ask the user for permission**. It MUST immediately self-loop and transition directly into Phase 2 execution mode.
-5. [ ] /goal Phase 2 (Step A - Two-Part Decomposition): For each target file, execute Part 1 (decompose large functions to <= 8 lines, max 15 lines) and Part 2 (extract decomposed functions and helpers into separate sibling files to bring the file under 100 lines).
-6. [ ] /goal Phase 2 (Step B - Wrapper Objects & Clean Signatures): If an extracted function returns multiple interrelated values or requires >2–3 parameters, encapsulate them into a dedicated wrapper object/struct.
-7. [ ] /goal Phase 2 (Step C - Zero Line-Compression & Style Preservation): Strictly preserve all blank lines, block separation, and indentation. NEVER delete whitespace, collapse `if/else`, or merge statements to artificially lower line counts.
-8. [ ] /goal Phase 2 (Step D - Boolean & Control Flow Concurrency): Enforce positive boolean naming (`is*`, `has*`), zero explicit `== true`, zero negative polarity in conditionals, and flatten nested `if` statements to depth <= 1 using guard clauses.
-9. [ ] /goal Phase 2 (Step E - Banned Intermediate Verification): DO NOT run unit tests (`go test`, `pytest`, npm test) and DO NOT verify builds during intermediate micro-refactoring steps.
-10. [ ] /goal Phase 2 (Step F - Final Step Build Verification): At the conclusion of all refactoring subtasks, run targeted syntax/build checks to resolve any compilation errors or import issues across all modified files.
-11. [ ] /goal Phase 3 (Step A - Task Consolidation): Consolidate all completed subtasks into `.ai-memory/plans/completed/xx-size-reduction.md`, delete granular subtask files, and update `.ai-memory/plans/01-index.md`.
-12. [ ] /goal Phase 3 (Step B - Final Step Git Commit & Push): Stage all modified files, consolidated plans, and memory records (`git add -A`), commit them in a single clean grouped atomic commit, and push to git. Never commit per-file.
-13. [ ] /learn Ingest `.ai-memory/memory/01-index.md` for project memory index and past learnings.
-14. [ ] /learn Ingest `.ai-memory/strictly-avoid.md` for banned anti-patterns and strict constraints.
-15. [ ] /learn Ingest `02-spec/02-coding-guidelines/02-canonical-size-tier.md` for canonical size tiers.
-16. [ ] /learn Ingest `.ai-memory/coding-guidelines.md` for master consolidated coding guidelines.
+1. [ ] [/goal](slashCommand:goal) Phase 1 (Step A - Discovery & Inventory): Deeply scan the target codebase using the fast Python discovery tools (`11-fast-file-scanner.py`, `12-fast-cached-grep.py`, `17-fast-file-reader.py` with `--limit`) to inventory all architectural violations and anti-patterns without truncation.
+2. [ ] [/goal](slashCommand:goal) Phase 1 (Step B - Master Plan Generation): Write the master architectural specification into `.ai-memory/plans/pending/xx-size-reduction.md` with an exhaustive Violation Ledger table (File, Initial Lines, Functions to Extract, Planned Destination Files, Wrapper Structs Needed).
+3. [ ] [/goal](slashCommand:goal) Phase 1 (Step C - Subtask Decomposition): Decompose the master plan into lean, single-responsibility subtask files in `.ai-memory/plans/subtasks/xx-size-reduction/01-<subtask>.md`, `02-<subtask>.md`, etc.
+4. [ ] [/goal](slashCommand:goal) Phase 1 (Step D - Mandatory Auto-Loop): As soon as Phase 1 planning completes, the master orchestrator **MUST NOT STOP or ask the user for permission**. It MUST immediately self-loop and transition directly into Phase 2 execution mode.
+5. [ ] [/goal](slashCommand:goal) Phase 2 (Step A - Two-Part Decomposition): For each target file, execute Part 1 (decompose large functions to <= 8 lines, max 15 lines) and Part 2 (extract decomposed functions and helpers into separate sibling files to bring the file under 100 lines).
+6. [ ] [/goal](slashCommand:goal) Phase 2 (Step B - Wrapper Objects & Clean Signatures): If an extracted function returns multiple interrelated values or requires >2–3 parameters, encapsulate them into a dedicated wrapper object/struct.
+7. [ ] [/goal](slashCommand:goal) Phase 2 (Step C - Zero Line-Compression & Style Preservation): Strictly preserve all blank lines, block separation, and indentation. NEVER delete whitespace, collapse `if/else`, or merge statements to artificially lower line counts.
+8. [ ] [/goal](slashCommand:goal) Phase 2 (Step D - Boolean & Control Flow Concurrency): Enforce positive boolean naming (`is*`, `has*`), zero explicit `== true`, zero negative polarity in conditionals, and flatten nested `if` statements to depth <= 1 using guard clauses.
+9. [ ] [/goal](slashCommand:goal) Phase 2 (Step E - Banned Intermediate Verification): DO NOT run unit tests (`go test`, `pytest`, npm test) and DO NOT verify builds during intermediate micro-refactoring steps.
+10. [ ] [/goal](slashCommand:goal) Phase 2 (Step F - Final Step Build Verification): At the conclusion of all refactoring subtasks, run targeted syntax/build checks to resolve any compilation errors or import issues across all modified files.
+11. [ ] [/goal](slashCommand:goal) Phase 3 (Step A - Task Consolidation): Consolidate all completed subtasks into `.ai-memory/plans/completed/xx-size-reduction.md`, delete granular subtask files, and update `.ai-memory/plans/readme.md`.
+12. [ ] [/goal](slashCommand:goal) Phase 3 (Step B - Final Step Git Commit & Push): Stage all modified files, consolidated plans, and memory records (`git add -A`), commit them in a single clean grouped atomic commit, and push to git. Never commit per-file.
+13. [ ] [/learn](slashCommand:learn) Ingest `.ai-memory/memory/readme.md` for project memory index and past learnings.
+14. [ ] [/learn](slashCommand:learn) Ingest `.ai-memory/strictly-avoid.md` for banned anti-patterns and strict constraints.
+15. [ ] [/learn](slashCommand:learn) Ingest `02-spec/02-coding-guidelines/02-canonical-size-tier.md` for canonical size tiers.
+16. [ ] [/learn](slashCommand:learn) Ingest `.ai-memory/coding-guidelines.md` for master consolidated coding guidelines.
 
 ---
 
@@ -76,6 +107,7 @@ Do not rely on standard search tools with 50-item truncation when discovering re
 ## 1. Canonical Size Limits & Allowed Exceptions
 
 ### A. Strict File Size Caps
+
 - **Target File Size:** Under 100 lines of code (recommended <= 80 lines).
 - **Target Function Size:** <= 8 lines preferred (hard cap of <= 15 lines). In extreme cases (e.g. exhaustive codegen switch), maximum <= 25 lines with waiver, but always strive for <= 8 lines.
 
@@ -97,6 +129,7 @@ All other source files (logic, services, controllers, handlers, utilities, hooks
 > Never attempt to meet the 100-line file cap or 8-line function cap by deleting blank lines, merging multiple statements onto a single line, or writing one-line `if/else` blocks. Doing so violates repository style guidelines and is an immediate auto-reject failure.
 
 ### Strict Formatting Preservation Invariants:
+
 1. **Return New Line Concept (Mandatory):**
    - Always leave exactly **ONE blank line BEFORE** every `return`, `throw`, or `break` statement (unless it is the only statement in a block).
    - Always leave exactly **ONE blank line AFTER** every closing curly brace `}` of an `if`, `for`, `switch`, or helper block.
@@ -188,6 +221,7 @@ Refactoring a large file must be performed in two sequential phases:
 ```
 
 ### Part 1: Function Decomposition (Target: <= 8 lines, Max: 15 lines)
+
 - Identify long functions and extract sub-operations into dedicated, private helper functions.
 - Replace complex multi-stage loops or deep logic with readable pipeline calls:
   ```go
@@ -206,6 +240,7 @@ Refactoring a large file must be performed in two sequential phases:
   ```
 
 ### Part 2: File Modularization (Target: < 100 lines)
+
 - When a file has multiple decomposed functions that keep the total lines above 100, extract cohesive clusters into new sibling files:
   - Validation logic -> `<name>_validator.go` (or `.ts`)
   - Transformation/mapping -> `<name>_converter.go` (or `.ts`)
@@ -219,6 +254,7 @@ Refactoring a large file must be performed in two sequential phases:
 When extracting functions, passing or returning multiple distinct values leads to argument bloat and fragile signatures.
 
 ### The Wrapper Object Mandate:
+
 1. **Return Wrapper Struct:** If an extracted helper returns 2 or more related values (beyond standard error/Result), encapsulate them into a dedicated named struct or type:
    ```go
    // ❌ BAD: returning multiple raw values
@@ -297,8 +333,9 @@ When all subtasks for the parent task (`.ai-memory/plans/pending/xx-size-reducti
 2. Include a header explicitly documenting the initial file sizes, final file sizes, and loop step metrics.
 3. Delete the original granular `.md` files in `.ai-memory/plans/subtasks/xx-size-reduction/`.
 4. Delete the original parent plan `.ai-memory/plans/pending/xx-size-reduction.md`.
-5. Update `.ai-memory/plans/01-index.md` to point to the newly consolidated completed file.
+5. Update `.ai-memory/plans/readme.md` to point to the newly consolidated completed file.
 
 ### Final Step Git Commit & Push Mandate (Strict Checklist)
-- [ ] **MANDATORY FINAL COMMIT & PUSH TO GIT (ANYHOW):** At the FINAL step of the turn, after all targeted files have been refactored, verified with targeted linters, and plans/subtasks consolidated, you MUST stage everything (`git add -A`), create a clean, descriptive conventional commit (`git commit -m "<type>(<scope>): <summary>"`), and push directly to the remote repository (`git push origin <branch>`). Leaving uncommitted changes or unpushed commits on the active branch at the end of a turn is an immediate failure.
+
+- [ ] **MANDATORY FINAL COMMIT & PUSH TO GIT (ANYHOW):** At the FINAL step of the turn, after all targeted files have been refactored, verified with targeted linters, and plans/subtasks consolidated, you MUST stage everything (`git add -A`), create a clean, descriptive conventional commit (`git commit -m "<summary>"`), and push directly to the remote repository (`git push origin <branch>`). Leaving uncommitted changes or unpushed commits on the active branch at the end of a turn is an immediate failure.
 - [ ] **TOTAL BAN ON PER-FILE COMMITS (DO NOT COMMIT EACH FILE INDIVIDUALLY):** You MUST NOT create separate git commits for each individual file as you edit them (e.g. running `git commit` after editing File 1, then committing again after File 2 is STRICTLY FORBIDDEN). Committing file-by-file pollutes git log history, creates subagent lock collisions, and breaks atomic rollback/bisectability. All modified files, test change caches, and plan records across the turn MUST be accumulated in the working tree and committed together in a SINGLE grouped atomic commit at the final step before pushing!

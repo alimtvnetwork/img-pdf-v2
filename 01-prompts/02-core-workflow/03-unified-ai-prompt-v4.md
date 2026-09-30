@@ -28,7 +28,7 @@ Before producing any report or analysis, the AI must:
 2. Read workflow memory - specifically `.ai-memory/plan.md` - to understand what has been done and what is pending. This avoids repeated work.
 3. Read all relevant memory files under `.ai-memory/memory/`, including workflow, suggestions, rules, decisions, history, issue references, and any protocol or process files present.
 
-/goal 1. Reconstruct project requirements by reading:
+[/goal](slashCommand:goal) 1. Reconstruct project requirements by reading:
 
    1. the .ai-memory memory content
    2. the existing spec files and idea files across all projects
@@ -84,7 +84,7 @@ Completion handling - When a suggestion is completed, update its status to done.
 
 - `.ai-memory/plan.md`
 - `.ai-memory/suggestions.md`
-- `.ai-memory/memory/01-index.md` - create the `history/` folder if it does not exist
+- `.ai-memory/memory/readme.md` - create the `history/` folder if it does not exist
 - `.ai-memory/strictly-avoid.md` - if new rules or constraints are discovered
 - Root `.ai-memory/plan.md` - only if a handoff roadmap is needed
 - Update memory issue references if analysis uncovers prior unresolved issue patterns
@@ -168,7 +168,7 @@ Memory update is mandatory. If memory is not updated the fix is incomplete.
 
 ### Decision logging
 
-All important decisions must be written to `.ai-memory/memory/01-index.md`. If the `history/` folder does not exist, create it and use this file as the canonical decision log.
+All important decisions must be written to `.ai-memory/memory/readme.md`. If the `history/` folder does not exist, create it and use this file as the canonical decision log.
 
 Required entries: architecture changes, spec interpretation decisions, rejected approaches and why, trade-off resolutions.
 
@@ -290,7 +290,7 @@ Always write or update specs before any implementation. Never implement until th
 
 ### Ambiguity handling
 
-If the specification is ambiguous, the AI must document the ambiguity in the relevant spec file and in `.ai-memory/memory/01-index.md` before implementing a solution. Do not silently resolve ambiguity.
+If the specification is ambiguous, the AI must document the ambiguity in the relevant spec file and in `.ai-memory/memory/readme.md` before implementing a solution. Do not silently resolve ambiguity.
 
 ### Repository scan requirement
 

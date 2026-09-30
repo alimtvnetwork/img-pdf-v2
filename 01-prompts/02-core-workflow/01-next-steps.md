@@ -57,7 +57,7 @@ When a task is completed this turn:
 
 - `mv .ai-memory/plans/pending/01-<slug>.md .ai-memory/plans/completed/01-<slug>.md`
 - Flip `Status: completed` in the same move.
-- Update `.ai-memory/plans/01-index.md` in the same op.
+- Update `.ai-memory/plans/readme.md` in the same op.
 - Subtasks follow the parent plan's convention (move to
   `subtasks/01-<slug>/completed/` or flip `Status:` in place).
 

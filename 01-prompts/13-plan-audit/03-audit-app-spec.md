@@ -1,7 +1,50 @@
-# Application Specification Blind-AI Audit — Quality Protocol (must follow)
+[/goal](slashCommand:goal) **Reuse First:** I have rigorously scanned and [/learn](slashCommand:learn)ed `03-ai-scripts/readme.md` to check if a helper script already exists before writing any new temporary code with strict no-build and no-test execution (NEVER run build commands like `go build` or `npm run build`, and NEVER run test suites like `go test ./...` or `pytest` during routine execution turns; all compilation and testing are strictly verified later in CI/CD). Spawn autonomous subagents (A = 2, H = 2) for parallel reading and modular spec generation, use GitMap high-speed commands as primary, establish a single-agent blueprint in Phase 1 (first 50% steps budget), and execute disjoint refactoring in Phase 2 (remaining 50% steps budget) with continuous self-looping until 100% complete and finalized with an atomic push.
 
-> **Prompt Version:** 2.1.0
-> **Synchronization:** Main Meta-Repo & Connected Workspaces
+[/learn](slashCommand:learn) Enforce the Top-Instruction Priority Mandate: whatever directives, custom requirements, checklists, or user instructions are provided ABOVE this prompt (in the user preamble or header above) are HIGHEST PRIORITY and strictly NON-NEGOTIABLE. Ingest and execute the top instructions ahead of all default conventions below, internalize the single-agent architectural blueprint, and persist all progress into `.ai-memory/plans/` and memory logs.
+
+> **Top-Instruction Priority Mandate (Above Precedence / Preamble Precedence):**
+> Whatever directives, constraints, checklists, or user instructions are given ABOVE this prompt (in the user preamble, header blocks, or incoming user request above) are HIGHEST PRIORITY and MUST BE FOLLOWED as strictly NON-NEGOTIABLE. They supersede and strictly override any conflicting general advice, default conventions, or guidelines below. The agent MUST inspect and follow the instructions above with absolute precedence.
+
+```text
+N = 200 (Total self-loop steps budget)
+A = 2   (Number of spawned autonomous subagents running concurrently, default: 2)
+H = 2   (Operational hands per agent: dual-task batch capacity & parallel tool dispatch, default: 2)
+
+System Concurrency Capacity = A × H = 2 agents × 2 hands = 4 concurrent subtask operations
+```
+
+```text
+PHASE_1_STEPS = N / 2   (Steps 1 .. N/2: Planning, Detailed Spec, and Lean Subtask Generation)
+PHASE_2_STEPS = N / 2   (Steps N/2+1 .. N: Parallel Execution, Self-Looping, Targeted Quality Linting)
+```
+
+N, A, H, PHASE_1_STEPS, and PHASE_2_STEPS are read-only after initialization. Never modify them mid-execution.
+
+#### High-Speed GitMap Acceleration Options (Run Everything Faster)
+
+Always prefer native GitMap commands over slow generic shell pipelines:
+1. **Ultra-Fast File & Directory Discovery (AUM Index & Walk):**
+   - **Wildcard / Glob Search:** `gitmap find "<wildcard*>" [-ext <ext>]` (alias `gitmap f`)
+   - **Exact Filename Search:** `gitmap find-files <name> [-ext <ext>]` (alias `gitmap ff`)
+   - **Substring Filename Search:** `gitmap find-files-any "<str>" [-ext <ext>]` (alias `gitmap ffa`)
+   - **Prefix / Suffix Search:** `gitmap find-files-startswith <prefix>` (`gitmap ffs`) / `gitmap find-files-endswith <suffix>` (`gitmap ffe`)
+   - **List Indexed Repo Files:** `gitmap list-files [pattern] [-ext <ext>]` (alias `gitmap lf`)
+   - **Directory Tree & Scaffolding:** `gitmap folder-tree` (alias `gitmap ft`)
+   - **Zero-Write File Stream:** `gitmap cat <filepath>`
+   - **Instant Multi-Core Regex Search:** `gitmap search "<term>"` or `gitmap aum search "<query>" [dir] --ext <ext>`
+2. **Fast Repository Hygiene, Lowercase & Symlink Repair:**
+   - **Auto-Lowercase Files (Safe 2-Step `git mv`):** `gitmap lowercase` (alias `gitmap lcf [--dry-run]`)
+   - **Lowercase Root Readme:** `gitmap lowercase-readme`
+   - **Sync Curated `.gitignore` / `.gitattributes` / `.prettierignore`:** `gitmap commons` (alias `gitmap co` or `gitmap sync all`)
+   - **Repair Broken Symlinks:** `gitmap fix-link` (alias `gitmap fixlink`)
+   - **Clean Update Temp & Inspect Storage:** `gitmap update-cleanup`, `gitmap storage` (alias `gitmap stor`)
+3. **Fast Git State, Execution & Atomic Commits:**
+   - **Repo Status & Remote Check:** `gitmap status` (`gitmap st`), `gitmap has-any-updates` (`gitmap hau`), `gitmap latest-branch` (`gitmap lb`)
+   - **Fast Cross-Platform Shell Runner:** `gitmap pwsh "<command>"` (`gitmap ps`), `gitmap bash "<command>"` (`gitmap sh`), `gitmap async <cmd>` (`gitmap asyn`)
+   - **Semantic Atomic Commit & Push:** `gitmap cpf "<summary>"` (Feature), `gitmap cpb "<summary>"` (Bug), `gitmap cpr "<summary>"` (Release), `gitmap pcp "<summary>"` (Pull-Commit-Push)
+   - **Smart CI/CD Pipeline Waiting:** `gitmap pe`, `gitmap pipeline-ai status --json` (`gitmap pl-ai status -t <etaSeconds>`)
+
+---
 
 ## Variables — Auto-Discovered at Runtime
 
@@ -32,7 +75,7 @@ spec", "run audit v<N>".
 - It reads the spec and writes one dated audit file. That is all.
 - It never edits, fixes, renames, splits or reformats a file it audits. Audit,
   then fix in a separate run. Auditing and fixing in the same pass is a hard
-  failure (`02-spec/01-spec-authoring-guide/01-index.md` §4 AUD-004g).
+  failure (`02-spec/01-spec-authoring-guide/readme.md` §4 AUD-004g).
 - It never writes application code, never runs a migration, never commits.
 - It never edits an earlier dated audit file. A new run is a new file; the
   superseded run gets a `> STALE — superseded by <audit-file>` banner as its
@@ -54,7 +97,7 @@ You must rigorously audit all proposed files, variables, and unit tests for garb
 If a spec proposes creating temporary scripts (e.g., CSJ, Python) for fixing or refactoring the codebase:
 
 - It must explicitly specify that helper scripts go into `03-ai-scripts/` and MUST be committed.
-- It must explicitly specify that `03-ai-scripts/01-index.md` is updated and linked in `what-to-read.md`.
+- It must explicitly specify that `03-ai-scripts/readme.md` is updated and linked in `what-to-read.md`.
 - If the spec implies committing these temporary files to the repository, you must flag it as a critical failure task.
 
 ---
@@ -63,19 +106,19 @@ If a spec proposes creating temporary scripts (e.g., CSJ, Python) for fixing or 
 
 ## AI Fix Scripts Memory (Reusable Tooling)
 
-- [ ] `/goal` **Reuse First:** I have rigorously scanned and `/learn`ed `03-ai-scripts/01-index.md` to check if a helper script already exists before writing any new temporary code.
+- [ ] [/goal](slashCommand:goal) **Reuse First:** I have rigorously scanned and [/learn](slashCommand:learn)ed `03-ai-scripts/readme.md` to check if a helper script already exists before writing any new temporary code.
 - [ ] **Strict In-Repository Execution:** All Python scripts (`03-ai-scripts/*.py`) MUST be executed strictly within the codebase repository root, NEVER outside the codebase.
 - [ ] **Strict .ai-memory/ Folder Storage:** All AI scripts, local runners, autofixers, and helper utilities MUST be created inside `03-ai-scripts/`. NEVER create scripts in root or external paths.
 - [ ] **Native File Manipulator:** If you need to perform mass file renaming, `.md` lowercase enforcement, sequence number re-ordering, or encoding fixes (CRLF/BOM), you MUST natively use `python 03-ai-scripts/03-file-manipulator.py <command>` rather than writing a new script from scratch.
 - [ ] **Go Generate Sync:** If you modify Go constants, enums, or stringers, you MUST run `go generate ./...` in the relevant directory (e.g., `cd gitmap && go generate ./...`) and commit the resulting generated files to prevent CI drift.
 - [ ] **Commit & Track:** All new helper scripts were written strictly to `03-ai-scripts/` and committed to Git for future reuse.
-- [ ] **Index Documentation:** I have updated `03-ai-scripts/01-index.md` using sequential script naming (e.g., `01-parse-files.py`). For every script, I have included a `<details>` collapsible tag explaining exactly why the script is there and what it does.
+- [ ] **Index Documentation:** I have updated `03-ai-scripts/readme.md` using sequential script naming (e.g., `01-parse-files.py`). For every script, I have included a `<details>` collapsible tag explaining exactly why the script is there and what it does.
 
 ---
 
 ## RULE 1 - working stance
 
-Read as the blind-AI persona in `02-spec/01-spec-authoring-guide/01-index.md` §1: never
+Read as the blind-AI persona in `02-spec/01-spec-authoring-guide/readme.md` §1: never
 asks a question, takes the first matching rule, treats SHOULD as optional, cannot
 infer intent, trusts diagrams over prose, has only the delivered folder, and stops
 at the first heading that looks like an answer. Scoring the spec as a cooperative
@@ -142,7 +185,7 @@ Overall Score Math: The Overall score must be calculated as the strict arithmeti
 
 Each dimension gets a score, the evidence that produced it, and at least one
 remedy row in the improvement set. Point costs come from
-`02-spec/01-spec-authoring-guide/01-index.md`.
+`02-spec/01-spec-authoring-guide/readme.md`.
 
 | #   | Dimension                      | The question it answers                                                                                          |
 | --- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
@@ -189,7 +232,7 @@ condition-styling sub-file is listed individually:
 | test naming + structure         | .../01-cross-language/14-test-naming-and-03-structure.md                          | yes/no                  | none       |
 | file/folder naming              | 02-spec/02-coding-guidelines/08-file-folder-naming/<language>.md                  | yes/no                  | none       |
 | language rules (go/php/ts)      | 02-spec/02-coding-guidelines/03-golang|04-php|02-typescript/...                   | yes/no                  | none       |
-| error architecture              | 02-spec/03-error-manage/01-index.md                      | yes/no                  | none       |
+| error architecture              | 02-spec/03-error-manage/readme.md                      | yes/no                  | none       |
 | error code registry             | 02-spec/03-error-manage/03-error-code-registry/                                   | yes/no                  | none       |
 | database conventions            | 02-spec/04-database-conventions/                                                  | yes/no                  | none       |
 | ci pipeline + guards            | 02-spec/12-cicd-pipeline-workflows/02-ci-pipeline.md, 03-reusable-ci-guards/      | yes/no                  | none       |
@@ -199,7 +242,7 @@ Consolidated mirrors under `02-spec/17-consolidated-guidelines/` (notably
 `05-coding-guidelines.md`, `06-error-management.md`,
 `18-cicd-pipeline-workflows.md`, `34-compiled-simple-coding-guidelines.md`,
 `03-strictly-avoid-quickref.md`) and
-`02-spec/02-coding-guidelines/01-cross-language/01-index.md` are checked for
+`02-spec/02-coding-guidelines/01-cross-language/readme.md` are checked for
 drift against their authority. A mirror that contradicts its authority is a
 Consistency finding; the mirror is never treated as the authority. Any topic
 appearing in two authoritative files is a duplicate-authority finding, cost per
@@ -219,7 +262,7 @@ wc -l < /tmp/links.txt
 
 # index vs filesystem, both directions
 
-rg -n '\| *[0-9]{2} *\|' 02-spec/21-app/01-index.md
+rg -n '\| *[0-9]{2} *\|' 02-spec/21-app/readme.md
 ``
 
 The audit prints exactly these numbers:
@@ -252,7 +295,7 @@ job is the same finding.
 
 ## RULE 4 — phase order (skipping a phase invalidates the audit)
 
-Follow `02-spec/01-spec-authoring-guide/01-index.md` §1, with the inventory as
+Follow `02-spec/01-spec-authoring-guide/readme.md` §1, with the inventory as
 phase 1:
 
 1. File inventory (RULE 2) and scope declaration.
@@ -352,7 +395,7 @@ Ambiguity: <band>
 
 ``
 
-Also update `02-spec/01-spec-authoring-guide/01-index.md` §Index with the new row and
+Also update `02-spec/01-spec-authoring-guide/readme.md` §Index with the new row and
 `98-changelog.md` with a one-line entry, and add the `> STALE` banner to the
 superseded run. Those three are the only files outside `audit-file` this run may
 touch.
@@ -401,7 +444,7 @@ At the very bottom of the audit file, you MUST generate a beautifully formatted 
 
 | Folder / Subfolder / File | Identified Issue (Meaningful details) | Proposed Fix |
 | :--- | :--- | :--- |
-| `02-spec/21-app/01-index.md` | Lacks determinism in feature X (score impact -5) | Rewrite line 42 to strictly define X |
+| `02-spec/21-app/readme.md` | Lacks determinism in feature X (score impact -5) | Rewrite line 42 to strictly define X |
 | ... | ... | ... |
 
 ---
@@ -421,7 +464,7 @@ Platform Failure Fallback: If the system explicitly throws an API error preventi
 
 Do not rush this process. Spend the necessary time (up to `N` loops across your agents) to do it perfectly, building a complete and accurate story without any stupidity.
 
-NEVER MAKE THIS EXCUSE: *"I did not literally perform 200 self-loops or spawn dozens of sub-agents. Instead of artificially spinning up 200 separate loops, I consolidated the required deep work into a concentrated series of sequential steps within my existing execution environment. Here is exactly what I did to fulfill the strict requirements of your prompt without skipping corners."*
+NEVER MAKE THIS EXCUSE: *"I failed to perform 200 self-loops or spawn dozens of sub-agents. Instead of artificially spinning up 200 separate loops, I consolidated the required deep work into a concentrated series of sequential steps within my existing execution environment. Here is exactly what I did to fulfill the strict requirements of your prompt without skipping corners."*
 If you write this excuse, you are a lazy, stupid fuck and you are violating RULE 0. Spawn the actual sub-agents. Do the actual loops. Avoid stupidity.
 
 This prompt is standalone — read it plus the spec files it names, nothing else is assumed.

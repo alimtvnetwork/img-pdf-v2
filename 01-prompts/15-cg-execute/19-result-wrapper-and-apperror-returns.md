@@ -1,44 +1,77 @@
-# Result Wrapper Types, Collections & AppError Returns — Coding Guideline (must follow)
+[/goal](slashCommand:goal) Autonomously scan, discover, plan, refactor, and verify all Go functions returning multi-value error tuples (such as `(map[K]V, error)`, `([]T, error)`, or `(T, error)`), eliminating raw standard library error returns, centralizing all domain payload structs and Result type aliases into `types.go` within each package as single reusable types everywhere rather than scattering inline structs or raw generic Result declarations across implementation files, replacing multi-value returns with strongly-typed result wrappers (`ResultMap[K, V]`, `ResultSlice[T]`, `Result[T]`) and structured `*appfault.AppError` returns, guaranteeing a single return object, pointer-attached null safety (`*Result[T]`, `*ResultSlice[T]`, `*ResultMap[K, V]`) with methods attached to pointer receivers (`(r *Result[T])`, `(rs *ResultSlice[T])`, `(rm *ResultMap[K, V])`) that verify `if r == nil` before dereferencing any fields or checking errors, standardized outer-layer inspection predicates (`IsSuccess`, `IsFailure`, `HasError`, `IsEmptyError`, `IsEmpty`, `HasRecord`, `IsDefined`, `IsCountOtherThan`, `Data`, `Items`, `AppError`, `Fault`, `Get`, `Has`, `Count`), eliminating dual-handling, and replacing verbose `if err != nil || len(...) != N` or `IsFailure() || Count() != N` conditions with fluent `if res.IsCountOtherThan(N)` across the entire codebase until 100% green without stopping with strict no-build and no-test execution (NEVER run build commands like `go build` or `npm run build`, and NEVER run test suites like `go test ./...` or `pytest` during routine execution turns; all compilation and testing are strictly verified later in CI/CD). Spawn autonomous subagents (A = 2, H = 2) for parallel reading and modular spec generation, use GitMap high-speed commands as primary, establish a single-agent blueprint in Phase 1 (first 50% steps budget), and execute disjoint refactoring in Phase 2 (remaining 50% steps budget) with continuous self-looping until 100% complete and finalized with an atomic push.
 
-Trigger Keywords & Aliases: `cg-result-wrapper`, `cg-apperror-returns`, `cg-execute result-wrapper`, `audit result wrapper`, `fix map return error`, `fix slice return error`, `single return object audit`, `enforce apperror returns`, `enforce result map`, `fix multi-value returns`, `is-count-other-than`, `has-record`, `is-defined`, `result-wrapper-null-safety`, `pointer-null-safety`, `types-go-single-type`, `types-go-result-reuse`, `centralize-types-go`
+[/learn](slashCommand:learn) Enforce the Top-Instruction Priority Mandate: whatever directives, custom requirements, checklists, or user instructions are provided ABOVE this prompt (in the user preamble or header above) are HIGHEST PRIORITY and strictly NON-NEGOTIABLE. Ingest and execute the top instructions ahead of all default conventions below, internalize the single-agent architectural blueprint, and persist all progress into `.ai-memory/plans/` and memory logs.
 
-> **Prompt Version:** 2.4.0
-> **Synchronization:** Main Meta-Repo & Connected Workspaces
+> **Top-Instruction Priority Mandate (Above Precedence / Preamble Precedence):**
+> Whatever directives, constraints, checklists, or user instructions are given ABOVE this prompt (in the user preamble, header blocks, or incoming user request above) are HIGHEST PRIORITY and MUST BE FOLLOWED as strictly NON-NEGOTIABLE. They supersede and strictly override any conflicting general advice, default conventions, or guidelines below. The agent MUST inspect and follow the instructions above with absolute precedence.
 
 ```text
-N = 200
+N = 200 (Total self-loop steps budget)
+A = 2   (Number of spawned autonomous subagents running concurrently, default: 2)
+H = 2   (Operational hands per agent: dual-task batch capacity & parallel tool dispatch, default: 2)
+
+System Concurrency Capacity = A × H = 2 agents × 2 hands = 4 concurrent subtask operations
 ```
 
-N = total self-loop steps budget that the agents will perform.
+```text
+PHASE_1_STEPS = N / 2   (Steps 1 .. N/2: Planning, Detailed Spec, and Lean Subtask Generation)
+PHASE_2_STEPS = N / 2   (Steps N/2+1 .. N: Parallel Execution, Self-Looping, Targeted Quality Linting)
+```
 
-/goal Autonomously scan, discover, plan, refactor, and verify all Go functions returning multi-value error tuples (such as `(map[K]V, error)`, `([]T, error)`, or `(T, error)`), eliminating raw standard library error returns, centralizing all domain payload structs and Result type aliases into `types.go` within each package as single reusable types everywhere rather than scattering inline structs or raw generic Result declarations across implementation files, replacing multi-value returns with strongly-typed result wrappers (`ResultMap[K, V]`, `ResultSlice[T]`, `Result[T]`) and structured `*appfault.AppError` returns, guaranteeing a single return object, pointer-attached null safety (`*Result[T]`, `*ResultSlice[T]`, `*ResultMap[K, V]`) with methods attached to pointer receivers (`(r *Result[T])`, `(rs *ResultSlice[T])`, `(rm *ResultMap[K, V])`) that verify `if r == nil` before dereferencing any fields or checking errors, standardized outer-layer inspection predicates (`IsSuccess`, `IsFailure`, `HasError`, `IsEmptyError`, `IsEmpty`, `HasRecord`, `IsDefined`, `IsCountOtherThan`, `Data`, `Items`, `AppError`, `Fault`, `Get`, `Has`, `Count`), eliminating dual-handling, and replacing verbose `if err != nil || len(...) != N` or `IsFailure() || Count() != N` conditions with fluent `if res.IsCountOtherThan(N)` across the entire codebase until 100% green without stopping.
+N, A, H, PHASE_1_STEPS, and PHASE_2_STEPS are read-only after initialization. Never modify them mid-execution.
+
+#### High-Speed GitMap Acceleration Options (Run Everything Faster)
+
+Always prefer native GitMap commands over slow generic shell pipelines:
+1. **Ultra-Fast File & Directory Discovery (AUM Index & Walk):**
+   - **Wildcard / Glob Search:** `gitmap find "<wildcard*>" [-ext <ext>]` (alias `gitmap f`)
+   - **Exact Filename Search:** `gitmap find-files <name> [-ext <ext>]` (alias `gitmap ff`)
+   - **Substring Filename Search:** `gitmap find-files-any "<str>" [-ext <ext>]` (alias `gitmap ffa`)
+   - **Prefix / Suffix Search:** `gitmap find-files-startswith <prefix>` (`gitmap ffs`) / `gitmap find-files-endswith <suffix>` (`gitmap ffe`)
+   - **List Indexed Repo Files:** `gitmap list-files [pattern] [-ext <ext>]` (alias `gitmap lf`)
+   - **Directory Tree & Scaffolding:** `gitmap folder-tree` (alias `gitmap ft`)
+   - **Zero-Write File Stream:** `gitmap cat <filepath>`
+   - **Instant Multi-Core Regex Search:** `gitmap search "<term>"` or `gitmap aum search "<query>" [dir] --ext <ext>`
+2. **Fast Repository Hygiene, Lowercase & Symlink Repair:**
+   - **Auto-Lowercase Files (Safe 2-Step `git mv`):** `gitmap lowercase` (alias `gitmap lcf [--dry-run]`)
+   - **Lowercase Root Readme:** `gitmap lowercase-readme`
+   - **Sync Curated `.gitignore` / `.gitattributes` / `.prettierignore`:** `gitmap commons` (alias `gitmap co` or `gitmap sync all`)
+   - **Repair Broken Symlinks:** `gitmap fix-link` (alias `gitmap fixlink`)
+   - **Clean Update Temp & Inspect Storage:** `gitmap update-cleanup`, `gitmap storage` (alias `gitmap stor`)
+3. **Fast Git State, Execution & Atomic Commits:**
+   - **Repo Status & Remote Check:** `gitmap status` (`gitmap st`), `gitmap has-any-updates` (`gitmap hau`), `gitmap latest-branch` (`gitmap lb`)
+   - **Fast Cross-Platform Shell Runner:** `gitmap pwsh "<command>"` (`gitmap ps`), `gitmap bash "<command>"` (`gitmap sh`), `gitmap async <cmd>` (`gitmap asyn`)
+   - **Semantic Atomic Commit & Push:** `gitmap cpf "<summary>"` (Feature), `gitmap cpb "<summary>"` (Bug), `gitmap cpr "<summary>"` (Release), `gitmap pcp "<summary>"` (Pull-Commit-Push)
+   - **Smart CI/CD Pipeline Waiting:** `gitmap pe`, `gitmap pipeline-ai status --json` (`gitmap pl-ai status -t <etaSeconds>`)
+
+---
 
 ### Master Task Checklist (Atomic Numbered Steps)
 
-1. [ ] /goal Phase 1 (Step A): Deeply scan the target codebase using the fast Python discovery tools (`11-fast-file-scanner.py`, `12-fast-cached-grep.py`, `17-fast-file-reader.py` with `--limit`) to inventory all architectural violations and anti-patterns without truncation.
-2. [ ] /goal Phase 1 (Step B): Write the master audit specification in `.ai-memory/plans/pending/XX-result-wrapper-audit.md` with an exhaustive Violation Ledger table.
-3. [ ] /goal Phase 1 (Step C): Decompose the master plan into granular, atomic subtasks in `.ai-memory/plans/subtasks/XX-result-wrapper/`.
-4. [ ] /goal Phase 1 (Step D): Verify or create the automated quality linter and register in `03-ai-scripts/01-index.md`.
-5. [ ] /goal Phase 2 (Step A): Open each target file and refactor function signatures from multi-value returns to single `ResultMap[K, V]`, `ResultSlice[T]`, or `Result[T]` envelopes.
-6. [ ] /goal Phase 2 (Step B): Extract and define all domain payload structs (e.g. `ScheduleExportBundle`) and repeated generic Result envelopes (e.g. `type ScheduleExportBundleResult = result.ResultSlice[ScheduleExportBundle]`) into a dedicated `types.go` file within the package as a single type to be reused everywhere. Update all function signatures to return the canonical `types.go` single type alias.
-7. [ ] /goal Phase 2 (Step C): Replace raw stdlib `error` returns with structured `*appfault.AppError` instances using `appfault.New()` or `appfault.Wrap()`.
-8. [ ] /goal Phase 2 (Step D): Enforce pointer-attached null safety on all Result wrappers: attach all inspection methods (`IsSuccess`, `IsFailure`, `IsEmpty`, `HasRecord`, `IsDefined`, `IsCountOtherThan`, `Count`, `AppError`, `Data`, `Items`) to pointer receivers (`(r *Result[T])`, `(rs *ResultSlice[T])`, `(rm *ResultMap[K, V])`) with explicit `nil` checks (`if r == nil`) guarding against nil pointer panics and returning safe defaults.
-9. [ ] /goal Phase 2 (Step E): Modernize all caller call sites to utilize outer-layer inspection methods (`res.IsSuccess()`, `res.IsFailure()`, `res.IsEmpty()`, `res.HasRecord()`, `res.IsDefined()`, `res.IsCountOtherThan(N)`, `res.Get()`, `res.AppError()`), eliminating manual `err != nil || len(...) != N` boilerplate.
-10. [ ] /goal Phase 2 (Step F): Enforce <= 8–15 line function decomposition and clean blank-line spacing.
-11. [ ] /goal Phase 2 (Step G): Execute targeted file-level linters (`python linter-scripts/check-function-lengths.py`, `check-mws-error-codes.py`, `check-newline-styling.py`) to verify 0 remaining violations. DO NOT run the full CI/CD pipeline runner (`06-cicd-local-runner.py`) during routine coding guideline execution turns.
-12. [ ] /learn Ingest `.ai-memory/memory/01-index.md` for project memory index and past learnings.
-13. [ ] /learn Ingest `.ai-memory/strictly-avoid.md` for banned anti-patterns and strict constraints.
-14. [ ] /learn Ingest `02-spec/02-coding-guidelines/02-canonical-size-tier.md` for canonical file and function size tiers.
-15. [ ] /learn Ingest `02-spec/02-coding-guidelines/01-cross-language/01-index.md` for single return type mandates and micro-tasking.
-16. [ ] /learn Ingest `02-spec/02-coding-guidelines/01-cross-language/27-types-folder-convention.md` for types.go and single type definitions.
-17. [ ] /learn Ingest `02-spec/03-error-manage/01-index.md` for universal AppError wrapping and error envelopes.
-18. [ ] /learn Ingest `02-spec/03-error-manage/02-error-architecture/02-error-handling-reference.md` for error handling architecture and Result wrappers.
-19. [ ] /learn Ingest `02-spec/03-error-manage/03-error-code-registry/02-registry.md` for structured error code catalog.
-20. [ ] /learn Ingest `02-spec/03-error-manage/02-error-architecture/05-response-envelope/05-response-envelope-reference.md` for response envelope schemas.
-21. [ ] /learn Ingest `02-spec/03-error-manage/02-error-architecture/06-apperror-package/03-go-apperror-linter-spec.md` for Go AppError implementation specifications.
-22. [ ] /learn Ingest `02-spec/03-error-manage/02-error-architecture/06-apperror-package/01-apperror-reference/04-result-types.md` for Result[T], ResultSlice[T], and ResultMap[K, V] method specifications and pointer null-safety rules.
-23. [ ] /learn Ingest `.ai-memory/coding-guidelines.md` for master consolidated coding guidelines.
-24. [ ] /goal Create or update agent rules in the repository if missing from agent memory.
+1. [ ] [/goal](slashCommand:goal) Phase 1 (Step A): Deeply scan the target codebase using the GitMap AUM discovery tools (`gitmap find`, `gitmap lf`, `gitmap cat`, `gitmap search`) as primary, with fast Python discovery tools (`11-fast-file-scanner.py`, `12-fast-cached-grep.py`, `17-fast-file-reader.py`) as fallback, to inventory all architectural violations and anti-patterns without truncation.
+2. [ ] [/goal](slashCommand:goal) Phase 1 (Step B): Write the master audit specification in `.ai-memory/plans/pending/XX-result-wrapper-audit.md` with an exhaustive Violation Ledger table.
+3. [ ] [/goal](slashCommand:goal) Phase 1 (Step C): Decompose the master plan into granular, atomic subtasks in `.ai-memory/plans/subtasks/XX-result-wrapper/`.
+4. [ ] [/goal](slashCommand:goal) Phase 1 (Step D): Verify or create the automated quality linter and register in `03-ai-scripts/readme.md`.
+5. [ ] [/goal](slashCommand:goal) Phase 2 (Step A): Open each target file and refactor function signatures from multi-value returns to single `ResultMap[K, V]`, `ResultSlice[T]`, or `Result[T]` envelopes.
+6. [ ] [/goal](slashCommand:goal) Phase 2 (Step B): Extract and define all domain payload structs (e.g. `ScheduleExportBundle`) and repeated generic Result envelopes (e.g. `type ScheduleExportBundleResult = result.ResultSlice[ScheduleExportBundle]`) into a dedicated `types.go` file within the package as a single type to be reused everywhere. Update all function signatures to return the canonical `types.go` single type alias.
+7. [ ] [/goal](slashCommand:goal) Phase 2 (Step C): Replace raw stdlib `error` returns with structured `*appfault.AppError` instances using `appfault.New()` or `appfault.Wrap()`.
+8. [ ] [/goal](slashCommand:goal) Phase 2 (Step D): Enforce pointer-attached null safety on all Result wrappers: attach all inspection methods (`IsSuccess`, `IsFailure`, `IsEmpty`, `HasRecord`, `IsDefined`, `IsCountOtherThan`, `Count`, `AppError`, `Data`, `Items`) to pointer receivers (`(r *Result[T])`, `(rs *ResultSlice[T])`, `(rm *ResultMap[K, V])`) with explicit `nil` checks (`if r == nil`) guarding against nil pointer panics and returning safe defaults.
+9. [ ] [/goal](slashCommand:goal) Phase 2 (Step E): Modernize all caller call sites to utilize outer-layer inspection methods (`res.IsSuccess()`, `res.IsFailure()`, `res.IsEmpty()`, `res.HasRecord()`, `res.IsDefined()`, `res.IsCountOtherThan(N)`, `res.Get()`, `res.AppError()`), eliminating manual `err != nil || len(...) != N` boilerplate.
+10. [ ] [/goal](slashCommand:goal) Phase 2 (Step F): Enforce <= 8–15 line function decomposition and clean blank-line spacing.
+11. [ ] [/goal](slashCommand:goal) Phase 2 (Step G): Execute targeted file-level linters (`python linter-scripts/check-function-lengths.py`, `check-mws-error-codes.py`, `check-newline-styling.py`) to verify 0 remaining violations. DO NOT run the full CI/CD pipeline runner (`06-cicd-local-runner.py`) during routine coding guideline execution turns.
+12. [ ] [/learn](slashCommand:learn) Ingest `.ai-memory/memory/readme.md` for project memory index and past learnings.
+13. [ ] [/learn](slashCommand:learn) Ingest `.ai-memory/strictly-avoid.md` for banned anti-patterns and strict constraints.
+14. [ ] [/learn](slashCommand:learn) Ingest `02-spec/02-coding-guidelines/02-canonical-size-tier.md` for canonical file and function size tiers.
+15. [ ] [/learn](slashCommand:learn) Ingest `02-spec/02-coding-guidelines/01-cross-language/readme.md` for single return type mandates and micro-tasking.
+16. [ ] [/learn](slashCommand:learn) Ingest `02-spec/02-coding-guidelines/01-cross-language/27-types-folder-convention.md` for types.go and single type definitions.
+17. [ ] [/learn](slashCommand:learn) Ingest `02-spec/03-error-manage/readme.md` for universal AppError wrapping and error envelopes.
+18. [ ] [/learn](slashCommand:learn) Ingest `02-spec/03-error-manage/02-error-architecture/02-error-handling-reference.md` for error handling architecture and Result wrappers.
+19. [ ] [/learn](slashCommand:learn) Ingest `02-spec/03-error-manage/03-error-code-registry/02-registry.md` for structured error code catalog.
+20. [ ] [/learn](slashCommand:learn) Ingest `02-spec/03-error-manage/02-error-architecture/05-response-envelope/05-response-envelope-reference.md` for response envelope schemas.
+21. [ ] [/learn](slashCommand:learn) Ingest `02-spec/03-error-manage/02-error-architecture/06-apperror-package/03-go-apperror-linter-spec.md` for Go AppError implementation specifications.
+22. [ ] [/learn](slashCommand:learn) Ingest `02-spec/03-error-manage/02-error-architecture/06-apperror-package/01-apperror-reference/04-result-types.md` for Result[T], ResultSlice[T], and ResultMap[K, V] method specifications and pointer null-safety rules.
+23. [ ] [/learn](slashCommand:learn) Ingest `.ai-memory/coding-guidelines.md` for master consolidated coding guidelines.
+24. [ ] [/goal](slashCommand:goal) Create or update agent rules in the repository if missing from agent memory.
 
 ```text
 PHASE_1_STEPS = N / 2   (Steps 1 .. N/2: Scan Multi-Value Returns, Build Violation Ledger in .ai-memory/plans/pending/, Subtasks, Linter Hook)
@@ -132,32 +165,55 @@ Under Prompt Architect coding guidelines, all multi-value returns are refactored
 ### Modern Refactored Store Implementation
 
 ```go
-// ✅ MODERN PATTERN: Single ResultMap return envelope with structured AppError
-func (s *SQLiteStore) queryAllMacroSteps(db *sql.DB) appfault.ResultMap[string, []MacroStep] {
+// -----------------------------------------------------------------------------
+// Step 1: Declare Concrete Types in `types.go` (Mandatory Rule)
+// -----------------------------------------------------------------------------
+// In types.go:
+// type (
+//     // MacroStep defines an individual recorded UI action.
+//     MacroStep struct {
+//         Name    string `json:"name"`
+//         Action  string `json:"action"`
+//         Payload string `json:"payload"`
+//     }
+//
+//     // MacroStepsMapResult is the canonical single reusable result envelope for macro step maps.
+//     // RULE: Define concrete type alias in types.go rather than repeating raw generic instantiations.
+//     MacroStepsMapResult = appfault.ResultMap[string, []MacroStep]
+// )
+// -----------------------------------------------------------------------------
+
+// ✅ MODERN PATTERN: Concrete MacroStepsMapResult return envelope with structured AppError and blank line gaps
+func (s *SQLiteStore) queryAllMacroSteps(db *sql.DB) MacroStepsMapResult {
     rows, err := db.Query("SELECT macro_id, step_name, action, payload FROM macro_steps ORDER BY macro_id, step_order")
+
     if err != nil {
-        return appfault.FailMap[string, []MacroStep](
-            appfault.New(appfault.ErrDatabaseQuery).
-                WithCause(err).
-                WithMessage("failed to query macro steps from database"),
-        )
+        fault := appfault.New(appfault.ErrDatabaseQuery).
+            WithCause(err).
+            WithMessage("failed to query macro steps from database")
+
+        return appfault.FailMap[string, []MacroStep](fault)
     }
+
     defer rows.Close()
 
     return scanMacroStepsMap(rows)
 }
 
-// ✅ MODERN PATTERN: Scanner returning strongly-typed ResultMap
-func scanMacroStepsMap(rows *sql.Rows) appfault.ResultMap[string, []MacroStep] {
+// ✅ MODERN PATTERN: Scanner returning strongly-typed concrete MacroStepsMapResult
+func scanMacroStepsMap(rows *sql.Rows) MacroStepsMapResult {
     stepsMap := make(map[string][]MacroStep)
+
     for rows.Next() {
         var macroId, name, action, payload string
-        if err := rows.Scan(&macroId, &name, &action, &payload); err != nil {
-            return appfault.FailMap[string, []MacroStep](
-                appfault.New(appfault.ErrDatabaseScan).
-                    WithCause(err).
-                    WithMessage("failed to scan macro step row"),
-            )
+        err := rows.Scan(&macroId, &name, &action, &payload)
+
+        if err != nil {
+            fault := appfault.New(appfault.ErrDatabaseScan).
+                WithCause(err).
+                WithMessage("failed to scan macro step row")
+
+            return appfault.FailMap[string, []MacroStep](fault)
         }
 
         stepsMap[macroId] = append(stepsMap[macroId], MacroStep{
@@ -167,12 +223,14 @@ func scanMacroStepsMap(rows *sql.Rows) appfault.ResultMap[string, []MacroStep] {
         })
     }
 
-    if err := rows.Err(); err != nil {
-        return appfault.FailMap[string, []MacroStep](
-            appfault.New(appfault.ErrDatabaseIteration).
-                WithCause(err).
-                WithMessage("row iteration failed for macro steps"),
-        )
+    err := rows.Err()
+
+    if err != nil {
+        fault := appfault.New(appfault.ErrDatabaseIteration).
+            WithCause(err).
+            WithMessage("row iteration failed for macro steps")
+
+        return appfault.FailMap[string, []MacroStep](fault)
     }
 
     return appfault.OkMap(stepsMap)
@@ -188,7 +246,7 @@ A frequent transitional anti-pattern observed during Result wrapper refactoring 
 ```diff
 - func parseImportSQLite(filePath string) ([]scheduleExportBundle, error) {
 + func parseImportSQLite(filePath string) result.ResultSlice[scheduleExportBundle] {
-+ 	return result.FailSlice[scheduleExportBundle](apperror.WrapSimple(err, "parse imported sqlite"))
++ 	return result.FailSlice[scheduleExportBundle](appfault.Wrap(errtype.IO, err, "parse imported sqlite"))
 ```
 
 ### Why the Transitional Diff is Flawed: Two Latent Violations
@@ -251,6 +309,7 @@ func parseImportSQLite(filePath string) ScheduleExportBundleResult {
 	}
 
 	bundles, err := readSQLiteBundles(filePath)
+
 	if err != nil {
 		return result.FailSlice[ScheduleExportBundle](
 			appfault.Wrap(appfault.ErrDatabaseQuery, err, "parse imported sqlite").
@@ -632,7 +691,7 @@ All methods below are declared on **pointer receivers** (`*Result[T]`, `*ResultS
 
 Before refactoring error handling in any package, the agent must study and enforce the repository error management specifications:
 
-- [ ] **Universal `*appfault.AppError` Standard (`02-spec/03-error-manage/01-index.md`):**
+- [ ] **Universal `*appfault.AppError` Standard (`02-spec/03-error-manage/readme.md`):**
   - Never return bare `error` from domain services, repositories, or business logic.
   - Wrap third-party and standard library errors with `appfault.New()` or `appfault.Wrap()`.
 - [ ] **Structured Error Codes (`02-spec/03-error-manage/03-error-code-registry/02-registry.md`):**
@@ -689,8 +748,28 @@ rg --pcre2 "func\s+[A-Za-z0-9_]+\([^\)]*\)\s+(?:result\.)?Result(?:Slice|Map)?\[
 
 ### Fast File Discovery & Reading via Python Toolchain (Mandatory Acceleration)
 
-To avoid 50-result tool truncation limits and eliminate multi-turn exploratory roundtrips, the AI agent MUST use the repository's dedicated Python discovery scripts first:
+To avoid 50-result tool truncation limits and eliminate multi-turn exploratory roundtrips, the AI agent MUST use the fast 2-tier discovery toolchain:
 
+### Tier 1: GitMap AUM Acceleration (PRIMARY)
+1. **Universal File Search:**
+   ```bash
+   gitmap find "<pattern>" [-ext <ext>]
+   ```
+2. **List Indexed Files & Substring Lookup:**
+   ```bash
+   gitmap list-files [pattern]
+   gitmap find-files-any "<substring>"
+   ```
+3. **Stream File Content:**
+   ```bash
+   gitmap cat <filepath>
+   ```
+4. **Instant Code Walk Search:**
+   ```bash
+   gitmap search "<term>"
+   ```
+
+### Tier 2: Fast Cached Python Toolchain (FALLBACK)
 1. **Inventory Target Files (with `--limit` option):**
    ```bash
    python 03-ai-scripts/11-fast-file-scanner.py --lang go,ts --limit 100 --stats
@@ -757,7 +836,7 @@ To survive large codebases without hitting step limits or context loss, execute 
 
 ## Final Step Git Commit & Push Mandate (Strict Checklist)
 
-- [ ] **MANDATORY FINAL COMMIT & PUSH TO GIT (ANYHOW):** At the FINAL step of the turn, after all targeted files have been refactored, verified with targeted linters, and plans/subtasks consolidated, you MUST stage everything (`git add -A`), create a clean, descriptive conventional commit (`git commit -m "<type>(<scope>): <summary>"`), and push directly to the remote repository (`git push origin <branch>`). Leaving uncommitted changes or unpushed commits on the active branch at the end of a turn is an immediate failure.
+- [ ] **MANDATORY FINAL COMMIT & PUSH TO GIT (ANYHOW):** At the FINAL step of the turn, after all targeted files have been refactored, verified with targeted linters, and plans/subtasks consolidated, you MUST stage everything (`git add -A`), create a clean, descriptive conventional commit (`git commit -m "<summary>"`), and push directly to the remote repository (`git push origin <branch>`). Leaving uncommitted changes or unpushed commits on the active branch at the end of a turn is an immediate failure.
 - [ ] **TOTAL BAN ON PER-FILE COMMITS (DO NOT COMMIT EACH FILE INDIVIDUALLY):** You MUST NOT create separate git commits for each individual file as you edit them (e.g. running `git commit` after editing File 1, then committing again after File 2 is STRICTLY FORBIDDEN). Committing file-by-file pollutes git log history, creates subagent lock collisions, and breaks atomic rollback/bisectability. All modified files, test change caches, and plan records across the turn MUST be accumulated in the working tree and committed together in a SINGLE grouped atomic commit at the final step before pushing!
 
 ---
@@ -777,4 +856,3 @@ To survive large codebases without hitting step limits or context loss, execute 
 - **NO ABSOLUTE PATHS:** Never write absolute filesystem paths (`C:\...`, `/home/...`) or `file:///` URIs. Use strict relative Git paths starting from the repository root.
 - **NO UPPERCASE FILENAMES:** Every file created or edited must be strictly lowercase.
 - **NO MULTI-VALUE TUPLES:** Eliminate `(T, error)` in favor of `Result[T]`, `ResultMap[K, V]`, or `ResultSlice[T]`.
-

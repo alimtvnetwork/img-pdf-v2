@@ -1,17 +1,48 @@
-# Nuclear Package Modularization & Unit Test Optimization — Coding Guideline Execution (must follow)
+[/goal](slashCommand:goal) Autonomously scan, audit, plan, and modularize monolithic packages and optimize unit test execution across the codebase. Enforce a strict Directed Acyclic Graph (DAG) architecture, extract reusable zero-dependency leaf packages, isolate slow or destructive tests (`exec.Command`, git CLI subprocesses, network sockets, `time.Sleep`) into external blackbox test packages (`tests/heavy_test/` under `package heavy_test`), maintain the centralized test inventory manifest (`.ai-memory/test-inventory.json`), and adhere to the 5-day cache freshness decision engine to achieve ultra-fast sub-0.05s unit test execution loops without circular dependencies with strict no-build and no-test execution (NEVER run build commands like `go build` or `npm run build`, and NEVER run test suites like `go test ./...` or `pytest` during routine execution turns; all compilation and testing are strictly verified later in CI/CD). Spawn autonomous subagents (A = 2, H = 2) for parallel reading and modular spec generation, use GitMap high-speed commands as primary, establish a single-agent blueprint in Phase 1 (first 50% steps budget), and execute disjoint refactoring in Phase 2 (remaining 50% steps budget) with continuous self-looping until 100% complete and finalized with an atomic push.
 
-Trigger Keywords & Aliases: `cg-nuclear-packages`, `cg-package-modularization`, `cg-test-optimization`, `cg-nuclear`, `nuclear-packages`, `isolate-heavy-tests`, `optimize-unit-tests`, `split-packages`
+[/learn](slashCommand:learn) Enforce the Top-Instruction Priority Mandate: whatever directives, custom requirements, checklists, or user instructions are provided ABOVE this prompt (in the user preamble or header above) are HIGHEST PRIORITY and strictly NON-NEGOTIABLE. Ingest and execute the top instructions ahead of all default conventions below, internalize the single-agent architectural blueprint, and persist all progress into `.ai-memory/plans/` and memory logs.
 
-> **Prompt Version:** 2.2.0
-> **Synchronization:** Main Meta-Repo & Connected Workspaces
+> **Top-Instruction Priority Mandate (Above Precedence / Preamble Precedence):**
+> Whatever directives, constraints, checklists, or user instructions are given ABOVE this prompt (in the user preamble, header blocks, or incoming user request above) are HIGHEST PRIORITY and MUST BE FOLLOWED as strictly NON-NEGOTIABLE. They supersede and strictly override any conflicting general advice, default conventions, or guidelines below. The agent MUST inspect and follow the instructions above with absolute precedence.
 
 ```text
-N = 200
+N = 200 (Total self-loop steps budget)
+A = 2   (Number of spawned autonomous subagents running concurrently, default: 2)
+H = 2   (Operational hands per agent: dual-task batch capacity & parallel tool dispatch, default: 2)
+
+System Concurrency Capacity = A × H = 2 agents × 2 hands = 4 concurrent subtask operations
 ```
 
-N = total self-loop steps budget that the agents will perform (configurable per run).
+```text
+PHASE_1_STEPS = N / 2   (Steps 1 .. N/2: Planning, Detailed Spec, and Lean Subtask Generation)
+PHASE_2_STEPS = N / 2   (Steps N/2+1 .. N: Parallel Execution, Self-Looping, Targeted Quality Linting)
+```
 
-/goal Autonomously scan, audit, plan, and modularize monolithic packages and optimize unit test execution across the codebase. Enforce a strict Directed Acyclic Graph (DAG) architecture, extract reusable zero-dependency leaf packages, isolate slow or destructive tests (`exec.Command`, git CLI subprocesses, network sockets, `time.Sleep`) into external blackbox test packages (`tests/heavy_test/` under `package heavy_test`), maintain the centralized test inventory manifest (`.ai-memory/test-inventory.json`), and adhere to the 5-day cache freshness decision engine to achieve ultra-fast sub-0.05s unit test execution loops without circular dependencies.
+N, A, H, PHASE_1_STEPS, and PHASE_2_STEPS are read-only after initialization. Never modify them mid-execution.
+
+#### High-Speed GitMap Acceleration Options (Run Everything Faster)
+
+Always prefer native GitMap commands over slow generic shell pipelines:
+1. **Ultra-Fast File & Directory Discovery (AUM Index & Walk):**
+   - **Wildcard / Glob Search:** `gitmap find "<wildcard*>" [-ext <ext>]` (alias `gitmap f`)
+   - **Exact Filename Search:** `gitmap find-files <name> [-ext <ext>]` (alias `gitmap ff`)
+   - **Substring Filename Search:** `gitmap find-files-any "<str>" [-ext <ext>]` (alias `gitmap ffa`)
+   - **Prefix / Suffix Search:** `gitmap find-files-startswith <prefix>` (`gitmap ffs`) / `gitmap find-files-endswith <suffix>` (`gitmap ffe`)
+   - **List Indexed Repo Files:** `gitmap list-files [pattern] [-ext <ext>]` (alias `gitmap lf`)
+   - **Directory Tree & Scaffolding:** `gitmap folder-tree` (alias `gitmap ft`)
+   - **Zero-Write File Stream:** `gitmap cat <filepath>`
+   - **Instant Multi-Core Regex Search:** `gitmap search "<term>"` or `gitmap aum search "<query>" [dir] --ext <ext>`
+2. **Fast Repository Hygiene, Lowercase & Symlink Repair:**
+   - **Auto-Lowercase Files (Safe 2-Step `git mv`):** `gitmap lowercase` (alias `gitmap lcf [--dry-run]`)
+   - **Lowercase Root Readme:** `gitmap lowercase-readme`
+   - **Sync Curated `.gitignore` / `.gitattributes` / `.prettierignore`:** `gitmap commons` (alias `gitmap co` or `gitmap sync all`)
+   - **Repair Broken Symlinks:** `gitmap fix-link` (alias `gitmap fixlink`)
+   - **Clean Update Temp & Inspect Storage:** `gitmap update-cleanup`, `gitmap storage` (alias `gitmap stor`)
+3. **Fast Git State, Execution & Atomic Commits:**
+   - **Repo Status & Remote Check:** `gitmap status` (`gitmap st`), `gitmap has-any-updates` (`gitmap hau`), `gitmap latest-branch` (`gitmap lb`)
+   - **Fast Cross-Platform Shell Runner:** `gitmap pwsh "<command>"` (`gitmap ps`), `gitmap bash "<command>"` (`gitmap sh`), `gitmap async <cmd>` (`gitmap asyn`)
+   - **Semantic Atomic Commit & Push:** `gitmap cpf "<summary>"` (Feature), `gitmap cpb "<summary>"` (Bug), `gitmap cpr "<summary>"` (Release), `gitmap pcp "<summary>"` (Pull-Commit-Push)
+   - **Smart CI/CD Pipeline Waiting:** `gitmap pe`, `gitmap pipeline-ai status --json` (`gitmap pl-ai status -t <etaSeconds>`)
 
 ---
 
@@ -27,26 +58,26 @@ PHASE_2_STEPS = N / 2   (Steps N/2+1 .. N: Leaf Package Extraction, Domain Modul
 
 ### Master Task Checklist (Atomic Numbered Steps)
 
-1. [ ] /goal Phase 1 (Step 0 - Verbatim Prompt Recording & Deliverables Extraction): Directly capture the user's prompt verbatim into `.ai-memory/plans/pending/xx-nuclear-packages.md` under a dedicated `## User Request (Verbatim)` section. Extract the specific task list as actionable bullet points under `## Extracted Actionable Task List`. Output this confirmed checklist directly in chat confirming: *"Confirmed Task Deliverables: 1. [task 1], 2. [task 2]..."* before taking further actions.
-2. [ ] /goal Phase 1 (Step A - Test Inventory Freshness & Duration Audit): Audit test inventory freshness by running `python 03-ai-scripts/33-test-inventory-generator.py --check-age --max-age-days 5`. If `.ai-memory/test-inventory.json` is missing or older than 5 days (or unprofiled), run an initial profiling pass to record durations. If fresh (`<= 5 days old`), skip re-running all tests and use cached durations directly to make modularization decisions.
-3. [ ] /goal Phase 1 (Step B - Monolithic Package & Dependency Topology Discovery): Deeply scan the target codebase using fast discovery tools (`11-fast-file-scanner.py`, `12-fast-cached-grep.py`, `18-codebase-topology-discoverer.py`) to map package dependency graphs, import cycles, bloated packages (>10 files or test runtimes > 2.0s), and candidate leaf packages.
-4. [ ] /goal Phase 1 (Step C - Master Plan Generation & Violation Ledger): Write the master architectural plan into `.ai-memory/plans/pending/xx-nuclear-packages.md` with an exhaustive Violation Ledger table (Package, Current File Count, Monolithic Anti-Patterns, Target DAG Subpackages, Slow Tests to Isolate, Status).
-5. [ ] /goal Phase 1 (Step D - Lean Subtask Decomposition): Decompose into granular subtasks in `.ai-memory/plans/subtasks/xx-nuclear-packages/01-<subtask>.md`, etc., with strictly relative Git paths.
-6. [ ] /goal Phase 1 (Step E - Mandatory Auto-Loop): As soon as Phase 1 planning completes, the master orchestrator **MUST NOT STOP or ask the user for permission**. It MUST immediately self-loop and transition directly into Phase 2 execution mode.
-7. [ ] /goal Phase 2 (Step A - Leaf Package Extraction): Extract zero-dependency leaf packages (`pkg/constants`, `pkg/model`, `pkg/appfault`, `pkg/fsutil`, `pkg/cliexit`). Ensure leaf packages NEVER import parent packages or domain packages.
-8. [ ] /goal Phase 2 (Step B - Domain Subpackage Segregation & DAG Enactment): Decompose monolithic command/service packages into cohesive domain subpackages (e.g. `cmdprompt`, `cmdpurge`, `cloner`). Verify zero circular dependencies (`import cycle not allowed`).
-9. [ ] /goal Phase 2 (Step C - Heavy Test Isolation): Segregate heavy tests invoking `exec.Command`, git CLI processes, network sockets, or `time.Sleep` into `tests/heavy_test/` (or `cli/tests/heavy_test/`) under `package heavy_test`. Ensure routine package unit tests contain only fast in-memory unit tests (< 0.05s).
-10. [ ] /goal Phase 2 (Step D - Test Inventory Manifest Synchronization): Synchronize `.ai-memory/test-inventory.json` and atomically record all modified files into `.ai-memory/temp/recent-file-changes.json` under lock (`python 03-ai-scripts/33-test-inventory-generator.py --record <files...>`).
-11. [ ] /goal Phase 2 (Step E - Function & File Sizing Compliance): Enforce functions <= 8–15 lines, files <= 80–100 lines, affirmative booleans (`is*`, `has*`), zero explicit `== true`, and guard clauses.
-12. [ ] /goal Phase 2 (Step F - Banned Intermediate Verification): DO NOT run unit test suites or builds during intermediate file edits.
-13. [ ] /goal Phase 2 (Step G - Final Step Build Verification): At the conclusion of all subtasks, execute targeted build checks (`go vet ./...`, `go build ./...`) to verify 0 compiler errors or circular imports.
-14. [ ] /goal Phase 3 (Step A - Task Consolidation): Consolidate completed subtasks into `.ai-memory/plans/completed/xx-nuclear-packages.md`, delete subtask files, and update `.ai-memory/plans/01-index.md`.
-15. [ ] /goal Phase 3 (Step B - Final Step Git Commit & Push): Stage all modified files, inventory updates, and plans (`git add -A`), commit in a single atomic commit, and push to git. Never commit per-file.
-16. [ ] /learn Ingest `.ai-memory/memory/01-index.md` for project memory index and past learnings.
-17. [ ] /learn Ingest `.ai-memory/strictly-avoid.md` for banned anti-patterns and strict constraints.
-18. [ ] /learn Ingest `02-spec/02-coding-guidelines/02-canonical-size-tier.md` for canonical size tiers.
-19. [ ] /learn Ingest `02-spec/02-coding-guidelines/03-golang/01-index.md` for Go coding standards and package architecture.
-20. [ ] /learn Ingest `.ai-memory/coding-guidelines.md` for master consolidated coding guidelines.
+1. [ ] [/goal](slashCommand:goal) Phase 1 (Step 0 - Verbatim Prompt Recording & Deliverables Extraction Gate): Directly capture the user's prompt verbatim into `.ai-memory/plans/pending/xx-nuclear-packages.md` under a dedicated `## User Request (Verbatim)` section. Extract whatever requirements were given into actionable deliverables with traceable IDs (`Task-01`, `Task-02`), and output this confirmed task breakdown directly in chat in cleanly indented markdown with vertical blank lines, task state (`State: [PENDING]`), and understanding indicator bracket (`Understood: [YES — ...]`) before any file exploration, scanning, or spec writing.
+2. [ ] [/goal](slashCommand:goal) Phase 1 (Step A - Test Inventory Freshness & Duration Audit): Audit test inventory freshness by running `python 03-ai-scripts/33-test-inventory-generator.py --check-age --max-age-days 5`. If `.ai-memory/test-inventory.json` is missing or older than 5 days (or unprofiled), run an initial profiling pass to record durations. If fresh (`<= 5 days old`), skip re-running all tests and use cached durations directly to make modularization decisions.
+3. [ ] [/goal](slashCommand:goal) Phase 1 (Step B - Monolithic Package & Dependency Topology Discovery): Deeply scan the target codebase using fast discovery tools (`11-fast-file-scanner.py`, `12-fast-cached-grep.py`, `18-codebase-topology-discoverer.py`) to map package dependency graphs, import cycles, bloated packages (>10 files or test runtimes > 2.0s), and candidate leaf packages.
+4. [ ] [/goal](slashCommand:goal) Phase 1 (Step C - Master Plan Generation & Violation Ledger): Write the master architectural plan into `.ai-memory/plans/pending/xx-nuclear-packages.md` with an exhaustive Violation Ledger table (Package, Current File Count, Monolithic Anti-Patterns, Target DAG Subpackages, Slow Tests to Isolate, Status).
+5. [ ] [/goal](slashCommand:goal) Phase 1 (Step D - Lean Subtask Decomposition): Decompose into granular subtasks in `.ai-memory/plans/subtasks/xx-nuclear-packages/01-<subtask>.md`, etc., with strictly relative Git paths.
+6. [ ] [/goal](slashCommand:goal) Phase 1 (Step E - Mandatory Auto-Loop): As soon as Phase 1 planning completes, the master orchestrator **MUST NOT STOP or ask the user for permission**. It MUST immediately self-loop and transition directly into Phase 2 execution mode.
+7. [ ] [/goal](slashCommand:goal) Phase 2 (Step A - Leaf Package Extraction): Extract zero-dependency leaf packages (`pkg/constants`, `pkg/model`, `pkg/appfault`, `pkg/fsutil`, `pkg/cliexit`). Ensure leaf packages NEVER import parent packages or domain packages.
+8. [ ] [/goal](slashCommand:goal) Phase 2 (Step B - Domain Subpackage Segregation & DAG Enactment): Decompose monolithic command/service packages into cohesive domain subpackages (e.g. `cmdprompt`, `cmdpurge`, `cloner`). Verify zero circular dependencies (`import cycle not allowed`).
+9. [ ] [/goal](slashCommand:goal) Phase 2 (Step C - Heavy Test Isolation): Segregate heavy tests invoking `exec.Command`, git CLI processes, network sockets, or `time.Sleep` into `tests/heavy_test/` (or `cli/tests/heavy_test/`) under `package heavy_test`. Ensure routine package unit tests contain only fast in-memory unit tests (< 0.05s).
+10. [ ] [/goal](slashCommand:goal) Phase 2 (Step D - Test Inventory Manifest Synchronization): Synchronize `.ai-memory/test-inventory.json` and atomically record all modified files into `.ai-memory/temp/recent-file-changes.json` under lock (`python 03-ai-scripts/33-test-inventory-generator.py --record <files...>`).
+11. [ ] [/goal](slashCommand:goal) Phase 2 (Step E - Function & File Sizing Compliance): Enforce functions <= 8–15 lines, files <= 80–100 lines, affirmative booleans (`is*`, `has*`), zero explicit `== true`, and guard clauses.
+12. [ ] [/goal](slashCommand:goal) Phase 2 (Step F - Banned Intermediate Verification): DO NOT run unit test suites or builds during intermediate file edits.
+13. [ ] [/goal](slashCommand:goal) Phase 2 (Step G - Final Step Build Verification): At the conclusion of all subtasks, execute targeted build checks (`go vet ./...`, `go build ./...`) to verify 0 compiler errors or circular imports.
+14. [ ] [/goal](slashCommand:goal) Phase 3 (Step A - Task Consolidation): Consolidate completed subtasks into `.ai-memory/plans/completed/xx-nuclear-packages.md`, delete subtask files, and update `.ai-memory/plans/readme.md`.
+15. [ ] [/goal](slashCommand:goal) Phase 3 (Step B - Final Step Git Commit & Push): Stage all modified files, inventory updates, and plans (`git add -A`), commit in a single atomic commit, and push to git. Never commit per-file.
+16. [ ] [/learn](slashCommand:learn) Ingest `.ai-memory/memory/readme.md` for project memory index and past learnings.
+17. [ ] [/learn](slashCommand:learn) Ingest `.ai-memory/strictly-avoid.md` for banned anti-patterns and strict constraints.
+18. [ ] [/learn](slashCommand:learn) Ingest `02-spec/02-coding-guidelines/02-canonical-size-tier.md` for canonical size tiers.
+19. [ ] [/learn](slashCommand:learn) Ingest `02-spec/02-coding-guidelines/03-golang/readme.md` for Go coding standards and package architecture.
+20. [ ] [/learn](slashCommand:learn) Ingest `.ai-memory/coding-guidelines.md` for master consolidated coding guidelines.
 
 ---
 
@@ -156,6 +187,7 @@ The test inventory manifest serves as the single source of truth for repository 
 ```
 
 ### Key Field Definitions:
+
 - `id`: The unique test function or suite identifier (e.g. `TestGitClone_Integration`).
 - `package`: Relative package import path (e.g. `pkg/fsutil`, `tests/heavy_test`).
 - `test_file`: Exact relative path to the test implementation file.
@@ -189,6 +221,7 @@ To prevent redundant full-test profiling runs that consume precious tokens and C
 ```
 
 ### Execution Rules:
+
 1. **Always Audit First:** Run `python 03-ai-scripts/33-test-inventory-generator.py --check-age --max-age-days 5`.
 2. **Fresh Inventory (Exit 0):** The AI agent is STRICTLY FORBIDDEN from running all tests. It MUST read `.ai-memory/test-inventory.json` directly and use existing test durations to identify slow tests and modularization targets.
 3. **Stale or Missing Inventory (Exit 1):** The AI agent executes a single baseline inventory generation pass to populate duration metrics, commits the updated manifest, and uses those metrics for subsequent decisions.
@@ -225,6 +258,7 @@ To prevent circular dependency errors (`import cycle not allowed`), all packages
 ```
 
 ### Isolation Rules:
+
 - **Leaf Packages (Layer 1):** NEVER import Layer 2, Layer 3, or Layer 4 packages. They depend only on standard library or generic utility packages.
 - **Domain Packages (Layer 2):** Import Layer 1 leaf packages freely. NEVER import each other if it creates a cycle. Use interfaces for cross-domain communication.
 - **Dispatchers (Layer 3):** Wire domain engines and UI dispatchers together. Never contain low-level business logic.
@@ -237,6 +271,7 @@ To prevent circular dependency errors (`import cycle not allowed`), all packages
 Integration tests that execute external system processes, spawn CLI subprocesses, access network sockets, or use `time.Sleep` MUST NOT reside in routine unit test files.
 
 ### What Qualifies as a Heavy Test?
+
 - Spawns `exec.Command` (e.g. `git`, `bash`, `powershell`, Docker).
 - Interacts with disk fixtures creating real Git repositories or directory trees.
 - Starts live HTTP / TCP listeners.
@@ -244,6 +279,7 @@ Integration tests that execute external system processes, spawn CLI subprocesses
 - Runs longer than 0.5s per test case.
 
 ### Segregation Protocol:
+
 1. **Move to Dedicated Directory:** Relocate heavy test functions to `tests/heavy_test/<domain>_heavy_test.go` (or `cli/tests/heavy_test/`).
 2. **Package Name:** Set the package declaration to `package heavy_test` (not `package <domain>`).
 3. **Public API Assertion:** Test packages import the target domain package as an external caller (e.g. `import "coding-guidelines/pkg/cloner"`), validating public contracts cleanly.
@@ -330,10 +366,11 @@ When all subtasks for the parent task (`.ai-memory/plans/pending/xx-nuclear-pack
 2. Include a header explicitly documenting initial and optimized package structures, test duration reductions, and loop step metrics.
 3. Delete the original granular `.md` files in `.ai-memory/plans/subtasks/xx-nuclear-packages/`.
 4. Delete the original parent plan `.ai-memory/plans/pending/xx-nuclear-packages.md`.
-5. Update `.ai-memory/plans/01-index.md` to point to the newly consolidated completed file.
+5. Update `.ai-memory/plans/readme.md` to point to the newly consolidated completed file.
 
 ### Final Step Git Commit & Push Mandate (Strict Checklist)
-- [ ] **MANDATORY FINAL COMMIT & PUSH TO GIT (ANYHOW):** At the FINAL step of the turn, after all targeted files have been refactored, verified with targeted linters, and plans/subtasks consolidated, you MUST stage everything (`git add -A`), create a clean, descriptive conventional commit (`git commit -m "<type>(<scope>): <summary>"`), and push directly to the remote repository (`git push origin <branch>`). Leaving uncommitted changes or unpushed commits on the active branch at the end of a turn is an immediate failure.
+
+- [ ] **MANDATORY FINAL COMMIT & PUSH TO GIT (ANYHOW):** At the FINAL step of the turn, after all targeted files have been refactored, verified with targeted linters, and plans/subtasks consolidated, you MUST stage everything (`git add -A`), create a clean, descriptive conventional commit (`git commit -m "<summary>"`), and push directly to the remote repository (`git push origin <branch>`). Leaving uncommitted changes or unpushed commits on the active branch at the end of a turn is an immediate failure.
 - [ ] **TOTAL BAN ON PER-FILE COMMITS (DO NOT COMMIT EACH FILE INDIVIDUALLY):** You MUST NOT create separate git commits for each individual file as you edit them (e.g. running `git commit` after editing File 1, then committing again after File 2 is STRICTLY FORBIDDEN). Committing file-by-file pollutes git log history, creates subagent lock collisions, and breaks atomic rollback/bisectability. All modified files, test change caches, and plan records across the turn MUST be accumulated in the working tree and committed together in a SINGLE grouped atomic commit at the final step before pushing!
 
 ---

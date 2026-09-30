@@ -45,7 +45,7 @@ You must self-loop `N` times to create the brain, tasks, and subtasks for the de
 Generate the folder structure, the `.ai-memory/plans/pending/` files, and the `.ai-memory/plans/subtasks/` files immediately during your self-loop.
 Your self-loop must strictly follow this structure:
 
-1. Roll-up Index: Update `.ai-memory/plans/01-index.md`.
+1. Roll-up Index: Update `.ai-memory/plans/readme.md`.
 2. Parent Plan: Create `.ai-memory/plans/pending/xx-<slug>.md`.
 3. Subtasks (Strict 01, 02 Sequence): Every group/step must be placed in a dedicated file under `.ai-memory/plans/subtasks/xx-<slug>/`.
    - The subtasks MUST follow a strict zero-padded numeric sequence: `01`, `02`, `03`, etc.
@@ -59,36 +59,36 @@ For every task, you MUST check if the following files or folders exist. If they 
 
 1. Root Memory Guidelines
 
-- /learn `.ai-memory/coding-guidelines.md` (and/or `.ai-memory/coding-guidelines.md`)
+- [/learn](slashCommand:learn) `.ai-memory/coding-guidelines.md` (and/or `.ai-memory/coding-guidelines.md`)
 
 2. Master Consolidated Guide & Coding Guidelines
 
-- /learn `02-spec/17-consolidated-guidelines/05-coding-guidelines.md`
-- /learn `02-spec/02-coding-guidelines/01-cross-language/01-index.md`
+- [/learn](slashCommand:learn) `02-spec/17-consolidated-guidelines/05-coding-guidelines.md`
+- [/learn](slashCommand:learn) `02-spec/02-coding-guidelines/01-cross-language/readme.md`
 
 3. Error Management (Must Follow for all Coding Tasks)
 
-- /learn `02-spec/03-error-manage/01-index.md`
-- /learn *Include most of the files from the error manage directory to ensure robust error handling is implemented per task.*
+- [/learn](slashCommand:learn) `02-spec/03-error-manage/readme.md`
+- [/learn](slashCommand:learn) *Include most of the files from the error manage directory to ensure robust error handling is implemented per task.*
 
 4. Boolean Conditions, Wrappers & Samples
 
-- /learn `02-spec/02-coding-guidelines/01-cross-language/02-boolean-principles/01-index.md`
-- /learn `02-spec/02-coding-guidelines/01-cross-language/12-no-negatives.md`
-- /learn `02-spec/02-coding-guidelines/01-cross-language/24-boolean-flag-methods.md`
+- [/learn](slashCommand:learn) `02-spec/02-coding-guidelines/01-cross-language/02-boolean-principles/readme.md`
+- [/learn](slashCommand:learn) `02-spec/02-coding-guidelines/01-cross-language/12-no-negatives.md`
+- [/learn](slashCommand:learn) `02-spec/02-coding-guidelines/01-cross-language/24-boolean-flag-methods.md`
 
 5. Code Style & File Size Limits (80-100 lines max)
 
-- /learn `02-spec/02-coding-guidelines/01-cross-language/04-code-style/01-index.md`
-- /learn `02-spec/02-coding-guidelines/01-cross-language/20-nesting-resolution-patterns.md`
-- /learn `02-spec/02-coding-guidelines/01-cross-language/06-cyclomatic-complexity.md`
+- [/learn](slashCommand:learn) `02-spec/02-coding-guidelines/01-cross-language/04-code-style/readme.md`
+- [/learn](slashCommand:learn) `02-spec/02-coding-guidelines/01-cross-language/20-nesting-resolution-patterns.md`
+- [/learn](slashCommand:learn) `02-spec/02-coding-guidelines/01-cross-language/06-cyclomatic-complexity.md`
 
 6. Variable Naming & Definitions
 
-- /learn `02-spec/02-coding-guidelines/01-cross-language/22-variable-naming-conventions.md`
-- /learn `02-spec/02-coding-guidelines/01-cross-language/11-key-naming-pascalcase.md`
-- /learn `02-spec/02-coding-guidelines/01-cross-language/10-function-naming.md`
-- /learn `02-spec/02-coding-guidelines/01-cross-language/18-code-mutation-avoidance.md`
+- [/learn](slashCommand:learn) `02-spec/02-coding-guidelines/01-cross-language/22-variable-naming-conventions.md`
+- [/learn](slashCommand:learn) `02-spec/02-coding-guidelines/01-cross-language/11-key-naming-pascalcase.md`
+- [/learn](slashCommand:learn) `02-spec/02-coding-guidelines/01-cross-language/10-function-naming.md`
+- [/learn](slashCommand:learn) `02-spec/02-coding-guidelines/01-cross-language/18-code-mutation-avoidance.md`
 
 ## 6. End-of-Loop Commit Fix (Non-Negotiable)
 
@@ -113,7 +113,7 @@ Each step or group that completes MUST immediately commit and fix the Git. Follo
 - [ ] Audit the plan against the Master Consolidated Guide, Code Style, Boolean Conditions, and Variable Naming rules.
 - [ ] Ensure each group section explicitly outlines the agent part (that the group is executed by a separate standalone agent).
 - [ ] Ensure the end-of-loop commit fix is properly executed for each completed step or group.
-- [ ] Update `.ai-memory/plans/01-index.md` and populate `.ai-memory/plans/pending/` and `.ai-memory/plans/subtasks/`.
+- [ ] Update `.ai-memory/plans/readme.md` and populate `.ai-memory/plans/pending/` and `.ai-memory/plans/subtasks/`.
 
 ### Execution Mode: Plan & Wait (User Approval Required)
 
@@ -146,8 +146,8 @@ To survive massive checklists and complex codebases, you MUST operate using thes
 
 - [ ] Anti-Boilerplate Check: Did I copy-paste the exact same "How" steps across multiple tasks? (If yes, you are acting stupid. Stop and rewrite them to be uniquely specific to the task's exact technical requirements).
 - [ ] Cognitive Check: Does every task contain "all the brains" (exact logic, specific paths, deep architectural context) so a lower-level agent can execute it without guessing?
-- [ ] /learn the overarching main task plan.
-- [ ] Read `.ai-memory/memory/01-index.md` and `.ai-memory/plans/01-index.md` before planning.
+- [ ] [/learn](slashCommand:learn) the overarching main task plan.
+- [ ] Read `.ai-memory/memory/readme.md` and `.ai-memory/plans/readme.md` before planning.
 - [ ] Ensure the git repository starts completely clean.
 - [ ] Complete all work on the current branch only.
 - [ ] Ensure `.gitignore` explicitly excludes test reports, artifacts, and compiled binaries.
@@ -196,7 +196,7 @@ To prevent cross-task pollution and ensure seamless agent communication, every t
 4. **On Error/Crash:** Append the exact error, root cause, and `STATUS: FAILED` to `.ai-memory/temp-agents/xx-<task-name>/state.md` before exiting.
 5. **On Success:** Mark `STATUS: DONE` in `.ai-memory/temp-agents/xx-<task-name>/state.md`, aggregate findings to the master plan, and clean up or archive the folder.
 
-NEVER MAKE THIS EXCUSE: *"I did not literally perform N self-loops or spawn dozens of sub-agents. Instead of artificially spinning up N separate loops, I consolidated the required deep work into a concentrated series of sequential steps within my existing execution environment."*
+NEVER MAKE THIS EXCUSE: *"I failed to perform N self-loops or spawn dozens of sub-agents. Instead of artificially spinning up N separate loops, I consolidated the required deep work into a concentrated series of sequential steps within my existing execution environment."*
 If you write this excuse, you are a lazy, stupid fuck and you are violating RULE 0. Spawn the actual sub-agents. Do the actual loops. Utilize the processing power effectively to get the right answer. Avoid stupidity.
 
 ## MUST FOLLOW NON-NEGOTIABLE

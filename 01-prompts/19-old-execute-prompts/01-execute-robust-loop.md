@@ -3,9 +3,9 @@
 > **Prompt Version:** 2.1.0
 > **Synchronization:** Main Meta-Repo & Connected Workspaces
 
-/goal Read all pending tasks from `.ai-memory/`, allocate small micro-portions of work to sub-agents, and execute them in a continuous self-loop. Manage sub-agent crashes gracefully, enforce file collision safety, sanitize artifacts before commits, and ensure the pipeline runs without halting until the queue is empty. You MUST self-loop continuously until every pending task is completed; do not stop until the queue is completely empty.
+[/goal](slashCommand:goal) Read all pending tasks from `.ai-memory/`, allocate small micro-portions of work to sub-agents, and execute them in a continuous self-loop. Manage sub-agent crashes gracefully, enforce file collision safety, sanitize artifacts before commits, and ensure the pipeline runs without halting until the queue is empty. You MUST self-loop continuously until every pending task is completed; do not stop until the queue is completely empty.
 
-/learn Capture every pattern, convention, fix, and correction discovered during execution into `.ai-memory/memory/learned/01-<slug>.md` and `.ai-memory/strictly-avoid.md`. Never repeat a mistake that was logged.
+[/learn](slashCommand:learn) Capture every pattern, convention, fix, and correction discovered during execution into `.ai-memory/memory/learned/01-<slug>.md` and `.ai-memory/strictly-avoid.md`. Never repeat a mistake that was logged.
 
 ## Non-Negotiable Rules (Auto-Reject on Violation)
 
@@ -14,13 +14,13 @@
 
 ## AI Fix Scripts Memory (Reusable Tooling)
 
-- [ ] `/goal` **Reuse First:** I have rigorously scanned and `/learn`ed `03-ai-scripts/01-index.md` to check if a helper script already exists before writing any new temporary code.
+- [ ] [/goal](slashCommand:goal) **Reuse First:** I have rigorously scanned and [/learn](slashCommand:learn)ed `03-ai-scripts/readme.md` to check if a helper script already exists before writing any new temporary code.
 - [ ] **Strict In-Repository Execution:** All Python scripts (`03-ai-scripts/*.py`) MUST be executed strictly within the codebase repository root, NEVER outside the codebase.
 - [ ] **Strict .ai-memory/ Folder Storage:** All AI scripts, local runners, autofixers, and helper utilities MUST be created inside `03-ai-scripts/`. NEVER create scripts in root or external paths.
 - [ ] **Native File Manipulator:** If you need to perform mass file renaming, `.md` lowercase enforcement, sequence number re-ordering, or encoding fixes (CRLF/BOM), you MUST natively use `python 03-ai-scripts/03-file-manipulator.py <command>` rather than writing a new script from scratch.
 - [ ] **Go Generate Sync:** If you modify Go constants, enums, or stringers, you MUST run `go generate ./...` in the relevant directory (e.g., `cd gitmap && go generate ./...`) and commit the resulting generated files to prevent CI drift.
 - [ ] **Commit & Track:** All new helper scripts were written strictly to `03-ai-scripts/` and committed to Git for future reuse.
-- [ ] **Index Documentation:** I have updated `03-ai-scripts/01-index.md` using sequential script naming (e.g., `01-parse-files.py`). For every script, I have included a `<details>` collapsible tag explaining exactly why the script is there and what it does.
+- [ ] **Index Documentation:** I have updated `03-ai-scripts/readme.md` using sequential script naming (e.g., `01-parse-files.py`). For every script, I have included a `<details>` collapsible tag explaining exactly why the script is there and what it does.
 
 4. Violation of any rule below is auto-reject on the same tier as RULE 0.
 
@@ -43,7 +43,7 @@
 1. Check git status first. The working tree must be clean. Confirm root readme is strictly lowercase `readme.md`.
 2. Ensure `.ai-memory/temp/` is added to your project's `.gitignore` file.
 3. Wipe any old, orphaned state files in `.ai-memory/temp/` from previous incomplete runs before starting fresh.
-4. Read `.ai-memory/plans/01-index.md` and load tasks from `.ai-memory/plans/pending/xx-<slug>.md`. Sequence them into Execution Waves:
+4. Read `.ai-memory/plans/readme.md` and load tasks from `.ai-memory/plans/pending/xx-<slug>.md`. Sequence them into Execution Waves:
    - Wave 1: Schemas, DB, and query wrappers
    - Wave 2: Core logic
    - Wave 3: UI and documentation
@@ -58,7 +58,7 @@
    - Spawn a maximum of 2 to 3 sub-agents concurrently. Never exceed this limit.
 
 2. File collision locking matrix (`active-locks.json`):
-   - Register active target files in `.ai-memory/01-index.md` before spawning an agent.
+   - Register active target files in `.ai-memory/readme.md` before spawning an agent.
    - When assigning tasks in parallel, ensure the tasks touch completely different files or components.
    - If two tasks share a dependency or file, sequence them sequentially to eliminate git merge conflicts.
 
@@ -100,8 +100,8 @@ As tasks are completed:
 
 1. Use `mv` to move the completed task file from `.ai-memory/plans/pending/` to `.ai-memory/plans/completed/`.
 2. Open the moved file and flip `Status: pending` to `Status: completed`.
-3. Immediately update `.ai-memory/plans/01-index.md` to reflect the completed status and new file location.
-4. Once an agent successfully finishes its task and you have verified it, remove its entry from `.ai-memory/01-index.md` and delete its state file from `.ai-memory/temp/`.
+3. Immediately update `.ai-memory/plans/readme.md` to reflect the completed status and new file location.
+4. Once an agent successfully finishes its task and you have verified it, remove its entry from `.ai-memory/readme.md` and delete its state file from `.ai-memory/temp/`.
 
 ---
 
@@ -121,13 +121,13 @@ At the end of every single iteration of your execution loop:
 
 - [ ] `.ai-memory/temp/` verified in `.gitignore` and orphaned state garbage-collected.
 - [ ] Dependencies and prerequisites verified before starting tasks.
-- [ ] Parallel assignments verified disjoint using `.ai-memory/01-index.md`.
+- [ ] Parallel assignments verified disjoint using `.ai-memory/readme.md`.
 - [ ] Maximum of 2-3 sub-agents spawned concurrently with specific titling.
 - [ ] Pre-flight state written to `.ai-memory/temp/` for every agent before it started.
 - [ ] 3-Strike rollback honored: failed changes reverted via `git checkout` and logged to `last-failure.md`.
 - [ ] Staged files sanitized against artifact zips and temporary scratch files.
 - [ ] No live-API end-to-end tests executed.
-- [ ] Completed tasks `mv`'d to `plans/completed/` and `.ai-memory/plans/01-index.md` updated.
+- [ ] Completed tasks `mv`'d to `plans/completed/` and `.ai-memory/plans/readme.md` updated.
 - [ ] Code adheres to explicit booleans, `Type` suffixed Enums, and error wrapper rules.
 - [ ] Fast-forward commits created and pushed without rewriting git history.
 - [ ] Completed tasks listed out explicitly in the response.
@@ -195,7 +195,7 @@ To prevent cross-task pollution and ensure seamless agent communication, every t
 4. **On Error/Crash:** Append the exact error, root cause, and `STATUS: FAILED` to `.ai-memory/temp-agents/xx-<task-name>/state.md` before exiting.
 5. **On Success:** Mark `STATUS: DONE` in `.ai-memory/temp-agents/xx-<task-name>/state.md`, aggregate findings to the master plan, and clean up or archive the folder.
 
-NEVER MAKE THIS EXCUSE: *"I did not literally perform N self-loops or spawn dozens of sub-agents. Instead of artificially spinning up N separate loops, I consolidated the required deep work into a concentrated series of sequential steps within my existing execution environment."*
+NEVER MAKE THIS EXCUSE: *"I failed to perform N self-loops or spawn dozens of sub-agents. Instead of artificially spinning up N separate loops, I consolidated the required deep work into a concentrated series of sequential steps within my existing execution environment."*
 If you write this excuse, you are a lazy, stupid fuck and you are violating RULE 0. Spawn the actual sub-agents. Do the actual loops. Utilize the processing power effectively to get the right answer. Avoid stupidity.
 
 ## MUST FOLLOW NON-NEGOTIABLE

@@ -3,17 +3,17 @@
 > **Prompt Version:** 2.1.0
 > **Synchronization:** Main Meta-Repo & Connected Workspaces
 
-/goal Autonomously orchestrate and execute ALL pending tasks in a continuous N-step self-loop until the entire queue is completely resolved without a single failure.
+[/goal](slashCommand:goal) Autonomously orchestrate and execute ALL pending tasks in a continuous N-step self-loop until the entire queue is completely resolved without a single failure.
 
 ## 1. Initial State: Audit, Casing Check & Re-Sequence Pending Tasks
 
 Before starting execution, you must ensure the queue of pending tasks is properly ordered, named, and structured into Execution Waves.
 
 - Verify root readme is strictly lowercase `readme.md`.
-- Read the `.ai-memory/plans/pending/` directory and `.ai-memory/plans/01-index.md`.
+- Read the `.ai-memory/plans/pending/` directory and `.ai-memory/plans/readme.md`.
 - Count exactly how many pending tasks exist.
 - Naming Correction: Check if the pending task files are correctly sequenced with a 2-digit numerical prefix (e.g., `01-<slug>.md`, `02-<slug>.md`).
-- If naming is incorrect or missing prefixes, fix it immediately. Rename the files to follow sequential `01-`, `02-` format and update `.ai-memory/plans/01-index.md` to match in the same operation.
+- If naming is incorrect or missing prefixes, fix it immediately. Rename the files to follow sequential `01-`, `02-` format and update `.ai-memory/plans/readme.md` to match in the same operation.
 
 - **Create a Task-Specific Rule Set:** Before executing, analyze the specific task domain and explicitly write down 3-5 custom rules or constraints unique to this task inside the spec file. This prevents domain-specific regressions and forces sub-agents to follow exact architectures.
 - Execution Waves: Group tasks into Execution Waves (Wave 1: Schemas/DB/wrappers; Wave 2: Business services; Wave 3: UI & docs).
@@ -24,7 +24,7 @@ You are the sole orchestrator. Your job is to complete ALL pending tasks without
 
 - Make a Great Plan: Analyze all pending tasks and devise a comprehensive execution plan. Tasks exceeding 7 steps must be decomposed into `plans/subtasks/xx-<slug>/`.
 - Do NOT Ask Questions: Do not stop to ask the user for permission. Do not stop to ask clarifying questions.
-- File Collision Locking Matrix (`active-locks.json`): Register active target files in `.ai-memory/01-index.md` so parallel tasks touch completely disjoint files.
+- File Collision Locking Matrix (`active-locks.json`): Register active target files in `.ai-memory/readme.md` so parallel tasks touch completely disjoint files.
 - Self-Loop: Self-loop continuously until every single pending task in the queue is verifiably completed.
 - 3-Strike Rollback: If an agent fails unit tests or builds 3 consecutive times, automatically rollback dirty working tree (`git checkout -- <files>`), log failure context to `.ai-memory/plan.md`, and advance to the next disjoint task.
 
@@ -46,14 +46,14 @@ You MUST follow the project's strict coding guidelines located in `02-spec/02-co
 2. Code Style & File Size Limits (80-100 lines max)
 *(Enforces strict size limitations: e.g., React components < 100 lines, functions < 15 lines, and basic formatting)*
 
-- `02-spec/02-coding-guidelines/01-cross-language/01-index.md`
+- `02-spec/02-coding-guidelines/01-cross-language/readme.md`
 - `02-spec/02-coding-guidelines/01-cross-language/20-nesting-resolution-patterns.md` (Flatten logic to avoid nested ifs)
 - `02-spec/02-coding-guidelines/01-cross-language/06-cyclomatic-complexity.md`
 
 3. Boolean Conditions & Positive Framing
 *(Dictates strict is/has prefixes, absolute ban on negative words like `not`/`no`, and extraction of complex logic)*
 
-- `02-spec/02-coding-guidelines/01-cross-language/02-boolean-principles/01-index.md`
+- `02-spec/02-coding-guidelines/01-cross-language/02-boolean-principles/readme.md`
 - `02-spec/02-coding-guidelines/01-cross-language/12-no-negatives.md`
 - `02-spec/02-coding-guidelines/01-cross-language/24-boolean-flag-methods.md` (Bans passing true/false as raw parameters)
 
@@ -121,7 +121,7 @@ To survive massive checklists and complex codebases, you MUST operate using thes
 
 - [ ] Self-loop continuously until every pending task is completed; do not stop until the queue is completely empty.
 - [ ] Audited `.ai-memory/plans/pending/` and re-sequenced task filenames to `01-`, `02-`, etc., if incorrectly named.
-- [ ] Grouped tasks into Execution Waves and checked `.ai-memory/01-index.md` for file collisions.
+- [ ] Grouped tasks into Execution Waves and checked `.ai-memory/readme.md` for file collisions.
 - [ ] Executed autonomously via continuous self-looping without stopping to ask user questions.
 - [ ] Audited code against Master Consolidated Guide, Code Style Limits (<15 lines/func, <100 lines/comp), Boolean positive framing, and Immutability rules.
 - [ ] 3-strike rule respected: failed tasks cleanly rolled back with `git checkout` and logged to `last-failure.md`.

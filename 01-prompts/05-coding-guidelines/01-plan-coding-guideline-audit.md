@@ -3,7 +3,7 @@
 > **Prompt Version:** 2.1.0
 > **Synchronization:** Main Meta-Repo & Connected Workspaces
 
-/goal Deeply audit the entire codebase for coding guideline violations, boolean anti-patterns, missing enums, cyclomatic complexity, and error-handling flaws. Structure all findings into actionable, fine-grained tasks in .ai-memory/plans/pending/ and subtasks before stopping.
+[/goal](slashCommand:goal) Deeply audit the entire codebase for coding guideline violations, boolean anti-patterns, missing enums, cyclomatic complexity, and error-handling flaws. Structure all findings into actionable, fine-grained tasks in .ai-memory/plans/pending/ and subtasks before stopping.
 
 ## STRICT AVOIDANCE: Never Disable CI/CD
 
@@ -21,21 +21,21 @@ Listen, past runs of these turns have been sloppy and stupid as fuck: wrong step
 N = 150 (Default number of steps the planning AI should take to generate the audit plan. The user may override this when triggering the prompt)
 ```
 
-/learn Ingest, analyze, and internalize all coding guidelines, boolean principles, function size limits, and error handling architectures across the codebase and specs.
+[/learn](slashCommand:learn) Ingest, analyze, and internalize all coding guidelines, boolean principles, function size limits, and error handling architectures across the codebase and specs.
 
 Autonomously self-loop and read:
 
-- /learn the master cross-language coding guidelines in `02-spec/02-coding-guidelines/01-cross-language/01-index.md` through `06-advanced-patterns.md`.
-- /learn the code style, braces, spacing, and multi-line rules in `02-spec/02-coding-guidelines/01-cross-language/01-index.md` through `06-comments-and-documentation.md`.
-- /learn the strict function and type size caps (8 lines preferred, 15 lines max) in `02-spec/02-coding-guidelines/01-cross-language/01-index.md`.
-- /learn the boolean principles, prefixing rules (is and has only (can, should, was, etc. are banned)), and guard extraction in `02-spec/02-coding-guidelines/01-cross-language/02-boolean-principles/01-index.md` through `05-exemptions-and-api.md`.
-- /learn the absolute prohibition against negative booleans and inverted logic in `02-spec/02-coding-guidelines/01-cross-language/12-no-negatives.md`.
-- /learn the strict identifier and file naming conventions in `02-spec/02-coding-guidelines/01-cross-language/01-index.md`.
-- /learn the DRY principles and duplication extraction patterns in `02-spec/02-coding-guidelines/01-cross-language/08-dry-principles.md`.
-- /learn the error management architecture and logging diagnostics in `02-spec/03-error-manage/01-index.md` and `02-spec/03-error-manage/02-error-architecture/02-error-handling-reference.md` as an AI skill checklist.
-- /learn the language-specific standards in `02-spec/02-coding-guidelines/` (TypeScript, Go, PHP, Rust, C#, Python, PowerShell).
-- /learn the anti-hallucination rules and common AI mistakes in `02-spec/02-coding-guidelines/01-cross-language/01-index.md` and `03-common-ai-mistakes.md`.
-- Read `.ai-memory/plans/01-index.md` and `.ai-memory/memory/01-index.md`.
+- [/learn](slashCommand:learn) the master cross-language coding guidelines in `02-spec/02-coding-guidelines/01-cross-language/readme.md` through `06-advanced-patterns.md`.
+- [/learn](slashCommand:learn) the code style, braces, spacing, and multi-line rules in `02-spec/02-coding-guidelines/01-cross-language/readme.md` through `06-comments-and-documentation.md`.
+- [/learn](slashCommand:learn) the strict function and type size caps (8 lines preferred, 15 lines max) in `02-spec/02-coding-guidelines/01-cross-language/readme.md`.
+- [/learn](slashCommand:learn) the boolean principles, prefixing rules (is and has only (can, should, was, etc. are banned)), and guard extraction in `02-spec/02-coding-guidelines/01-cross-language/02-boolean-principles/readme.md` through `05-exemptions-and-api.md`.
+- [/learn](slashCommand:learn) the absolute prohibition against negative booleans and inverted logic in `02-spec/02-coding-guidelines/01-cross-language/12-no-negatives.md`.
+- [/learn](slashCommand:learn) the strict identifier and file naming conventions in `02-spec/02-coding-guidelines/01-cross-language/readme.md`.
+- [/learn](slashCommand:learn) the DRY principles and duplication extraction patterns in `02-spec/02-coding-guidelines/01-cross-language/08-dry-principles.md`.
+- [/learn](slashCommand:learn) the error management architecture and logging diagnostics in `02-spec/03-error-manage/readme.md` and `02-spec/03-error-manage/02-error-architecture/02-error-handling-reference.md` as an AI skill checklist.
+- [/learn](slashCommand:learn) the language-specific standards in `02-spec/02-coding-guidelines/` (TypeScript, Go, PHP, Rust, C#, Python, PowerShell).
+- [/learn](slashCommand:learn) the anti-hallucination rules and common AI mistakes in `02-spec/02-coding-guidelines/01-cross-language/readme.md` and `03-common-ai-mistakes.md`.
+- Read `.ai-memory/plans/readme.md` and `.ai-memory/memory/readme.md`.
 
 ## 2. Planning Loop (Deep N-Step Analysis)
 
@@ -63,7 +63,7 @@ For every issue found:
 
 ## 4. Enqueueing Tasks for Sub-Agents (Bounded 5–8 Files Batches)
 
-Your final output must be a massively detailed plan stored at `.ai-memory/plans/01-index.md` and granular subtask batch files written to `.ai-memory/plans/01-index.md`, `batch-02.md`, etc.
+Your final output must be a massively detailed plan stored at `.ai-memory/plans/readme.md` and granular subtask batch files written to `.ai-memory/plans/readme.md`, `batch-02.md`, etc.
 The plan must partition all discovered violations into **bounded micro-batches of strictly 5–8 files each** so that 2 concurrent sub-agents (max 2 threads each) can safely execute without context exhaustion or truncation:
 
 1. [ ] **Batch Partitioning:** Group all codebase files needing fixes into 5–8 file chunks in `.ai-memory/plans/subtasks/01-coding-guideline-fixes/`.
@@ -76,7 +76,7 @@ The plan must partition all discovered violations into **bounded micro-batches o
 
 ## 5. Coding Guidelines Strict Adherence
 
-/learn You MUST internalize the master coding guidelines located at `01-prompts/04-coding-standards/01-coding-guidelines.md`. It contains the ultimate source of truth for Boolean rules, Function limits, Error handling, and language-specific React/Go/Python paradigms. Do not hallucinate rules; enforce exactly what is in that file.
+[/learn](slashCommand:learn) You MUST internalize the master coding guidelines located at `01-prompts/04-coding-standards/01-coding-guidelines.md`. It contains the ultimate source of truth for Boolean rules, Function limits, Error handling, and language-specific React/Go/Python paradigms. Do not hallucinate rules; enforce exactly what is in that file.
 
 ## Metadata
 

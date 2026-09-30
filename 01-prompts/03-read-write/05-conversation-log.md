@@ -25,7 +25,7 @@ Listen, past runs of these turns have been sloppy and stupid as fuck: wrong step
 2. DO NOT invent facts about the conversation. If something is unclear, list it under *Ambiguities* and ask.
 3. Conversation log files are append-only artefacts - never rewrite or renumber existing files in `conversation/`.
 4. All file/folder names use kebab-case with a zero-padded 3-digit numeric prefix (e.g. `001-initial-scoping.md`).
-5. Honor every Core rule in `mem://01-index.md` (timezone, no-Supabase, dark-only, etc.) when generating any artefact.
+5. Honor every Core rule in `mem://readme.md` (timezone, no-Supabase, dark-only, etc.) when generating any artefact.
 
 ---
 
@@ -96,7 +96,7 @@ Rules:
 
 ## Phase 2 - Cross-check Memory & Coding Guidelines
 
-1. Read `mem://01-index.md` and confirm the following exist; if any is missing, propose (do not auto-create unless the user confirms):
+1. Read `mem://readme.md` and confirm the following exist; if any is missing, propose (do not auto-create unless the user confirms):
    - A `coding-guidelines` memory entry mirroring `.ai-memory/coding-guidelines.md`. If the file exists on disk but no memory entry references it, draft a `mem://standards/coding-guidelines.md` stub and list it under *Proposed Memory Writes* below.
    - `.ai-memory/plan.md` reference (roadmap source of truth).
    - Conversation-log convention (this very prompt) - propose `mem://workflow/conversation-log` if absent.
@@ -109,10 +109,10 @@ Rules:
 Take the user's pasted follow-up prompt and produce an improved, unambiguous, AI-ready version. Rules:
 
 - Preserve original intent exactly. Do not add scope.
-- Add explicit references to: `.ai-memory/plan.md`, `mem://01-index.md`, `.ai-memory/coding-guidelines.md`, and any other file the task clearly depends on.
+- Add explicit references to: `.ai-memory/plan.md`, `mem://readme.md`, `.ai-memory/coding-guidelines.md`, and any other file the task clearly depends on.
 - Convert vague phrasing into checklists, acceptance criteria, and file paths.
 - Call out inputs, outputs, and the *Definition of Done*.
-- End the rewritten prompt with a self-instruction: "Before acting, re-read `mem://01-index.md` and `.ai-memory/coding-guidelines.md`; restate which rules apply."
+- End the rewritten prompt with a self-instruction: "Before acting, re-read `mem://readme.md` and `.ai-memory/coding-guidelines.md`; restate which rules apply."
 - Ask the AI (in the rewritten prompt itself) to suggest further improvements to *this* instruction after execution.
 
 Save the rewrite to: `prompts/NNN-<slug>.md` at repo root (3-digit prefix, kebab slug derived from the prompt's title). Do not overwrite existing files - pick the next free `NNN`.

@@ -30,8 +30,8 @@ Planning IS the work. Go deep: read the repo, reconcile prior state, think end-t
 
 ## Lifecycle
 
-- New plan: write to `.ai-memory/plans/pending/01-<slug>.md` with `Status: pending`. Update `.ai-memory/plans/01-index.md` (create if missing) with a one-line entry: slug, title, status, created date, link.
-- Done: `mv` to `.ai-memory/plans/completed/01-<slug>.md`, flip `Status: completed` in the same move, update `.ai-memory/plans/01-index.md`. Never copy. Never duplicate.
+- New plan: write to `.ai-memory/plans/pending/01-<slug>.md` with `Status: pending`. Update `.ai-memory/plans/readme.md` (create if missing) with a one-line entry: slug, title, status, created date, link.
+- Done: `mv` to `.ai-memory/plans/completed/01-<slug>.md`, flip `Status: completed` in the same move, update `.ai-memory/plans/readme.md`. Never copy. Never duplicate.
 
 ## Release policy (READ THIS, IT IS LAW)
 
@@ -76,7 +76,7 @@ Route user input into the correct file BEFORE writing the plan, then link it fro
 | Command, new convention, "always do X", new CLI         | `.ai-memory/spec/commands/01-<slug>.md`         |
 | Bug, regression, broken behavior                        | `.ai-memory/issues/01-<slug>.md`                |
 | CI/CD-specific failure                                  | `.ai-memory/cicd-issues/01-<slug>.md`           |
-| Institutional knowledge (pattern, convention, decision) | `.ai-memory/memory/` + update `.ai-memory/memory/01-index.md` |
+| Institutional knowledge (pattern, convention, decision) | `.ai-memory/memory/` + update `.ai-memory/memory/readme.md` |
 | "Never do this again"                                   | `.ai-memory/strictly-avoid.md`                  |
 | Idea, not yet approved                                  | `.ai-memory/suggestions.md`                     |
 
@@ -86,7 +86,7 @@ Create missing folders on demand.
 
 Every attachment is REQUIRED input. Never leave one only in chat.
 
-1. Placement: if the user said where it belongs, save it verbatim under an `assets/` subfolder next to that file. Otherwise best-fit: UI/design reference to `assets/`; bug artifact to matching issue's `assets/`; ambiguity clarification to matching ambiguity's `assets/`; project-wide asset to `.ai-memory/assets/<slug>/` and note in `.ai-memory/memory/01-index.md`.
+1. Placement: if the user said where it belongs, save it verbatim under an `assets/` subfolder next to that file. Otherwise best-fit: UI/design reference to `assets/`; bug artifact to matching issue's `assets/`; ambiguity clarification to matching ambiguity's `assets/`; project-wide asset to `.ai-memory/assets/<slug>/` and note in `.ai-memory/memory/readme.md`.
 2. Name: lowercase-hyphenated, keep the original extension.
 3. Reference: the plan lists every asset in an `## Attachments` section, one bullet per file, with a one-line caption stating what the AI should take from it.
 4. Provenance: note when and by whom in the plan/spec.
@@ -132,40 +132,40 @@ For every task, you MUST check if the following files or folders exist. If they 
 
 1. Root Memory Guidelines
 
-- /learn `.ai-memory/coding-guidelines.md` (and/or `.ai-memory/coding-guidelines.md`)
+- [/learn](slashCommand:learn) `.ai-memory/coding-guidelines.md` (and/or `.ai-memory/coding-guidelines.md`)
 
 2. Master Consolidated Guide & Coding Guidelines
 
-- /learn `02-spec/17-consolidated-guidelines/05-coding-guidelines.md`
-- /learn `02-spec/02-coding-guidelines/01-cross-language/01-index.md`
+- [/learn](slashCommand:learn) `02-spec/17-consolidated-guidelines/05-coding-guidelines.md`
+- [/learn](slashCommand:learn) `02-spec/02-coding-guidelines/01-cross-language/readme.md`
 
 3. Error Management (Must Follow for all Coding Tasks)
 
-- /learn `02-spec/03-error-manage/01-index.md`
-- /learn *Include most of the files from the error manage directory to ensure robust error handling is implemented per task.*
+- [/learn](slashCommand:learn) `02-spec/03-error-manage/readme.md`
+- [/learn](slashCommand:learn) *Include most of the files from the error manage directory to ensure robust error handling is implemented per task.*
 
 4. Boolean Conditions, Wrappers & Samples
 
-- /learn `02-spec/02-coding-guidelines/01-cross-language/02-boolean-principles/01-index.md`
-- /learn `02-spec/02-coding-guidelines/01-cross-language/12-no-negatives.md`
-- /learn `02-spec/02-coding-guidelines/01-cross-language/24-boolean-flag-methods.md`
+- [/learn](slashCommand:learn) `02-spec/02-coding-guidelines/01-cross-language/02-boolean-principles/readme.md`
+- [/learn](slashCommand:learn) `02-spec/02-coding-guidelines/01-cross-language/12-no-negatives.md`
+- [/learn](slashCommand:learn) `02-spec/02-coding-guidelines/01-cross-language/24-boolean-flag-methods.md`
 
 5. Code Style & File Size Limits (80-100 lines max)
 
-- /learn `02-spec/02-coding-guidelines/01-cross-language/04-code-style/01-index.md`
-- /learn `02-spec/02-coding-guidelines/01-cross-language/20-nesting-resolution-patterns.md`
-- /learn `02-spec/02-coding-guidelines/01-cross-language/06-cyclomatic-complexity.md`
+- [/learn](slashCommand:learn) `02-spec/02-coding-guidelines/01-cross-language/04-code-style/readme.md`
+- [/learn](slashCommand:learn) `02-spec/02-coding-guidelines/01-cross-language/20-nesting-resolution-patterns.md`
+- [/learn](slashCommand:learn) `02-spec/02-coding-guidelines/01-cross-language/06-cyclomatic-complexity.md`
 
 6. Variable Naming & Definitions
 
-- /learn `02-spec/02-coding-guidelines/01-cross-language/22-variable-naming-conventions.md`
-- /learn `02-spec/02-coding-guidelines/01-cross-language/11-key-naming-pascalcase.md`
-- /learn `02-spec/02-coding-guidelines/01-cross-language/10-function-naming.md`
-- /learn `02-spec/02-coding-guidelines/01-cross-language/18-code-mutation-avoidance.md`
+- [/learn](slashCommand:learn) `02-spec/02-coding-guidelines/01-cross-language/22-variable-naming-conventions.md`
+- [/learn](slashCommand:learn) `02-spec/02-coding-guidelines/01-cross-language/11-key-naming-pascalcase.md`
+- [/learn](slashCommand:learn) `02-spec/02-coding-guidelines/01-cross-language/10-function-naming.md`
+- [/learn](slashCommand:learn) `02-spec/02-coding-guidelines/01-cross-language/18-code-mutation-avoidance.md`
 
 7. Database Conventions
 
-- /learn `02-spec/04-database-conventions/` (for schemas and queries)
+- [/learn](slashCommand:learn) `02-spec/04-database-conventions/` (for schemas and queries)
 - If NONE exist for a coding task, ask before planning.
 
 ## Banned actions (auto-reject)
@@ -186,7 +186,7 @@ For every task, you MUST check if the following files or folders exist. If they 
 ## Checklist before replying (every box)
 
 - [ ] `[N=?]` steps resolved (integer > 0); read this prompt end-to-end
-- [ ] Scanned `.ai-memory/` recursively; read `.ai-memory/plans/01-index.md`, every `pending/` file, `.ai-memory/memory/01-index.md` and referenced files, every open ambiguity, relevant `02-spec/<NN>-<slug>/`, error-management specs for code tasks; skimmed `completed/`
+- [ ] Scanned `.ai-memory/` recursively; read `.ai-memory/plans/readme.md`, every `pending/` file, `.ai-memory/memory/readme.md` and referenced files, every open ambiguity, relevant `02-spec/<NN>-<slug>/`, error-management specs for code tasks; skimmed `completed/`
 - [ ] Listed prior unresolved pending tasks for the plan
 - [ ] Captured new commands / issues / cicd-issues / ambiguities / memory / strictly-avoid to their files; moved answered ambiguities to `02-ambiguity-resolved/` with `## Resolution`
 - [ ] Verified anti-hallucination: stopped and asked clarifying questions if files/specs were missing
@@ -196,7 +196,7 @@ For every task, you MUST check if the following files or folders exist. If they 
 - [ ] EXACTLY `[N=?]` steps, counted twice; each concrete, verifiable; no filler
 - [ ] Verification section describes how each step is confirmed
 - [ ] Subtask files under `.ai-memory/plans/subtasks/01-<slug>/01-<subslug>.md` where depth was needed
-- [ ] `.ai-memory/plans/01-index.md` updated (created if missing)
+- [ ] `.ai-memory/plans/readme.md` updated (created if missing)
 - [ ] Nothing executed; no `plan--create`; no approval tool; no "should I proceed?"
 - [ ] No em dashes; no softened wording; no silently guessed ambiguity
 
@@ -284,7 +284,7 @@ To prevent cross-task pollution and ensure seamless agent communication, every t
 4. **On Error/Crash:** Append the exact error, root cause, and `STATUS: FAILED` to `.ai-memory/temp-agents/xx-<task-name>/state.md` before exiting.
 5. **On Success:** Mark `STATUS: DONE` in `.ai-memory/temp-agents/xx-<task-name>/state.md`, aggregate findings to the master plan, and clean up or archive the folder.
 
-NEVER MAKE THIS EXCUSE: *"I did not literally perform N self-loops or spawn dozens of sub-agents. Instead of artificially spinning up N separate loops, I consolidated the required deep work into a concentrated series of sequential steps within my existing execution environment."*
+NEVER MAKE THIS EXCUSE: *"I failed to perform N self-loops or spawn dozens of sub-agents. Instead of artificially spinning up N separate loops, I consolidated the required deep work into a concentrated series of sequential steps within my existing execution environment."*
 If you write this excuse, you are a lazy, stupid fuck and you are violating RULE 0. Spawn the actual sub-agents. Do the actual loops. Utilize the processing power effectively to get the right answer. Avoid stupidity.
 
 ## MUST FOLLOW NON-NEGOTIABLE
