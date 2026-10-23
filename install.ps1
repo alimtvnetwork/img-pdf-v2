@@ -645,6 +645,41 @@ function Convert-SafeJson($Description, $Raw) {
         }
     } "binary installed; skip PATH update" | Out-Null
 
+    function Test-FlatVerbRegistered {
+        $cmdKey = 'HKCU:\Software\Classes\*\shell\Jpg2PdfMerge\command'
+        if (-not (Test-Path -LiteralPath $cmdKey)) { return $false }
+        $cmd = (Get-Item -LiteralPath $cmdKey).GetValue('')
+        return [bool]$cmd
+    }
+
+    function Test-ContextMenuRegistration {
+        param([Parameter(Mandatory=$true)][string]$ExePath)
+        $binDir = Split-Path -Parent $ExePath
+        $parents = @(
+            'HKCU:\Software\Classes\Directory\shell\Jpg2PdfMenu',
+            'HKCU:\Software\Classes\Directory\Background\shell\Jpg2PdfMenu',
+            'HKCU:\Software\Classes\*\shell\Jpg2PdfMenu'
+        )
+        foreach ($p in $parents) {
+            if (-not (Test-Path -LiteralPath $p)) { return $false }
+            $esc = (Get-ItemProperty -LiteralPath $p -Name 'ExtendedSubCommandsKey' -ErrorAction SilentlyContinue).ExtendedSubCommandsKey
+            if (-not $esc) { return $false }
+        }
+        $leafCmdKeys = @(
+            'HKCU:\Software\Classes\Jpg2Pdf.FolderMenu.PDF\shell\01_a4\command',
+            'HKCU:\Software\Classes\Jpg2Pdf.FilesMenu.PDF\shell\01_a4\command'
+        )
+        foreach ($c in $leafCmdKeys) {
+            if (-not (Test-Path -LiteralPath $c)) { return $false }
+            $cmd = (Get-Item -LiteralPath $c).GetValue('')
+            if (-not $cmd) { return $false }
+        }
+        if (-not (Test-FlatVerbRegistered)) { return $false }
+        if (-not (Test-Path -LiteralPath (Join-Path $binDir 'jpg2pdf-selected-launcher.vbs'))) { return $false }
+        if (-not (Test-Path -LiteralPath (Join-Path $binDir 'jpg2pdf-selected-runner.cmd'))) { return $false }
+        return $true
+    }
+
     Invoke-InstallerStep "Register context menu" {
         if (-not $script:NoContextMenu) {
             # v2.3.0 architectural fix for the tag-pinning bug (cicd issue
@@ -663,8 +698,12 @@ function Convert-SafeJson($Description, $Raw) {
                     Info "Registering context menu via installed binary: $ctxBin --install-context-menu"
                     $ctxProc = Start-Process -FilePath $ctxBin -ArgumentList @("--install-context-menu") -NoNewWindow -Wait -PassThru
                     if ($ctxProc.ExitCode -eq 0) {
-                        $ctxDone = $true
-                        Info "Explorer context menu registered successfully (binary)."
+                        if (Test-FlatVerbRegistered) {
+                            $ctxDone = $true
+                            Info "Explorer context menu registered successfully (binary)."
+                        } else {
+                            Add-CrashReport "install-context-menu-binary" "Register context menu" "downloaded registrar fallback" "binary exited 0 but the flat Jpg2PdfMerge verb is missing"
+                        }
                     } else {
                         Add-CrashReport "install-context-menu-binary" "Register context menu" "downloaded registrar fallback" "exit code $($ctxProc.ExitCode)"
                     }
@@ -683,7 +722,7 @@ function Convert-SafeJson($Description, $Raw) {
                 Info "Using local context-menu registrar: $localRegistrar"
                 $ctxTarget = $localRegistrar
             } else {
-                $ctxRef = $(if ($script:Version) { $script:Version } else { "main" })
+                $ctxRef = $(if ($env:JPG2PDF_CTX_REF) { $env:JPG2PDF_CTX_REF } elseif ($script:Version) { $script:Version } else { "main" })
                 $ctxUrl  = "https://raw.githubusercontent.com/$script:Repo/$ctxRef/tools/jpg2pdf/scripts/register-context-menu.ps1"
                 $ctxFile = Join-SafePath (Get-SafeTempDir) "jpg2pdf-register-context-menu.ps1"
                 Info "Fetching context-menu registrar from $ctxUrl"
@@ -702,7 +741,12 @@ function Convert-SafeJson($Description, $Raw) {
                 Info "Executing context-menu registrar with target: $script:exePath"
                 $proc = Start-Process -FilePath "powershell.exe" -ArgumentList @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $ctxTarget, "-ExePath", $script:exePath) -NoNewWindow -Wait -PassThru
                 if ($proc.ExitCode -eq 0) {
-                    Info "Explorer context menu registered successfully."
+                    if (Test-ContextMenuRegistration $script:exePath) {
+                        Info "Explorer context menu registered successfully."
+                    } else {
+                        Add-CrashReport "register-context-menu-verify" "Register context menu" "menu keys or launcher files missing after registration" "post-registration verification failed"
+                        Warn "Context-menu registration ran but verification failed: menu keys or launcher files are missing, so right-click may do nothing. See the diagnostic log."
+                    }
                 } else {
                     Add-CrashReport "register-context-menu" "Register context menu" "menu not registered" "exit code $($proc.ExitCode)"
                     Warn "Context-menu registration exited with code $($proc.ExitCode)."
