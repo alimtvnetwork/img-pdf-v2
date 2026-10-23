@@ -1,6 +1,6 @@
 # Plan: Cross-platform right-click "Combine into PDF" fix (v2.3.0)
 
-**Status:** In progress (2026-10-24)
+**Status:** Shipped in v2.3.0 (2026-10-24) - commit 5a78277, tag v2.3.0, GitHub Release published with all platform binaries; CI green on main and on the tag (pytest + 4 build targets). Release binary verified end-to-end: --install-context-menu plus positional mixed merge (image+PDF+DOCX = 4 pages).
 **Root-cause record:** .ai-memory/cicd-issues/08-context-menu-gone-cross-platform.md
 **Governing specs:** tools/jpg2pdf/spec/SPEC.md, .ai-memory/memory/03-mixed-input-merge.md,
 .ai-memory/memory/08-selected-files-hidden-launcher.md
@@ -99,5 +99,5 @@ the entry exists and works via the classic menu and documents this.
 5. [x] New tests; full suite green in a local venv (21 passed, 1 Windows-only skip); CI verification on push.
 6. [x] Version 2.3.0 (VERSION, __version__, CHANGELOG, .gitmap/release),
        README + SPEC updates, issue 02/05 status updates.
-7. [ ] Commit + push (only this work, not the unrelated sync edits in
+7. [x] Commit + push (only this work, not the unrelated sync edits in
        the working tree); verify CI green; tag v2.3.0; verify release.
