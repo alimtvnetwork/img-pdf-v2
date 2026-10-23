@@ -631,22 +631,22 @@ X-KDE-Priority=TopLevel
 [Desktop Action Jpg2PdfA4]
 Name=A4
 Icon=application-pdf
-Exec=$JPG2PDF_BIN --size a4 %F
+Exec=$JPG2PDF_BIN --size a4 --files %F
 
 [Desktop Action Jpg2PdfLetter]
 Name=Letter
 Icon=application-pdf
-Exec=$JPG2PDF_BIN --size letter %F
+Exec=$JPG2PDF_BIN --size letter --files %F
 
 [Desktop Action Jpg2PdfLegal]
 Name=Legal
 Icon=application-pdf
-Exec=$JPG2PDF_BIN --size legal %F
+Exec=$JPG2PDF_BIN --size legal --files %F
 
 [Desktop Action Jpg2PdfPencil]
 Name=A4 pencil / paper look
 Icon=application-pdf
-Exec=$JPG2PDF_BIN --size a4 --style pencil %F
+Exec=$JPG2PDF_BIN --size a4 --style pencil --files %F
 EOF
       then
         chmod 644 "$kde_file" 2>/dev/null || true
@@ -792,6 +792,18 @@ WFLOW
 fi
 
 
+
+  # The binary owns file-manager integration (v2.3.0+): re-run its own
+  # registrar so the entries always match the installed version and the
+  # Nemo/Thunar entries (not covered by the inline fallback above) exist.
+  # Older binaries reject the flag; the inline entries then stay in place.
+  if [ -x "$JPG2PDF_BIN" ]; then
+    if "$JPG2PDF_BIN" --install-context-menu >/dev/null 2>&1; then
+      info "File-manager integration refreshed via jpg2pdf --install-context-menu"
+    else
+      warn "jpg2pdf --install-context-menu not supported by this binary; kept installer fallback entries."
+    fi
+  fi
 
 case ":${PATH:-}:" in
   *":$PREFIX:"*) info "$PREFIX is already on PATH." ;;

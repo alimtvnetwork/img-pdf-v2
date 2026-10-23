@@ -4,7 +4,7 @@
 `.github/workflows/release.yml` builds binaries but does not invoke them on sample inputs (image + PDF + HTML + Word) to verify the multi-format merge works.
 
 ## Status
-**Open.** Tracked as a suggestion in `.lovable/suggestions.md`.
+**Fixed in v2.3.0.** `tools/jpg2pdf/tests/test_merge_mixed.py` runs the mixed merge (image + PDF + HTML + DOCX) in the Ubuntu tests job on every push/PR, via both `--files` and positional paths.
 
 ## Risk
 A regression in `pypdf`/`xhtml2pdf`/`docx2pdf` integration could ship to users without detection until someone manually tests a mixed selection.

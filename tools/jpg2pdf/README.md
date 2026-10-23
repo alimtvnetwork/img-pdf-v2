@@ -121,6 +121,30 @@ then call `jpg2pdf --files-from` once for the whole batch. The runner
 logs to `%LOCALAPPDATA%\jpg2pdf\context.log` and pauses on non-zero exit
 so errors stay readable.
 
+Since v2.3.0 a flat **Combine into PDF** verb (A4) is registered for
+files, folders and folder backgrounds as well; it does not depend on
+the grouped cascading menu rendering. On **Windows 11** all legacy
+entries live under **Show more options** -- Microsoft reserves the
+top-level menu for packaged apps; a first-tier entry needs a signed
+MSIX package (tracked in
+`.ai-memory/cicd-issues/08-context-menu-gone-cross-platform.md`).
+
+## Right-click on macOS and Linux
+
+The binary registers its own file-manager entries -- run
+`jpg2pdf --install-context-menu` once (the installers already do).
+Because the binary is the registrar, the entries always match the
+installed version. Remove them with `jpg2pdf --uninstall-context-menu`.
+
+- **macOS Finder**: Quick Actions *Combine into PDF (A4 / Letter /
+  Legal / A4, pencil look)* under right-click -> Quick Actions.
+- **GNOME Files**: Scripts -> *jpg2pdf - Combine into PDF ...*.
+- **Cinnamon (Nemo)** and **XFCE (Thunar)**: *Combine into PDF*
+  actions directly in the right-click menu.
+- **KDE Dolphin**: *Combine into PDF* submenu (entries call
+  `jpg2pdf --files %F`, the selection form the CLI accepts on
+  every OS: `jpg2pdf a.png b.pdf c.docx` merges in order).
+
 ## CLI use
 
 ```bash
@@ -155,7 +179,7 @@ Supported inputs (sorted naturally; mixed types merged in selection order):
 | Image | `.jpg .jpeg .png .webp .bmp .tif .tiff` | Honors `--size/--fit/--style/...` |
 | PDF   | `.pdf`                                   | Embedded as-is |
 | HTML  | `.html .htm`                             | Rendered via `xhtml2pdf` |
-| Word  | `.docx .doc`                             | Needs MS Word (Windows) or LibreOffice (macOS) |
+| Word  | `.docx .doc`                             | MS Word, or LibreOffice (any OS), or built-in text fallback |
 
 ## Build from source
 

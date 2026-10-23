@@ -647,6 +647,29 @@ function Convert-SafeJson($Description, $Raw) {
 
     Invoke-InstallerStep "Register context menu" {
         if (-not $script:NoContextMenu) {
+            # v2.3.0 architectural fix for the tag-pinning bug (cicd issue
+            # 05/08): the installed binary registers its OWN flat
+            # "Combine into PDF" verb, so a working merge entry always
+            # matches the binary version even if the grouped-menu
+            # registrar below cannot be downloaded. The PowerShell
+            # registrar (local, else downloaded) then adds the grouped
+            # PDF/Image/UI cascading menu on top.
+            $ctxDone = $false
+            $ctxBin = $null
+            if (Test-SafePath $script:exePath) { $ctxBin = $script:exePath }
+            elseif ($script:cmdPath -and (Test-SafePath $script:cmdPath)) { $ctxBin = $script:cmdPath }
+            if ($ctxBin) {
+                try {
+                    Info "Registering context menu via installed binary: $ctxBin --install-context-menu"
+                    $ctxProc = Start-Process -FilePath $ctxBin -ArgumentList @("--install-context-menu") -NoNewWindow -Wait -PassThru
+                    if ($ctxProc.ExitCode -eq 0) {
+                        $ctxDone = $true
+                        Info "Explorer context menu registered successfully (binary)."
+                    } else {
+                        Add-CrashReport "install-context-menu-binary" "Register context menu" "downloaded registrar fallback" "exit code $($ctxProc.ExitCode)"
+                    }
+                } catch { Add-CrashReport "install-context-menu-binary" "Register context menu" "downloaded registrar fallback" $_ }
+            }
             $localRegistrar = $null
             if ($PSScriptRoot) {
                 $candidateLocal = Join-SafePath $PSScriptRoot "tools\jpg2pdf\scripts\register-context-menu.ps1"
@@ -685,7 +708,7 @@ function Convert-SafeJson($Description, $Raw) {
                     Warn "Context-menu registration exited with code $($proc.ExitCode)."
                 }
             } else {
-                Warn "Could not obtain context-menu registrar script; skipping registration."
+                if (-not $ctxDone) { Warn "Could not obtain context-menu registrar script; skipping registration." }
             }
         }
     } "skip context-menu registration" | Out-Null

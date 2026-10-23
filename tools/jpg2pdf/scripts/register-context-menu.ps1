@@ -542,6 +542,31 @@ function Build-GroupedSubmenu {
     }
 }
 
+function Register-FlatVerb {
+    # Flat top-level "Combine into PDF" verb (v2.3.0). Does NOT depend on
+    # ExtendedSubCommandsKey cascading, so the merge entry always exists
+    # even if the grouped menu fails to render. On Windows 11 every
+    # legacy verb (grouped or flat) lives under "Show more options";
+    # a first-tier Windows 11 entry needs a signed MSIX sparse package.
+    param(
+        [Parameter(Mandatory=$true)][string]$Root,
+        [Parameter(Mandatory=$true)][string]$Command,
+        [Parameter(Mandatory=$false)][string]$AppliesTo = ""
+    )
+    $k = "$Root\Jpg2PdfMerge"
+    if (Test-Path -LiteralPath $k) { Remove-Item -LiteralPath $k -Recurse -Force }
+    New-Key $k
+    Set-DefaultValue $k "Combine into PDF"
+    New-ItemProperty -LiteralPath $k -Name "MUIVerb"          -Value "Combine into PDF" -PropertyType String -Force | Out-Null
+    New-ItemProperty -LiteralPath $k -Name "Icon"             -Value $exe               -PropertyType String -Force | Out-Null
+    New-ItemProperty -LiteralPath $k -Name "MultiSelectModel" -Value "Player"           -PropertyType String -Force | Out-Null
+    if ($AppliesTo) {
+        New-ItemProperty -LiteralPath $k -Name "AppliesTo" -Value $AppliesTo -PropertyType String -Force | Out-Null
+    }
+    New-Key "$k\command"
+    Set-DefaultValue "$k\command" $Command
+}
+
 function Register-Parent {
     param(
         [Parameter(Mandatory=$true)][string]$Root,
@@ -593,6 +618,13 @@ $exts = @(".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff",
 $appliesFilter = ($exts | ForEach-Object { "System.FileExtension:=" + $_ }) -join " OR "
 Register-Parent "HKCU:\Software\Classes\*\shell" "Jpg2Pdf.FilesMenu" -AppliesTo $appliesFilter
 
+# Flat fallback verb (v2.3.0): one direct "Combine into PDF" entry that
+# does not depend on the grouped cascading menu rendering correctly.
+$flatCmd = New-SelectedFilesCommand -LauncherPath $selectedLauncher -VerbId "a4" -VerbArgs "--size a4"
+Register-FlatVerb "HKCU:\Software\Classes\*\shell" $flatCmd -AppliesTo $appliesFilter
+Register-FlatVerb "HKCU:\Software\Classes\Directory\shell" ('"' + $exe + '" --size a4 "%V"')
+Register-FlatVerb "HKCU:\Software\Classes\Directory\Background\shell" ('"' + $exe + '" --size a4 "%V"')
+
 foreach ($ext in $exts) {
     $legacyRoots = @("HKCU:\Software\Classes\SystemFileAssociations\$ext\shell\Jpg2PdfMenu")
     $oldProgId = (Get-ItemProperty -Path "HKCU:\Software\Classes\$ext" -ErrorAction SilentlyContinue)."(default)"
@@ -613,6 +645,7 @@ foreach ($ext in $exts) {
 
     foreach ($root in $targets) {
         Register-Parent $root "Jpg2Pdf.FilesMenu"
+        Register-FlatVerb $root $flatCmd
     }
 }
 

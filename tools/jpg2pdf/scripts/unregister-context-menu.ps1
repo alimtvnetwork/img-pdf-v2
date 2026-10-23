@@ -5,6 +5,9 @@
 $ErrorActionPreference = "SilentlyContinue"
 
 $paths = @(
+    "HKCU:\Software\Classes\*\shell\Jpg2PdfMerge",
+    "HKCU:\Software\Classes\Directory\shell\Jpg2PdfMerge",
+    "HKCU:\Software\Classes\Directory\Background\shell\Jpg2PdfMerge",
     "HKCU:\Software\Classes\*\shell\Jpg2PdfMenu",
     "HKCU:\Software\Classes\AllFilesystemObjects\shell\Jpg2PdfMenu",
     "HKCU:\Software\Classes\Directory\shell\Jpg2PdfMenu",
@@ -22,12 +25,14 @@ $paths = @(
 $exts = @(".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff", ".pdf", ".html", ".htm", ".docx", ".doc")
 foreach ($ext in $exts) {
     $paths += "HKCU:\Software\Classes\SystemFileAssociations\$ext\shell\Jpg2PdfMenu"
+    $paths += "HKCU:\Software\Classes\SystemFileAssociations\$ext\shell\Jpg2PdfMerge"
     $progId = (Get-ItemProperty -Path "HKCU:\Software\Classes\$ext" -ErrorAction SilentlyContinue)."(default)"
     if (-not $progId) {
         $progId = (Get-ItemProperty -Path "Registry::HKEY_CLASSES_ROOT\$ext" -ErrorAction SilentlyContinue)."(default)"
     }
     if ($progId) {
         $paths += "HKCU:\Software\Classes\$progId\shell\Jpg2PdfMenu"
+        $paths += "HKCU:\Software\Classes\$progId\shell\Jpg2PdfMerge"
     }
 }
 

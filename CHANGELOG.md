@@ -4,6 +4,19 @@ All notable changes to `jpg2pdf` are documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2026-10-24
+
+### Fixed
+- Right-click "Combine into PDF" is back on every OS (cicd issue 08). Root causes: Windows 11 demotes all legacy HKCU shell verbs to "Show more options" and no flat fallback verb existed; the installer downloaded the registrar from the latest release tag instead of using the installed code, so registrar fixes never reached users; the KDE Dolphin entry passed selected files as bare positional arguments, which the CLI rejected (argparse exit 2); and Word files were silently dropped on Linux / macOS without MS Word because `word_to_pdf` only tried `docx2pdf`.
+- The binary now registers its own context menu: `jpg2pdf --install-context-menu` / `--uninstall-context-menu` (Windows Explorer flat verb + runner/launcher, macOS Finder Quick Actions, Linux Nautilus scripts / Nemo actions / Thunar actions / KDE Dolphin servicemenu). `install.ps1` and `install.sh` call the binary's own registrar as part of installation, so a working merge entry no longer depends on downloading a registrar from a release tag -- the tag-pinning bug (issue 05) is closed architecturally.
+- `register-context-menu.ps1` additionally registers a flat top-level `Jpg2PdfMerge` verb ("Combine into PDF", A4) for files, per-extension associations, folders and folder backgrounds; `unregister-context-menu.ps1` removes it.
+
+### Added
+- The CLI accepts any number of positional paths: `jpg2pdf a.png b.pdf c.docx` merges them in order (a single folder still means folder mode). This is the form file managers pass with `%F` / `%*`.
+- Word conversion chain is cross-platform: MS Word via `docx2pdf` (Windows/macOS) -> LibreOffice headless (all OSes, `.doc` + `.docx`) -> built-in dependency-free `.docx` text fallback, so a Word file in a mixed selection is never silently dropped again.
+- Tests: `test_merge_mixed.py` (image+PDF+HTML+DOCX page counts, positional merge, DOCX-only merge) and `test_context_menu_cross_platform.py` (Windows/macOS/Linux registration builders and install/uninstall round trips, runnable in Ubuntu CI). Issue 02's missing mixed-input CI smoke test is now covered.
+- Web app (`src/`): the placeholder page is now a working "Combine into PDF" app -- drag-and-drop or select images/PDFs/HTML/DOCX, reorder with buttons or the right-click context menu (the Radix context-menu component was already in the tree but never used), add a YouTube thumbnail by URL, and merge everything client-side with pdf-lib into a downloadable PDF. Nothing is uploaded.
+
 ## [2.2.0] - 2026-09-22
 
 ### Added

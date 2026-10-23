@@ -33,7 +33,7 @@ Supported extensions (case-insensitive):
 | Image  | `.jpg .jpeg .png .webp .bmp .tif .tiff`          | Pillow (existing pipeline; honours `--size/--fit/--style/...`) |
 | PDF    | `.pdf`                                           | embedded as-is, page geometry preserved |
 | HTML   | `.html .htm`                                     | `xhtml2pdf` (pure Python) |
-| Word   | `.docx .doc`                                     | `docx2pdf` (needs MS Word on Windows or LibreOffice on macOS) |
+| Word   | `.docx .doc`                                     | `docx2pdf` (MS Word) -> LibreOffice `soffice` (any OS) -> built-in text fallback |
 
 Folder input is sorted naturally (`img2.jpg` before `img10.jpg`). Mixed
 selections are merged into a single PDF in selection order; consecutive
@@ -46,8 +46,11 @@ own page geometry.
 ## CLI
 ```
 jpg2pdf <folder>                   [options]
+jpg2pdf <f1> <f2> ...              [options]   # positional files, in order
 jpg2pdf --files <f1> <f2> ...      [options]
 jpg2pdf --files-from <listfile>    [options]   # one path per line (UTF-8)
+jpg2pdf --install-context-menu                 # right-click entries, this OS
+jpg2pdf --uninstall-context-menu
 ```
 
 | Flag | Default | Meaning |

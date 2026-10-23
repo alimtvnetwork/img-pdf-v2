@@ -1,6 +1,6 @@
 # 05 — Installer pins context-menu script to release tag
 
-**Status:** Fixed in v1.4.4 (workaround); architectural fix pending
+**Status:** Fixed in v1.4.4 (workaround); architectural fix shipped in v2.3.0 -- the binary registers its own context menu via `--install-context-menu` and both installers call it first, so the registrar always matches the installed binary (see issue 08).
 
 ## Symptom
 User fixes the context-menu registrar on `main`, bumps version, but reinstalls keep getting the OLD broken script. "Nothing happens" persists across multiple "fixes."

@@ -1,0 +1,18 @@
+{
+  "version": "2.3.0",
+  "branch": "release/v2.3.0",
+  "sourceBranch": "main",
+  "commit": "HEAD",
+  "tag": "v2.3.0",
+  "assets": [],
+  "changelog": [
+    "Fixed right-click Combine into PDF on Windows, macOS and Linux (cicd issue 08): flat Explorer verb, binary-owned --install-context-menu registration, installers no longer pin the registrar to a release tag.",
+    "CLI accepts multiple positional files (jpg2pdf a.png b.pdf c.docx) so file-manager %F selections merge in order; fixed the KDE Dolphin Exec line to use --files %F.",
+    "Word merge is cross-platform: docx2pdf/MS Word, then LibreOffice headless, then a built-in .docx text fallback; Word files are never silently dropped.",
+    "Added mixed-input merge tests and cross-platform context-menu tests that run in Ubuntu CI."
+  ],
+  "isDraft": false,
+  "isPreRelease": false,
+  "createdAt": "2026-10-24T00:00:00Z",
+  "isLatest": true
+}

@@ -39,6 +39,15 @@ collect_from_folder = _engine.collect_from_folder
 collect_from_list = _engine.collect_from_list
 html_to_pdf = _engine.html_to_pdf
 word_to_pdf = _engine.word_to_pdf
+find_soffice = _engine.find_soffice
+docx_paragraphs = _engine.docx_paragraphs
+text_to_pdf = _engine.text_to_pdf
+install_context_menu = _engine.install_context_menu
+uninstall_context_menu = _engine.uninstall_context_menu
+build_windows_context_menu = _engine.build_windows_context_menu
+build_macos_context_menu = _engine.build_macos_context_menu
+build_linux_context_menu = _engine.build_linux_context_menu
+thunar_actions = _engine.thunar_actions
 images_to_pdf_chunk = _engine.images_to_pdf_chunk
 merge_pdfs = _engine.merge_pdfs
 apply_pencil = _engine.apply_pencil
@@ -71,6 +80,15 @@ __all__ = [
     "collect_from_list",
     "html_to_pdf",
     "word_to_pdf",
+    "find_soffice",
+    "docx_paragraphs",
+    "text_to_pdf",
+    "install_context_menu",
+    "uninstall_context_menu",
+    "build_windows_context_menu",
+    "build_macos_context_menu",
+    "build_linux_context_menu",
+    "thunar_actions",
     "images_to_pdf_chunk",
     "merge_pdfs",
     "apply_pencil",

@@ -170,6 +170,20 @@ After install, right-click works two ways — both route through a **single term
 No more 30 terminals popping up for 30 selected files. The launcher batches
 everything into one conversion call.
 
+On **Windows 11** the entries live under **Show more options** (Microsoft
+reserves the top-level menu for packaged apps).
+
+---
+
+## 🍎🐧 Right-click on macOS and Linux
+
+`jpg2pdf --install-context-menu` (run automatically by the installers)
+registers *Combine into PDF* for Finder Quick Actions on macOS, and for
+GNOME Files (Scripts), Nemo, Thunar and KDE Dolphin on Linux. Mixed
+selections of images, PDFs and Word documents merge into one PDF on
+every OS -- Word files convert via MS Word, LibreOffice, or a built-in
+fallback, so they are never silently dropped.
+
 <div align="center">
   <a href="tools/jpg2pdf/docs/context-menu.png"><img class="jpg2pdf-zoom" src="tools/jpg2pdf/docs/context-menu.png" alt="Windows Explorer right-click menu showing 'Combine into PDF' submenu" width="520" style="transition: transform .35s ease, box-shadow .35s ease; border-radius: 12px;"/></a>
 </div>

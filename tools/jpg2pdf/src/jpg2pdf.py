@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """jpg2pdf -- Combine images into a single PDF.
 
-Two input modes:
+Input modes:
   jpg2pdf <folder> [options]
+  jpg2pdf f1 f2 ... [options]               # files, in order (file-manager form)
   jpg2pdf --files f1 f2 ... [options]
   jpg2pdf --files-from list.txt [options]   # one path per line (UTF-8)
+  jpg2pdf --install-context-menu            # right-click entries for this OS
 
 See spec/SPEC.md for the full specification.
 """
@@ -12,7 +14,10 @@ import argparse
 import json
 import os
 import re
+import shutil
+import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from PIL import Image, ImageChops, ImageEnhance, ImageFilter, ImageOps
 
@@ -50,7 +55,7 @@ except ImportError:
         resolve_youtube_thumbnails = None
         slugify_title = None
 
-__version__ = "2.2.0"
+__version__ = "2.3.0"
 
 
 # Pencil presets -- tuned for faint handwritten text.
@@ -482,25 +487,195 @@ def html_to_pdf(src: Path, out_pdf: Path) -> Path | None:
     return out_pdf
 
 
-def word_to_pdf(src: Path, out_pdf: Path) -> Path | None:
+def find_soffice() -> str | None:
+    """Locate a LibreOffice binary on any OS, or None.
+
+    Checks PATH first, then the standard install locations on macOS,
+    Linux and Windows. LibreOffice is the cross-platform Word engine:
+    unlike docx2pdf it also works on Linux and on macOS machines
+    without MS Word installed.
+    """
+    for name in ("soffice", "libreoffice"):
+        found = shutil.which(name)
+        if found:
+            return found
+    candidates = [
+        "/Applications/LibreOffice.app/Contents/MacOS/soffice",
+        "/usr/bin/soffice",
+        "/usr/local/bin/soffice",
+        r"C:\Program Files\LibreOffice\program\soffice.exe",
+        r"C:\Program Files (x86)\LibreOffice\program\soffice.exe",
+    ]
+    for cand in candidates:
+        if Path(cand).is_file():
+            return cand
+    return None
+
+
+def _word_via_docx2pdf(src: Path, out_pdf: Path) -> bool:
+    """Try MS Word via docx2pdf (Windows / macOS with Word installed).
+
+    docx2pdf is not implemented on Linux at all, so skip it there and
+    go straight to LibreOffice / the built-in fallback.
+    """
+    if sys.platform not in ("win32", "darwin"):
+        return False
     try:
         from docx2pdf import convert as _docx_convert  # type: ignore
-    except Exception as e:
-        print(f"  skip {src.name}: Word support needs docx2pdf ({e})",
-              file=sys.stderr)
-        return None
+    except Exception:
+        return False
     try:
-        # docx2pdf needs a real installed Word (Win) / LibreOffice (mac).
         _docx_convert(str(src), str(out_pdf))
     except Exception as e:
-        print(f"  skip {src.name}: Word->PDF failed ({e}). "
-              "Install Microsoft Word (Windows) or LibreOffice.",
-              file=sys.stderr)
-        return None
-    if not out_pdf.is_file():
-        print(f"  skip {src.name}: Word->PDF produced no output", file=sys.stderr)
-        return None
+        print(f"  docx2pdf failed for {src.name}: {e}", file=sys.stderr)
+        return False
+    return out_pdf.is_file()
+
+
+def _word_via_soffice(src: Path, out_pdf: Path, soffice: str) -> bool:
+    """Convert Word -> PDF with headless LibreOffice (any OS).
+
+    Uses an isolated throwaway user profile so a locked or corrupted
+    real profile can never block a right-click conversion.
+    """
+    try:
+        with tempfile.TemporaryDirectory(prefix="jpg2pdf-soffice-") as td:
+            td_p = Path(td)
+            profile = td_p / "profile"
+            cmd = [soffice, "--headless", "--norestore", "--nolockcheck",
+                   f"-env:UserInstallation={profile.as_uri()}",
+                   "--convert-to", "pdf", "--outdir", str(td_p), str(src)]
+            proc = subprocess.run(cmd, capture_output=True, text=True,
+                                  timeout=180)
+            produced = td_p / (src.stem + ".pdf")
+            if proc.returncode == 0 and produced.is_file():
+                shutil.copyfile(produced, out_pdf)
+                return True
+            print(f"  soffice failed for {src.name}: "
+                  f"{(proc.stderr or proc.stdout or '').strip()[:200]}",
+                  file=sys.stderr)
+    except Exception as e:
+        print(f"  soffice failed for {src.name}: {e}", file=sys.stderr)
+    return False
+
+
+def docx_paragraphs(src: Path) -> list:
+    """Extract paragraph texts from a .docx using only the stdlib."""
+    import xml.etree.ElementTree as _et
+    import zipfile as _zf
+    w_ns = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
+    try:
+        with _zf.ZipFile(src) as z:
+            xml_bytes = z.read("word/document.xml")
+        root = _et.fromstring(xml_bytes)
+    except Exception as e:
+        print(f"  cannot read {src.name} as .docx: {e}", file=sys.stderr)
+        return []
+    paras = []
+    for para in root.iter(w_ns + "p"):
+        texts = [t.text or "" for t in para.iter(w_ns + "t")]
+        paras.append("".join(texts))
+    return paras
+
+
+def _escape_pdf_text(text: str) -> str:
+    safe = text.encode("latin-1", "replace").decode("latin-1")
+    return safe.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
+
+
+def text_to_pdf(lines, out_pdf: Path) -> Path | None:
+    """Write plain-text lines to a simple multi-page PDF (stdlib only).
+
+    Last-resort renderer so a .docx can still be merged on a machine
+    with neither MS Word nor LibreOffice. A4, Helvetica, wrapped and
+    paginated; formatting is simplified, content is preserved.
+    """
+    import textwrap as _tw
+    wrapped = []
+    for line in lines:
+        line = str(line).rstrip("\n")
+        if line.strip():
+            wrapped.extend(_tw.wrap(line, width=92) or [""])
+        else:
+            wrapped.append("")
+    if not wrapped:
+        wrapped = [""]
+    per_page = 48
+    chunks = [wrapped[i:i + per_page]
+              for i in range(0, len(wrapped), per_page)]
+    objs = {}
+    objs[1] = b"<< /Type /Catalog /Pages 2 0 R >>"
+    objs[3] = b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"
+    page_ids = []
+    next_id = 4
+    for chunk in chunks:
+        content_id = next_id
+        page_id = next_id + 1
+        next_id += 2
+        page_ids.append(page_id)
+        ops = ["BT", "/F1 11 Tf", "50 780 Td", "14 TL"]
+        for line in chunk:
+            ops.append(f"({_escape_pdf_text(line)}) Tj")
+            ops.append("T*")
+        ops.append("ET")
+        stream = "\n".join(ops).encode("latin-1", "replace")
+        objs[content_id] = (b"<< /Length " + str(len(stream)).encode()
+                            + b" >>\nstream\n" + stream + b"\nendstream")
+        objs[page_id] = (
+            f"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] "
+            f"/Resources << /Font << /F1 3 0 R >> >> "
+            f"/Contents {content_id} 0 R >>").encode("latin-1")
+    kids = " ".join(f"{pid} 0 R" for pid in page_ids)
+    objs[2] = (f"<< /Type /Pages /Kids [{kids}] /Count {len(page_ids)} >>"
+               ).encode("latin-1")
+    out = bytearray(b"%PDF-1.4\n")
+    offsets = {}
+    for oid in sorted(objs):
+        offsets[oid] = len(out)
+        out += f"{oid} 0 obj\n".encode("latin-1") + objs[oid] + b"\nendobj\n"
+    xref_pos = len(out)
+    max_id = max(objs)
+    out += f"xref\n0 {max_id + 1}\n".encode("latin-1")
+    out += b"0000000000 65535 f \n"
+    for oid in range(1, max_id + 1):
+        out += f"{offsets[oid]:010d} 00000 n \n".encode("latin-1")
+    out += (f"trailer\n<< /Size {max_id + 1} /Root 1 0 R >>\n"
+            f"startxref\n{xref_pos}\n%%EOF\n").encode("latin-1")
+    out_pdf.write_bytes(bytes(out))
     return out_pdf
+
+
+def word_to_pdf(src: Path, out_pdf: Path) -> Path | None:
+    """Convert a Word file (.docx / .doc) to PDF, on any OS.
+
+    Conversion chain, best fidelity first:
+      1. docx2pdf / MS Word (Windows, macOS with Word).
+      2. LibreOffice headless (Windows, macOS, Linux).
+      3. Built-in .docx text fallback (any OS, no dependencies).
+    A Word input is never silently dropped: None is returned only
+    when every converter failed, and the reason is printed.
+    """
+    if _word_via_docx2pdf(src, out_pdf):
+        return out_pdf
+    soffice = find_soffice()
+    if soffice and _word_via_soffice(src, out_pdf, soffice):
+        return out_pdf
+    if src.suffix.lower() == ".docx":
+        paras = docx_paragraphs(src)
+        if paras:
+            print(f"  note: {src.name}: no Word/LibreOffice found, using "
+                  "built-in text fallback (simplified formatting).",
+                  file=sys.stderr)
+            try:
+                if text_to_pdf(paras, out_pdf):
+                    return out_pdf
+            except Exception as e:
+                print(f"  skip {src.name}: text fallback failed ({e})",
+                      file=sys.stderr)
+                return None
+    print(f"  skip {src.name}: Word->PDF failed. Install Microsoft Word "
+          "or LibreOffice to convert .doc/.docx files.", file=sys.stderr)
+    return None
 
 
 def images_to_pdf_chunk(image_paths, out_pdf: Path, *, page_w_pt, page_h_pt,
@@ -540,6 +715,618 @@ def merge_pdfs(pdf_paths, out: Path) -> None:
     with open(out, "wb") as f:
         writer.write(f)
     writer.close()
+
+
+# ---------- File-manager (right-click) integration ----------
+# The binary registers its OWN context-menu entries via
+# --install-context-menu / --uninstall-context-menu. Before v2.3.0 the
+# registrar lived outside the binary (a PowerShell script downloaded
+# from the latest release tag by install.ps1, plus drifting inline
+# heredocs in install.sh), so fixes routinely never reached installed
+# machines -- see .ai-memory/cicd-issues/08-context-menu-gone-cross-platform.md.
+#
+# The builders below are pure functions (registry plan for Windows,
+# path -> content maps for macOS/Linux) so the whole matrix can be
+# unit-tested on any OS; only the thin appliers touch the real system.
+
+CTX_VERBS = [
+    ("a4", "Combine into PDF (A4)", "--size a4"),
+    ("letter", "Combine into PDF (Letter)", "--size letter"),
+    ("legal", "Combine into PDF (Legal)", "--size legal"),
+    ("a4-pencil", "Combine into PDF (A4, pencil look)",
+     "--size a4 --style pencil"),
+]
+CTX_FLAT_LABEL = "Combine into PDF"
+CTX_EXTS = [".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff",
+            ".pdf", ".html", ".htm", ".docx", ".doc"]
+
+
+def _ctx_platform(platform=None) -> str:
+    if platform:
+        p = str(platform).lower()
+        if p.startswith("win"):
+            return "windows"
+        if p in ("darwin", "mac", "macos", "osx"):
+            return "macos"
+        return "linux"
+    if sys.platform.startswith("win"):
+        return "windows"
+    if sys.platform == "darwin":
+        return "macos"
+    return "linux"
+
+
+def _ctx_self_command(command=None) -> str:
+    """Command line prefix that invokes this jpg2pdf install."""
+    if command:
+        return str(command)
+    if getattr(sys, "frozen", False):
+        return str(Path(sys.executable).resolve())
+    found = shutil.which("jpg2pdf")
+    if found:
+        return str(Path(found).resolve())
+    return f"{Path(sys.executable).resolve()} {Path(__file__).resolve()}"
+
+
+def _desktop_exec(command: str, args: str) -> str:
+    """Exec= value for .desktop / .nemo_action files.
+
+    The command prefix may be "interpreter script" (source runs) or a
+    single binary path (installed runs); quote each token that needs
+    it instead of wrapping the whole prefix in one pair of quotes.
+    """
+    import shlex as _shlex
+    try:
+        tokens = _shlex.split(command)
+    except ValueError:
+        tokens = [command]
+    quoted = " ".join(f'"{tok}"' if " " in tok else tok for tok in tokens)
+    return f"{quoted} {args}".strip()
+
+
+def _shell_command(command: str) -> str:
+    """Shell-safe rendering of the command prefix (token-wise quoting)."""
+    import shlex as _shlex
+    try:
+        tokens = _shlex.split(command)
+    except ValueError:
+        tokens = [command]
+    return " ".join(_shlex.quote(tok) for tok in tokens)
+
+
+# ----- Windows -----
+
+_CTX_RUNNER_CMD = r"""@echo off
+setlocal EnableExtensions EnableDelayedExpansion
+set "JPG2PDF_EXE=__EXE__"
+set "JPG2PDF_GUI_EXE=__GUI_EXE__"
+set "LOG_DIR=%LOCALAPPDATA%\jpg2pdf"
+if not exist "!LOG_DIR!" mkdir "!LOG_DIR!" >nul 2>nul
+set "LOG=!LOG_DIR!\context.log"
+set "QUEUE_DIR=!LOG_DIR!\queue"
+if not exist "!QUEUE_DIR!" mkdir "!QUEUE_DIR!" >nul 2>nul
+
+if /I "%~1"=="--exec" goto exec
+if /I "%~1"=="--run"  goto run
+goto queue
+
+:queue
+set "VERB_ID=%~1"
+set "VERB_ARGS=%~2"
+set "SELECTED_FILE=%~3"
+if "!VERB_ID!"=="" exit /b 1
+if "!SELECTED_FILE!"=="" exit /b 1
+set "QUEUE=!QUEUE_DIR!\!VERB_ID!.lst"
+>>"!LOG!" echo [%DATE% %TIME%] selected verb=!VERB_ID! file=!SELECTED_FILE!
+>>"!QUEUE!" echo(!SELECTED_FILE!
+call "%~f0" --run "!VERB_ID!" "!VERB_ARGS!" "!QUEUE!" "!LOG!"
+exit /b !ERRORLEVEL!
+
+:run
+set "VERB_ID=%~2"
+set "VERB_ARGS=%~3"
+set "QUEUE=%~4"
+set "LOG=%~5"
+set "LAST_SIZE=-1"
+for /L %%I in (1,1,12) do (
+  for %%A in ("!QUEUE!") do set "NOW_SIZE=%%~zA"
+  if "!NOW_SIZE!"=="!LAST_SIZE!" if %%I GTR 2 goto queue_ready
+  set "LAST_SIZE=!NOW_SIZE!"
+  ping -n 2 127.0.0.1 >nul 2>nul
+)
+:queue_ready
+set "WORK_NAME=!VERB_ID!-work-%RANDOM%%RANDOM%.lst"
+ren "!QUEUE!" "!WORK_NAME!" >nul 2>nul
+if errorlevel 1 exit /b 0
+set "QUEUE=!QUEUE_DIR!\!WORK_NAME!"
+if /I "!VERB_ID!"=="gui" (
+  set "TARGET_EXE=!JPG2PDF_GUI_EXE!"
+  if not exist "!TARGET_EXE!" set "TARGET_EXE=!JPG2PDF_EXE!"
+  start "" "!TARGET_EXE!" --gui --files-from "!QUEUE!"
+  exit /b 0
+)
+>>"!LOG!" echo [%DATE% %TIME%] launching visible console verb=!VERB_ID! queue=!QUEUE!
+start "jpg2pdf - !VERB_ID!" cmd.exe /d /c "call ""%~f0"" --exec ""!VERB_ID!"" ""!VERB_ARGS!"" ""!QUEUE!"" ""!LOG!"" "
+exit /b 0
+
+:exec
+set "VERB_ID=%~2"
+set "VERB_ARGS=%~3"
+set "QUEUE=%~4"
+set "LOG=%~5"
+title jpg2pdf !VERB_ID!
+echo.
+echo [jpg2pdf] Combining selected files (!VERB_ID!)
+echo.
+>>"!LOG!" echo [%DATE% %TIME%] exec verb=!VERB_ID! queue=!QUEUE!
+call "!JPG2PDF_EXE!" !VERB_ARGS! --files-from "!QUEUE!"
+set "JPG2PDF_CODE=!ERRORLEVEL!"
+>>"!LOG!" echo [%DATE% %TIME%] exit=!JPG2PDF_CODE! verb=!VERB_ID!
+if not "!JPG2PDF_CODE!"=="0" (
+  echo.
+  echo [jpg2pdf] FAILED with exit code !JPG2PDF_CODE!.
+  echo [jpg2pdf] Log: "!LOG!"
+)
+echo.
+echo [jpg2pdf] Done. Press any key to close this window.
+pause >nul
+del "!QUEUE!" >nul 2>nul
+exit /b !JPG2PDF_CODE!
+"""
+
+_CTX_LAUNCHER_VBS = r"""Option Explicit
+Dim sh, args, i, quoted, cmdLine
+Set sh = CreateObject("WScript.Shell")
+args = ""
+For i = 0 To WScript.Arguments.Count - 1
+  quoted = Replace(WScript.Arguments(i), Chr(34), Chr(34) & Chr(34))
+  args = args & " " & Chr(34) & quoted & Chr(34)
+Next
+cmdLine = "cmd.exe /d /c " & Chr(34) & Chr(34) & "__RUNNER__" & Chr(34) & args & Chr(34)
+sh.Run cmdLine, 0, False
+"""
+
+
+def build_windows_context_menu(exe_path: str, bin_dir: str) -> dict:
+    """Pure builder for the Windows flat 'Combine into PDF' verb.
+
+    Returns {"files": {path: content}, "entries": [(key, name, value)]}
+    where key is a HKCU-relative path and name None means the key's
+    (default) value. The flat verb complements the grouped cascading
+    menu installed by scripts/register-context-menu.ps1: it does not
+    depend on ExtendedSubCommandsKey, so the merge entry always exists
+    (Windows 11 shows legacy verbs under 'Show more options').
+    """
+    exe_path = str(exe_path)
+    bin_dir = str(bin_dir)
+    gui_exe = bin_dir + "\\jpg2pdf-gui.exe"
+    runner = bin_dir + "\\jpg2pdf-selected-runner.cmd"
+    launcher = bin_dir + "\\jpg2pdf-selected-launcher.vbs"
+    files = {
+        runner: _CTX_RUNNER_CMD.replace("__EXE__", exe_path)
+                               .replace("__GUI_EXE__", gui_exe),
+        launcher: _CTX_LAUNCHER_VBS.replace("__RUNNER__", runner),
+    }
+    entries = []
+
+    def add_verb(root, command, applies_to=""):
+        base = root + "\\Jpg2PdfMerge"
+        entries.append((base, None, CTX_FLAT_LABEL))
+        entries.append((base, "MUIVerb", CTX_FLAT_LABEL))
+        entries.append((base, "Icon", exe_path))
+        entries.append((base, "MultiSelectModel", "Player"))
+        if applies_to:
+            entries.append((base, "AppliesTo", applies_to))
+        entries.append((base + "\\command", None, command))
+
+    applies = " OR ".join(f"System.FileExtension:={ext}" for ext in CTX_EXTS)
+    selected_cmd = (f'wscript.exe "{launcher}" "a4" "--size a4" "%1"')
+    add_verb(r"Software\Classes\*\shell", selected_cmd, applies)
+    for ext in CTX_EXTS:
+        add_verb(rf"Software\Classes\SystemFileAssociations\{ext}\shell",
+                 selected_cmd)
+    folder_cmd = f'"{exe_path}" --size a4 "%V"'
+    add_verb(r"Software\Classes\Directory\shell", folder_cmd)
+    add_verb(r"Software\Classes\Directory\Background\shell", folder_cmd)
+    return {"files": files, "entries": entries}
+
+
+def _win_delete_tree(root_handle, path: str) -> None:
+    import winreg
+    try:
+        key = winreg.OpenKey(root_handle, path, 0, winreg.KEY_ALL_ACCESS)
+    except OSError:
+        return
+    while True:
+        try:
+            sub = winreg.EnumKey(key, 0)
+        except OSError:
+            break
+        _win_delete_tree(root_handle, path + "\\" + sub)
+    key.Close()
+    winreg.DeleteKey(root_handle, path)
+
+
+# ----- macOS -----
+
+def _macos_workflow_files(label: str, verb_args: str, command: str) -> dict:
+    """Contents of one Finder Quick Action .workflow bundle."""
+    from xml.sax.saxutils import escape as _xml_escape
+    import shlex as _shlex
+    shell_lines = [
+        'list="$(mktemp -t jpg2pdf-qa)"',
+        'for f in "$@"; do printf \'%s\\n\' "$f" >> "$list"; done',
+        f"{_shell_command(command)} {verb_args} --files-from \"$list\"",
+        "rc=$?",
+        'rm -f "$list" 2>/dev/null || true',
+        "exit $rc",
+    ]
+    command_string = _xml_escape("\n".join(shell_lines))
+    info_plist = f"""<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>NSServices</key>
+  <array>
+    <dict>
+      <key>NSMenuItem</key>
+      <dict><key>default</key><string>{label}</string></dict>
+      <key>NSMessage</key><string>runWorkflowAsService</string>
+      <key>NSRequiredContext</key>
+      <dict><key>NSApplicationIdentifier</key><string>com.apple.finder</string></dict>
+      <key>NSSendFileTypes</key>
+      <array>
+        <string>public.image</string>
+        <string>com.adobe.pdf</string>
+        <string>public.html</string>
+        <string>org.openxmlformats.wordprocessingml.document</string>
+        <string>com.microsoft.word.doc</string>
+      </array>
+    </dict>
+  </array>
+</dict>
+</plist>
+"""
+    wflow = f"""<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>AMApplicationBuild</key><string>523</string>
+  <key>AMApplicationVersion</key><string>2.10</string>
+  <key>AMDocumentVersion</key><string>2</string>
+  <key>actions</key>
+  <array>
+    <dict>
+      <key>action</key>
+      <dict>
+        <key>AMAccepts</key>
+        <dict>
+          <key>Container</key><string>List</string>
+          <key>Optional</key><false/>
+          <key>Types</key><array><string>com.apple.cocoa.path</string></array>
+        </dict>
+        <key>AMActionVersion</key><string>2.0.3</string>
+        <key>AMApplication</key><array><string>Automator</string></array>
+        <key>AMParameterProperties</key>
+        <dict>
+          <key>COMMAND_STRING</key><dict/>
+          <key>CheckedForUserDefaultShell</key><dict/>
+          <key>inputMethod</key><dict/>
+          <key>shell</key><dict/>
+          <key>source</key><dict/>
+        </dict>
+        <key>AMProvides</key>
+        <dict>
+          <key>Container</key><string>List</string>
+          <key>Types</key><array><string>com.apple.cocoa.string</string></array>
+        </dict>
+        <key>ActionBundlePath</key><string>/System/Library/Automator/Run Shell Script.action</string>
+        <key>ActionName</key><string>Run Shell Script</string>
+        <key>ActionParameters</key>
+        <dict>
+          <key>COMMAND_STRING</key>
+          <string>{command_string}</string>
+          <key>CheckedForUserDefaultShell</key><true/>
+          <key>inputMethod</key><integer>1</integer>
+          <key>shell</key><string>/bin/bash</string>
+          <key>source</key><string></string>
+        </dict>
+        <key>BundleIdentifier</key><string>com.apple.RunShellScript</string>
+        <key>CFBundleVersion</key><string>2.0.3</string>
+        <key>CanShowSelectedItemsWhenRun</key><false/>
+        <key>CanShowWhenRun</key><true/>
+        <key>Category</key><array><string>AMCategoryUtilities</string></array>
+        <key>Class Name</key><string>RunShellScriptAction</string>
+        <key>InputUUID</key><string>00000000-0000-0000-0000-000000000001</string>
+        <key>Keywords</key><array><string>Shell</string></array>
+        <key>OutputUUID</key><string>00000000-0000-0000-0000-000000000002</string>
+        <key>UUID</key><string>00000000-0000-0000-0000-000000000003</string>
+        <key>UnlocalizedApplications</key><array><string>Automator</string></array>
+        <key>isViewVisible</key><true/>
+      </dict>
+      <key>isViewVisible</key><true/>
+    </dict>
+  </array>
+  <key>connectors</key><dict/>
+  <key>workflowMetaData</key>
+  <dict>
+    <key>serviceInputTypeIdentifier</key><string>com.apple.Automator.fileSystemObject</string>
+    <key>serviceOutputTypeIdentifier</key><string>com.apple.Automator.nothing</string>
+    <key>serviceProcessesInput</key><integer>0</integer>
+    <key>workflowTypeIdentifier</key><string>com.apple.Automator.servicesMenu</string>
+  </dict>
+</dict>
+</plist>
+"""
+    return {"Info.plist": info_plist, "document.wflow": wflow}
+
+
+def build_macos_context_menu(home, command: str) -> dict:
+    """Pure builder: {absolute path: content} for Finder Quick Actions."""
+    home = Path(home)
+    files = {}
+    for _verb_id, label, verb_args in CTX_VERBS:
+        wf = _macos_workflow_files(label, verb_args, command)
+        base = home / "Library" / "Services" / f"{label}.workflow" / "Contents"
+        files[str(base / "Info.plist")] = wf["Info.plist"]
+        files[str(base / "document.wflow")] = wf["document.wflow"]
+    return files
+
+
+# ----- Linux -----
+
+def build_linux_context_menu(home, command: str) -> dict:
+    """Pure builder: {absolute path: {"content", "executable"}}.
+
+    Covers GNOME Files (Nautilus scripts), Cinnamon Nemo actions and
+    the KDE Dolphin servicemenu. Thunar is handled separately because
+    its actions merge into an existing uca.xml (see thunar helpers).
+    All Exec lines pass the selection via --files -- the pre-v2.3.0
+    Dolphin entry passed files as bare positionals, which the old
+    single-positional CLI rejected with exit code 2.
+    """
+    home = Path(home)
+    files = {}
+    quoted = _shell_command(command)
+    for _verb_id, label, verb_args in CTX_VERBS:
+        naut_path = (home / ".local" / "share" / "nautilus" / "scripts"
+                     / f"jpg2pdf - {label}")
+        naut = ("#!/usr/bin/env bash\n"
+                "set -e\n"
+                'list="$(mktemp -t jpg2pdf-naut.XXXXXX)"\n'
+                "printf '%s\\n' \"$NAUTILUS_SCRIPT_SELECTED_FILE_PATHS\""
+                " | sed '/^$/d' > \"$list\"\n"
+                "[ -s \"$list\" ] || exit 0\n"
+                f"{quoted} {verb_args} --files-from \"$list\"\n"
+                "rc=$?\n"
+                'rm -f "$list" 2>/dev/null || true\n'
+                "exit $rc\n")
+        files[str(naut_path)] = {"content": naut, "executable": True}
+        nemo_path = (home / ".local" / "share" / "nemo" / "actions"
+                     / f"jpg2pdf-{_verb_id}.nemo_action")
+        nemo = ("[Nemo Action]\n"
+                f"Name={label}\n"
+                "Comment=Merge selected files into one PDF with jpg2pdf\n"
+                f"Exec={_desktop_exec(command, verb_args + ' --files %F')}\n"
+                "Icon-Name=application-pdf\n"
+                "Selection=Any\n"
+                "Extensions=" + ";".join(e.lstrip(".") for e in CTX_EXTS)
+                + ";\n")
+        files[str(nemo_path)] = {"content": nemo, "executable": False}
+    kde_path = (home / ".local" / "share" / "kio" / "servicemenus"
+                / "jpg2pdf.desktop")
+    kde_lines = [
+        "[Desktop Entry]",
+        "Type=Service",
+        "ServiceTypes=KonqPopupMenu/Plugin",
+        "MimeType=image/jpeg;image/png;image/webp;image/tiff;image/bmp;"
+        "application/pdf;text/html;"
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document;"
+        "application/msword;",
+        "Actions=" + ";".join(f"Jpg2Pdf{_i}" for _i, _ in enumerate(CTX_VERBS))
+        + ";",
+        "X-KDE-Submenu=Combine into PDF",
+        "Icon=application-pdf",
+        "X-KDE-Priority=TopLevel",
+        "",
+    ]
+    for i, (_verb_id, label, verb_args) in enumerate(CTX_VERBS):
+        short = label.replace("Combine into PDF ", "").strip("()")
+        kde_lines += [
+            f"[Desktop Action Jpg2Pdf{i}]",
+            f"Name={short}",
+            "Icon=application-pdf",
+            f"Exec={_desktop_exec(command, verb_args + ' --files %F')}",
+            "",
+        ]
+    files[str(kde_path)] = {"content": "\n".join(kde_lines),
+                            "executable": False}
+    return files
+
+
+def thunar_actions(command: str) -> list:
+    """Thunar custom-action definitions (merged into uca.xml)."""
+    patterns = ";".join("*" + ext for ext in CTX_EXTS)
+    actions = []
+    for verb_id, label, verb_args in CTX_VERBS:
+        actions.append({
+            "name": label,
+            "unique-id": f"jpg2pdf-{verb_id}-1690000000",
+            "command": _desktop_exec(command, verb_args + " --files %F"),
+            "description": "Merge selected files into one PDF with jpg2pdf",
+            "patterns": patterns,
+        })
+    return actions
+
+
+def _thunar_uca_path(home) -> Path:
+    return Path(home) / ".config" / "Thunar" / "uca.xml"
+
+
+def _install_thunar(home, command: str) -> str:
+    import xml.etree.ElementTree as _et
+    path = _thunar_uca_path(home)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.is_file():
+        try:
+            tree = _et.parse(path)
+            root = tree.getroot()
+        except Exception:
+            root = _et.Element("actions")
+            tree = _et.ElementTree(root)
+    else:
+        root = _et.Element("actions")
+        tree = _et.ElementTree(root)
+    ours = {a["name"] for a in thunar_actions(command)}
+    for child in list(root):
+        if child.tag == "action":
+            name_el = child.find("name")
+            if name_el is not None and name_el.text in ours:
+                root.remove(child)
+    for spec in thunar_actions(command):
+        action = _et.SubElement(root, "action")
+        _et.SubElement(action, "icon").text = "application-pdf"
+        _et.SubElement(action, "name").text = spec["name"]
+        _et.SubElement(action, "unique-id").text = spec["unique-id"]
+        _et.SubElement(action, "command").text = spec["command"]
+        _et.SubElement(action, "description").text = spec["description"]
+        _et.SubElement(action, "patterns").text = spec["patterns"]
+        _et.SubElement(action, "image-files")
+        _et.SubElement(action, "text-files")
+        _et.SubElement(action, "other-files")
+    tree.write(path, encoding="utf-8", xml_declaration=True)
+    return str(path)
+
+
+def _uninstall_thunar(home) -> str:
+    import xml.etree.ElementTree as _et
+    path = _thunar_uca_path(home)
+    if not path.is_file():
+        return str(path)
+    try:
+        tree = _et.parse(path)
+        root = tree.getroot()
+    except Exception:
+        return str(path)
+    ours = {label for _i, label, _a in CTX_VERBS}
+    for child in list(root):
+        if child.tag == "action":
+            name_el = child.find("name")
+            if name_el is not None and name_el.text in ours:
+                root.remove(child)
+    tree.write(path, encoding="utf-8", xml_declaration=True)
+    return str(path)
+
+
+# ----- Apply / remove -----
+
+def install_context_menu(platform=None, home=None, command=None) -> list:
+    """Register right-click 'Combine into PDF' entries for this OS.
+
+    Returns the list of files/keys written. Safe to re-run: existing
+    entries are replaced.
+    """
+    plat = _ctx_platform(platform)
+    cmd = _ctx_self_command(command)
+    written = []
+    if plat == "windows":
+        exe = cmd
+        bin_dir = (exe.rsplit("\\", 1)[0] if "\\" in exe
+                   else str(Path(exe).parent))
+        plan = build_windows_context_menu(exe, bin_dir)
+        if sys.platform.startswith("win"):
+            for fpath, content in plan["files"].items():
+                p = Path(fpath)
+                p.parent.mkdir(parents=True, exist_ok=True)
+                p.write_text(content, encoding="ascii")
+                written.append(fpath)
+        else:
+            # Cross-platform dry surface: builders are what tests verify;
+            # never write Windows-named files onto a non-Windows disk.
+            written.extend(plan["files"])
+        if sys.platform.startswith("win"):
+            import winreg
+            for key_path, name, value in plan["entries"]:
+                key = winreg.CreateKey(winreg.HKEY_CURRENT_USER, key_path)
+                try:
+                    if name is None:
+                        winreg.SetValue(key, "", winreg.REG_SZ, value)
+                    else:
+                        winreg.SetValueEx(key, name, 0, winreg.REG_SZ, value)
+                finally:
+                    key.Close()
+                written.append("HKCU\\" + key_path)
+        else:
+            written.extend("HKCU\\" + k for k, _n, _v in plan["entries"])
+        return written
+    home_p = Path(home) if home else Path.home()
+    if plat == "macos":
+        files = build_macos_context_menu(home_p, cmd)
+        for fpath, content in files.items():
+            p = Path(fpath)
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_text(content, encoding="utf-8")
+            written.append(fpath)
+        if sys.platform == "darwin":
+            subprocess.run(["/System/Library/CoreServices/pbs", "-flush"],
+                           capture_output=True)
+        return written
+    files = build_linux_context_menu(home_p, cmd)
+    for fpath, spec in files.items():
+        p = Path(fpath)
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(spec["content"], encoding="utf-8")
+        if spec["executable"]:
+            p.chmod(0o755)
+        written.append(fpath)
+    written.append(_install_thunar(home_p, cmd))
+    return written
+
+
+def uninstall_context_menu(platform=None, home=None, command=None) -> list:
+    """Remove the entries written by install_context_menu."""
+    plat = _ctx_platform(platform)
+    cmd = _ctx_self_command(command)
+    removed = []
+    if plat == "windows":
+        exe = cmd
+        bin_dir = (exe.rsplit("\\", 1)[0] if "\\" in exe
+                   else str(Path(exe).parent))
+        plan = build_windows_context_menu(exe, bin_dir)
+        for fpath in plan["files"]:
+            p = Path(fpath)
+            if p.is_file():
+                p.unlink()
+            removed.append(fpath)
+        if sys.platform.startswith("win"):
+            roots = set()
+            for key_path, _n, _v in plan["entries"]:
+                if key_path.endswith("\\Jpg2PdfMerge"):
+                    roots.add(key_path)
+            import winreg
+            for key_path in sorted(roots, reverse=True):
+                _win_delete_tree(winreg.HKEY_CURRENT_USER, key_path)
+                removed.append("HKCU\\" + key_path)
+        return removed
+    home_p = Path(home) if home else Path.home()
+    if plat == "macos":
+        for _verb_id, label, _args in CTX_VERBS:
+            wf = home_p / "Library" / "Services" / f"{label}.workflow"
+            if wf.is_dir():
+                shutil.rmtree(wf)
+            removed.append(str(wf))
+        if sys.platform == "darwin":
+            subprocess.run(["/System/Library/CoreServices/pbs", "-flush"],
+                           capture_output=True)
+        return removed
+    files = build_linux_context_menu(home_p, cmd)
+    for fpath in files:
+        p = Path(fpath)
+        if p.is_file():
+            p.unlink()
+        removed.append(fpath)
+    removed.append(_uninstall_thunar(home_p))
+    return removed
 
 
 def apply_pencil(im: Image.Image, opacity: float, brightness: float,
@@ -815,8 +1602,19 @@ def main():
     ap.add_argument("--gui", action="store_true",
                     help="Launch the desktop GUI instead of running a CLI "
                          "conversion. All other flags are ignored.")
-    ap.add_argument("folder", nargs="?", default=None,
-                    help="Folder of images (omit if using --files / --files-from / --youtube)")
+    ap.add_argument("--install-context-menu", action="store_true",
+                    help="Register right-click 'Combine into PDF' entries "
+                         "for this OS (Windows Explorer, macOS Finder, "
+                         "Linux file managers) and exit. The entries call "
+                         "this binary, so they always match its version.")
+    ap.add_argument("--uninstall-context-menu", action="store_true",
+                    help="Remove the right-click entries installed by "
+                         "--install-context-menu and exit.")
+    ap.add_argument("paths", nargs="*", default=None,
+                    help="A folder (merge everything inside it), or one or "
+                         "more files to merge in the given order -- the form "
+                         "file managers pass with %F / %* (omit if using "
+                         "--files / --files-from / --youtube)")
     ap.add_argument("--files", nargs="+", default=None,
                     help="Explicit list of image files (preserves order)")
     ap.add_argument("--files-from", default=None,
@@ -915,6 +1713,20 @@ def main():
                          "'folder' = preserve OS folder enumeration order.")
     args = ap.parse_args()
 
+    # --install/--uninstall-context-menu: register file-manager
+    # integration for this OS, then exit (no conversion happens).
+    if args.install_context_menu:
+        for item in install_context_menu():
+            print(f"  installed: {item}")
+        print("Context menu installed. On Windows 11, look under "
+              "'Show more options' when you right-click.")
+        return
+    if args.uninstall_context_menu:
+        for item in uninstall_context_menu():
+            print(f"  removed: {item}")
+        print("Context menu removed.")
+        return
+
     # --gui short-circuits the CLI and hands control to the Tk shell.
     if args.gui:
         # Local import: only needed in GUI mode, and keeps Tk out of
@@ -938,8 +1750,8 @@ def main():
                 pass
         if args.files:
             initial_paths.extend(args.files)
-        if args.folder:
-            initial_paths.append(args.folder)
+        if args.paths:
+            initial_paths.extend(args.paths)
         from jpg2pdf_app.gui import run as _gui_run
         sys.exit(_gui_run(initial_paths=initial_paths or None))
 
@@ -973,6 +1785,7 @@ def main():
     images = []
     out_dir = None       # where the PDF will be written
     folder_name = None   # used by {folder} in --name-pattern
+    folder_path = None   # set in folder mode (drives --sort folder)
     input_mode = None    # "files" | "folder" (drives --sort auto)
 
     if args.youtube:
@@ -985,8 +1798,8 @@ def main():
                 yt_target_dir = p
             else:
                 yt_target_dir = p.parent
-        elif args.folder:
-            f = Path(args.folder).expanduser()
+        elif args.paths:
+            f = Path(args.paths[0]).expanduser()
             if f.is_dir():
                 yt_target_dir = f
 
@@ -1023,20 +1836,37 @@ def main():
             if images:
                 out_dir = images[0].parent
                 folder_name = images[0].parent.name
-    elif args.folder:
-        folder = Path(args.folder).expanduser().resolve()
-        if not folder.is_dir():
-            print(f"Not a folder: {folder}", file=sys.stderr)
-            sys.exit(1)
-
-        images.extend(collect_from_folder(folder, args.recursive))
-        input_mode = "folder"
-        if not out_dir:
-            out_dir = folder
-            folder_name = folder.name
+    elif args.paths:
+        first = Path(args.paths[0]).expanduser().resolve()
+        if len(args.paths) == 1 and first.is_dir():
+            folder_path = first
+            images.extend(collect_from_folder(first, args.recursive))
+            input_mode = "folder"
+            if not out_dir:
+                out_dir = first
+                folder_name = first.name
+        else:
+            # Selection mode from positional arguments: the form file
+            # managers use (KDE %F, Thunar/Nemo %F, scripts passing %*).
+            # A folder among the paths expands to its contents.
+            expanded = []
+            for raw_path in args.paths:
+                pp = Path(raw_path).expanduser().resolve()
+                if pp.is_dir():
+                    expanded.extend(
+                        str(p) for p in collect_from_folder(pp, False))
+                else:
+                    expanded.append(str(pp))
+            images.extend(collect_from_list(expanded))
+            input_mode = "files"
+            if not out_dir:
+                if images:
+                    out_dir = images[0].parent
+                    folder_name = images[0].parent.name
     else:
         if not args.youtube:
-            ap.error("Provide a folder, or --files, or --files-from, or --youtube.")
+            ap.error("Provide a folder or files, or --files, or "
+                     "--files-from, or --youtube.")
 
     if not images:
         print("No images to convert.", file=sys.stderr)
@@ -1064,7 +1894,7 @@ def main():
         # Preserve enumeration order. For folder mode, re-collect without the
         # implicit natural-sort done by collect_from_folder.
         if input_mode == "folder":
-            folder_p = Path(args.folder).expanduser().resolve()
+            folder_p = folder_path
             it = folder_p.rglob("*") if args.recursive else folder_p.iterdir()
             images = [p for p in it if p.is_file()
                       and p.suffix.lower() in SUPPORTED_EXTS]
