@@ -51,7 +51,7 @@ The synchronization engine operates across 43 registered target repositories loc
 | **12** | `global-ppt-v1` | `../presentations-repos/global-ppt-v1` | Web / Presentation Deck |
 | **13** | `hiltrax` | `../presentations-repos/hiltrax` | Web / Presentation Deck |
 | **14** | `icon-coding-guidelines` | `../icon-coding-guidelines` | SVG / Design System |
-| **15** | `img-pdf-v2` | `../img-pdf-v2` | Go / CLI / Imaging |
+| **15** | `img-pdf` | `../img-pdf` | Go / CLI / Imaging |
 | **16** | `ki-health-ppt` | `../presentations-repos/ki-health-ppt` | Web / Presentation Deck |
 | **17** | `kubernetes-training` | `../aukgit/kubernetes-training` | Cloud / DevOps |
 | **18** | `lara-licensing` | `../lara-licensing` | PHP / Laravel |

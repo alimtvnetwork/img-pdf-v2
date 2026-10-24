@@ -48,7 +48,7 @@ The synchronization engine operates across the full fleet of 43 connected reposi
 | **12** | `presentations-repos/global-ppt-v1` | `../presentations-repos/global-ppt-v1` |
 | **13** | `presentations-repos/hiltrax` | `../presentations-repos/hiltrax` |
 | **14** | `icon-coding-guidelines` | `../icon-coding-guidelines` |
-| **15** | `img-pdf-v2` | `../img-pdf-v2` |
+| **15** | `img-pdf` | `../img-pdf` |
 | **16** | `presentations-repos/ki-health-ppt` | `../presentations-repos/ki-health-ppt` |
 | **17** | `aukgit/kubernetes-training` | `../aukgit/kubernetes-training` |
 | **18** | `lara-licensing` | `../lara-licensing` |
@@ -93,7 +93,7 @@ The synchronization engine operates across the full fleet of 43 connected reposi
 12. `presentations-repos/global-ppt-v1` (`../presentations-repos/global-ppt-v1`)
 13. `presentations-repos/hiltrax` (`../presentations-repos/hiltrax`)
 14. `icon-coding-guidelines` (`../icon-coding-guidelines`)
-15. `img-pdf-v2` (`../img-pdf-v2`)
+15. `img-pdf` (`../img-pdf`)
 16. `presentations-repos/ki-health-ppt` (`../presentations-repos/ki-health-ppt`)
 17. `aukgit/kubernetes-training` (`../aukgit/kubernetes-training`)
 18. `lara-licensing` (`../lara-licensing`)
