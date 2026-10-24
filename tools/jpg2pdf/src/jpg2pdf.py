@@ -55,7 +55,7 @@ except ImportError:
         resolve_youtube_thumbnails = None
         slugify_title = None
 
-__version__ = "2.3.0"
+__version__ = "2.4.0"
 
 
 # Pencil presets -- tuned for faint handwritten text.
@@ -417,6 +417,57 @@ PAGE_SIZES = {  # points (1/72 inch)
     "letter": (612.00, 792.00),
     "legal":  (612.00, 1008.00),
 }
+def resolve_page_size(size: str, orientation: str = "portrait") -> tuple:
+    """Return (width_pt, height_pt) for a page size + orientation.
+
+    This is the single place that turns the visualizer's page-size
+    choice into points, so the CLI, the desktop GUI and the tests all
+    agree. Embedded PDF pages keep their own native size -- only
+    image / HTML / Word pages are laid out on this size.
+    """
+    if size not in PAGE_SIZES:
+        raise ValueError(f"unknown page size: {size!r}")
+    w, h = PAGE_SIZES[size]
+    if orientation == "landscape":
+        w, h = h, w
+    elif orientation != "portrait":
+        raise ValueError(f"unknown orientation: {orientation!r}")
+    return (w, h)
+
+
+def move_item(items: list, index: int, delta: int) -> list:
+    """Return a copy of `items` with the entry at `index` moved by `delta`.
+
+    Out-of-range indices and moves that would leave the list return
+    the list unchanged (a copy). This is the visualizer reorder
+    primitive shared by the GUI and the tests: the merged PDF always
+    follows list order, so reordering here *is* reordering the PDF.
+    """
+    out = list(items)
+    if index < 0 or index >= len(out):
+        return out
+    target = index + delta
+    if target < 0 or target >= len(out):
+        return out
+    entry = out.pop(index)
+    out.insert(target, entry)
+    return out
+
+
+def move_item_to(items: list, index: int, target: int) -> list:
+    """Return a copy of `items` with the entry at `index` moved to `target`."""
+    out = list(items)
+    if index < 0 or index >= len(out):
+        return out
+    if target < 0:
+        target = 0
+    if target >= len(out):
+        target = len(out) - 1
+    entry = out.pop(index)
+    out.insert(target, entry)
+    return out
+
+
 IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff"}
 PDF_EXTS   = {".pdf"}
 HTML_EXTS  = {".html", ".htm"}
@@ -730,6 +781,13 @@ def merge_pdfs(pdf_paths, out: Path) -> None:
 # unit-tested on any OS; only the thin appliers touch the real system.
 
 CTX_VERBS = [
+    # Visualizer first: right-click -> GUI list, where the user can
+    # reorder (up/down), remove, and change page size / orientation
+    # before Convert. The GUI's --gui branch reads --files / --files-from
+    # in exactly the order the file manager delivered them, and its
+    # Convert step passes --sort selection, so a manual reorder sticks.
+    # Silent one-click merges (a4/letter/legal) stay below it.
+    ("visualizer", "Review & merge in visualizer...", "--gui"),
     ("a4", "Combine into PDF (A4)", "--size a4"),
     ("letter", "Combine into PDF (Letter)", "--size letter"),
     ("legal", "Combine into PDF (Legal)", "--size legal"),
@@ -909,10 +967,11 @@ def build_windows_context_menu(exe_path: str, bin_dir: str) -> dict:
     }
     entries = []
 
-    def add_verb(root, command, applies_to=""):
-        base = root + "\\Jpg2PdfMerge"
-        entries.append((base, None, CTX_FLAT_LABEL))
-        entries.append((base, "MUIVerb", CTX_FLAT_LABEL))
+    def add_verb(root, command, applies_to="", key="Jpg2PdfMerge",
+                 label=CTX_FLAT_LABEL):
+        base = root + "\\" + key
+        entries.append((base, None, label))
+        entries.append((base, "MUIVerb", label))
         entries.append((base, "Icon", exe_path))
         entries.append((base, "MultiSelectModel", "Player"))
         if applies_to:
@@ -921,10 +980,17 @@ def build_windows_context_menu(exe_path: str, bin_dir: str) -> dict:
 
     applies = " OR ".join(f"System.FileExtension:={ext}" for ext in CTX_EXTS)
     selected_cmd = (f'wscript.exe "{launcher}" "a4" "--size a4" "%1"')
+    visualizer_cmd = (f'wscript.exe "{launcher}" "gui" "" "%1"')
     add_verb(r"Software\Classes\*\shell", selected_cmd, applies)
+    add_verb(r"Software\Classes\*\shell", visualizer_cmd, applies,
+             key="Jpg2PdfVisualizer",
+             label="Review & merge in visualizer...")
     for ext in CTX_EXTS:
         add_verb(rf"Software\Classes\SystemFileAssociations\{ext}\shell",
                  selected_cmd)
+        add_verb(rf"Software\Classes\SystemFileAssociations\{ext}\shell",
+                 visualizer_cmd, key="Jpg2PdfVisualizer",
+                 label="Review & merge in visualizer...")
     folder_cmd = f'"{exe_path}" --size a4 "%V"'
     add_verb(r"Software\Classes\Directory\shell", folder_cmd)
     add_verb(r"Software\Classes\Directory\Background\shell", folder_cmd)
@@ -1301,7 +1367,8 @@ def uninstall_context_menu(platform=None, home=None, command=None) -> list:
         if sys.platform.startswith("win"):
             roots = set()
             for key_path, _n, _v in plan["entries"]:
-                if key_path.endswith("\\Jpg2PdfMerge"):
+                if (key_path.endswith("\\Jpg2PdfMerge")
+                        or key_path.endswith("\\Jpg2PdfVisualizer")):
                     roots.add(key_path)
             import winreg
             for key_path in sorted(roots, reverse=True):
@@ -1940,9 +2007,7 @@ def main():
     if args.pencil_ink_darken    is None: args.pencil_ink_darken    = preset["ink_darken"]
     if args.pencil_brightness    is None: args.pencil_brightness    = preset["brightness"]
 
-    w, h = PAGE_SIZES[args.size]
-    if args.orientation == "landscape":
-        w, h = h, w
+    w, h = resolve_page_size(args.size, args.orientation)
 
     # Resolve output filename: explicit --out wins, else apply --name-pattern
     # (CLI > saved pref > built-in default), persist if user passed one.

@@ -1,0 +1,19 @@
+{
+  "version": "2.4.0",
+  "branch": "release/v2.4.0",
+  "sourceBranch": "main",
+  "commit": "HEAD",
+  "tag": "v2.4.0",
+  "assets": [],
+  "changelog": [
+    "Right-click visualizer entry on every OS (Review & merge in visualizer...): reorder, remove, change page size/orientation/rotation before merging.",
+    "Selection order is the merge contract: CLI --sort selection default for file selections, GUI forces selection sort on preload and manual reorder, web merges strictly in list order.",
+    "Desktop GUI gains Top/Bottom reorder, Rotate control and numbered rows; web visualizer gains orientation, sort-by-name, move-to-top/bottom and image thumbnails.",
+    "Universal one-line installer install.py (Python, stdlib only) alongside the native install.ps1 / install.sh one-liners.",
+    "New end-to-end tests for order, reorder, page size and the visualizer verbs (test_visualizer_order.py, test_install_py.py)."
+  ],
+  "isDraft": false,
+  "isPreRelease": false,
+  "createdAt": "2026-10-25T00:00:00Z",
+  "isLatest": true
+}

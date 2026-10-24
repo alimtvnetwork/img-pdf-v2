@@ -121,6 +121,15 @@ then call `jpg2pdf --files-from` once for the whole batch. The runner
 logs to `%LOCALAPPDATA%\jpg2pdf\context.log` and pauses on non-zero exit
 so errors stay readable.
 
+Since v2.4.0 a flat **Review & merge in visualizer...** verb
+(`Jpg2PdfVisualizer`) is registered beside it: it queues the selection
+and launches the GUI with the files in queue order, where Up / Down /
+Top / Bottom, Remove, page size, orientation and rotation can be fixed
+before Convert. Selection order is the merge order (`--sort selection`
+for file selections); a manual GUI reorder forces Sort=selection so a
+persisted name-sort can no longer undo it. PDF pages keep their native
+size; the page-size choice lays out image / HTML / Word pages only.
+
 Since v2.3.0 a flat **Combine into PDF** verb (A4) is registered for
 files, folders and folder backgrounds as well; it does not depend on
 the grouped cascading menu rendering. On **Windows 11** all legacy

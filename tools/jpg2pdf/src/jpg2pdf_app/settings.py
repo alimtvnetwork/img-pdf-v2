@@ -26,7 +26,7 @@ MAX_RECENT = 12
 # Option keys persisted from the GUI's tk variables. Keep this list stable.
 PRESET_KEYS = (
     "mode", "sort", "size", "orient", "fit", "stack",
-    "pencil", "strength", "output",
+    "pencil", "strength", "output", "rotate",
 )
 
 DEFAULTS: dict[str, Any] = {
@@ -39,6 +39,7 @@ DEFAULTS: dict[str, Any] = {
     "pencil": False,
     "strength": "subtle",  # project default, do not change
     "output": "",
+    "rotate": 0,
     "recent": [],
 }
 
@@ -67,6 +68,12 @@ def load() -> dict[str, Any]:
             for k, v in loaded.items():
                 if k in DEFAULTS:
                     data[k] = v
+            try:
+                data["rotate"] = int(data.get("rotate", 0))
+            except (TypeError, ValueError):
+                data["rotate"] = 0
+            if data["rotate"] not in (0, 90, 180, 270):
+                data["rotate"] = 0
             # Sanitize recent list.
             r = loaded.get("recent")
             if isinstance(r, list):

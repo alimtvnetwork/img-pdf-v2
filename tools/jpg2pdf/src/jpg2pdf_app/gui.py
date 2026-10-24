@@ -115,6 +115,7 @@ class Jpg2PdfApp:
         self.var_pencil  = tk.BooleanVar(value=bool(s.get("pencil", False)))
         self.var_strength = tk.StringVar(value=s.get("strength", "subtle"))
         self.var_output  = tk.StringVar(value=s.get("output", ""))
+        self.var_rotate  = tk.StringVar(value=str(s.get("rotate", 0)))
 
         self._recent: list[str] = list(s.get("recent", []) or [])
 
@@ -133,6 +134,7 @@ class Jpg2PdfApp:
         # Pre-load any paths handed in from the command line (e.g. the
         # "Open in jpg2pdf UI..." context-menu entry).
         if initial_paths:
+            self.var_sort.set("selection")
             try:
                 self._add_paths(list(initial_paths))
                 self._set_status(
@@ -216,6 +218,7 @@ class Jpg2PdfApp:
             "pencil":   bool(self.var_pencil.get()),
             "strength": self.var_strength.get(),
             "output":   self.var_output.get(),
+            "rotate":   int(self.var_rotate.get() or 0),
             "recent":   list(self._recent),
         }
 
@@ -261,10 +264,14 @@ class Jpg2PdfApp:
         # Toolbar: up/down/remove/youtube -------------------------------
         tools = ttk.Frame(left, padding=(0, 6, 0, 0))
         tools.pack(fill=tk.X)
+        ttk.Button(tools, text="Top",    width=5,
+                   command=self.on_move_top).pack(side=tk.LEFT)
         ttk.Button(tools, text="Up",     width=6,
-                   command=self.on_move_up).pack(side=tk.LEFT)
+                   command=self.on_move_up).pack(side=tk.LEFT, padx=(4, 0))
         ttk.Button(tools, text="Down",   width=6,
                    command=self.on_move_down).pack(side=tk.LEFT, padx=(4, 0))
+        ttk.Button(tools, text="Bottom", width=7,
+                   command=self.on_move_bottom).pack(side=tk.LEFT, padx=(4, 0))
         ttk.Button(tools, text="Remove", width=8,
                    command=self.on_remove).pack(side=tk.LEFT, padx=(4, 0))
         ttk.Button(tools, text="+ YouTube", width=10,
@@ -324,6 +331,13 @@ class Jpg2PdfApp:
             f, self.var_orient, self.var_orient.get(),
             "portrait", "landscape",
         ).pack(side=tk.RIGHT, padx=(6, 0))
+
+        # Rotate (PDF only) -- "correct a page" before merging.
+        f = row("Rotate images")
+        ttk.OptionMenu(
+            f, self.var_rotate, self.var_rotate.get(),
+            "0", "90", "180", "270",
+        ).pack(fill=tk.X)
 
         # Fit (PDF only)
         f = row("Image fit (PDF)")
@@ -427,9 +441,9 @@ class Jpg2PdfApp:
 
     def _refresh_list(self) -> None:
         self.listbox.delete(0, tk.END)
-        for p in self.inputs:
+        for pos, p in enumerate(self.inputs, 1):
             kind = "yt" if p in self._youtube_inputs else classify(p)
-            label = f"[{kind:>4}]  {p}"
+            label = f"{pos:>2}. [{kind:>4}]  {p}"
             self.listbox.insert(tk.END, label)
         # Toggle the empty-state hint overlay.
         if self.inputs:
@@ -591,6 +605,7 @@ class Jpg2PdfApp:
             return
         for i in idxs:
             self.inputs[i - 1], self.inputs[i] = self.inputs[i], self.inputs[i - 1]
+        self.var_sort.set("selection")
         self._refresh_list()
         for i in idxs:
             self.listbox.selection_set(i - 1)
@@ -601,9 +616,34 @@ class Jpg2PdfApp:
             return
         for i in idxs:
             self.inputs[i + 1], self.inputs[i] = self.inputs[i], self.inputs[i + 1]
+        self.var_sort.set("selection")
         self._refresh_list()
         for i in idxs:
             self.listbox.selection_set(i + 1)
+
+    def on_move_top(self) -> None:
+        idxs = sorted(self._selected_indices())
+        if not idxs or idxs[0] == 0:
+            return
+        picked = [self.inputs[i] for i in idxs]
+        rest = [p for j, p in enumerate(self.inputs) if j not in set(idxs)]
+        self.inputs = picked + rest
+        self.var_sort.set("selection")
+        self._refresh_list()
+        for i in range(len(picked)):
+            self.listbox.selection_set(i)
+
+    def on_move_bottom(self) -> None:
+        idxs = sorted(self._selected_indices())
+        if not idxs or idxs[-1] >= len(self.inputs) - 1:
+            return
+        picked = [self.inputs[i] for i in idxs]
+        rest = [p for j, p in enumerate(self.inputs) if j not in set(idxs)]
+        self.inputs = rest + picked
+        self.var_sort.set("selection")
+        self._refresh_list()
+        for i in range(len(rest), len(self.inputs)):
+            self.listbox.selection_set(i)
 
     def on_convert(self) -> None:
         if not self.inputs:
@@ -688,6 +728,7 @@ class Jpg2PdfApp:
                 "--size", self.var_size.get(),
                 "--orientation", self.var_orient.get(),
                 "--fit", self.var_fit.get(),
+                "--rotate", str(int(self.var_rotate.get() or 0)),
                 "--stack", self.var_stack.get(),
                 "--out", out]
 

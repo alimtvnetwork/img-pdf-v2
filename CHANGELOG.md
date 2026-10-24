@@ -4,6 +4,23 @@ All notable changes to `jpg2pdf` are documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.0] - 2026-10-25
+
+### Added
+- Right-click now has a visualizer entry on every OS: "Review & merge in visualizer..." (Windows flat `Jpg2PdfVisualizer` verb + PowerShell registrar, macOS Finder Quick Action, Linux Nautilus / Nemo / Thunar / KDE). It opens the desktop GUI with the multi-file selection pre-loaded in delivered order, so you can reorder (Up / Down / Top / Bottom), remove, change page size (A4 / Letter / Legal), orientation and rotation, then Convert. Silent one-click merges (A4 / Letter / Legal) stay alongside it.
+- Selection order is now the contract, not a side effect: the CLI defaults to `--sort selection` for `--files` / `--files-from` / positional selections, the GUI forces Sort=selection when a context-menu selection is pre-loaded and whenever you manually reorder, and the web visualizer merges strictly in list order (nothing re-sorts). New pure helpers `resolve_page_size()`, `move_item()` and `move_item_to()` in the engine, shared by GUI and tests.
+- Desktop GUI: Top / Bottom reorder buttons, a Rotate images control (0 / 90 / 180 / 270, passed as `--rotate` and persisted), and numbered list rows so the merge sequence is explicit.
+- Web visualizer (`src/`): orientation (portrait / landscape) for image and text pages, Sort by name, Move to top / bottom in the right-click menu, and image thumbnails in the file list. PDF pages keep their own native size on every surface; only image / HTML / Word pages use the chosen page size.
+- Universal one-line installer `install.py` (stdlib only): `python3 -c "import urllib.request; exec(urllib.request.urlopen('https://raw.githubusercontent.com/alimtvnetwork/img-pdf-v2/main/install.py').read().decode())"` detects OS/arch, downloads the CLI + GUI release binaries, and runs `jpg2pdf --install-context-menu`. Native one-liners remain primary: `irm .../install.ps1 | iex` on Windows, `curl -fsSL .../install.sh | bash` on macOS/Linux.
+
+### Fixed
+- A persisted GUI Sort=name/date would silently re-sort at Convert and undo a manual Up/Down reorder (and could undo a context-menu selection order). Manual reorders and context-menu preloads now force Sort=selection.
+- `unregister-context-menu.ps1` and the binary uninstaller now also remove the new `Jpg2PdfVisualizer` keys.
+
+### Tests
+- `tools/jpg2pdf/tests/test_visualizer_order.py`: page-size portrait/landscape, move up/down/top/bottom, selection-order preservation, CLI end-to-end PDF-image-PDF merge in selection order (not filename order), corrected-order merge, landscape page size applying only to image pages, opt-in `--sort name`, GUI reorder-forces-selection guard, and visualizer verbs on all OS builders + the PowerShell registrar.
+- `tools/jpg2pdf/tests/test_install_py.py`: release-asset mapping for Windows / macOS / Linux x64 + arm64, and `--dry-run` printing the plan without network or disk writes.
+
 ## [2.3.0] - 2026-10-24
 
 ### Fixed

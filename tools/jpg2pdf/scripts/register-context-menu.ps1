@@ -567,6 +567,32 @@ function Register-FlatVerb {
     Set-DefaultValue "$k\command" $Command
 }
 
+function Register-VisualizerVerb {
+    # Flat "Review & merge in visualizer..." verb (v2.4.0). Same queue
+    # mechanism as the flat merge verb, but VerbId "gui" makes the
+    # runner launch jpg2pdf-gui with the selection pre-loaded, in
+    # queue order, so the user can reorder / remove / change page
+    # size before Convert. File roots only: folder selections use
+    # the grouped "Open folder in jpg2pdf UI..." entry instead.
+    param(
+        [Parameter(Mandatory=$true)][string]$Root,
+        [Parameter(Mandatory=$true)][string]$Command,
+        [Parameter(Mandatory=$false)][string]$AppliesTo = ""
+    )
+    $k = "$Root\Jpg2PdfVisualizer"
+    if (Test-Path -LiteralPath $k) { Remove-Item -LiteralPath $k -Recurse -Force }
+    New-Key $k
+    Set-DefaultValue $k "Review & merge in visualizer..."
+    New-ItemProperty -LiteralPath $k -Name "MUIVerb"          -Value "Review & merge in visualizer..." -PropertyType String -Force | Out-Null
+    New-ItemProperty -LiteralPath $k -Name "Icon"             -Value $exe               -PropertyType String -Force | Out-Null
+    New-ItemProperty -LiteralPath $k -Name "MultiSelectModel" -Value "Player"           -PropertyType String -Force | Out-Null
+    if ($AppliesTo) {
+        New-ItemProperty -LiteralPath $k -Name "AppliesTo" -Value $AppliesTo -PropertyType String -Force | Out-Null
+    }
+    New-Key "$k\command"
+    Set-DefaultValue "$k\command" $Command
+}
+
 function Register-Parent {
     param(
         [Parameter(Mandatory=$true)][string]$Root,
@@ -621,7 +647,9 @@ Register-Parent "HKCU:\Software\Classes\*\shell" "Jpg2Pdf.FilesMenu" -AppliesTo 
 # Flat fallback verb (v2.3.0): one direct "Combine into PDF" entry that
 # does not depend on the grouped cascading menu rendering correctly.
 $flatCmd = New-SelectedFilesCommand -LauncherPath $selectedLauncher -VerbId "a4" -VerbArgs "--size a4"
+$visualizerCmd = New-SelectedFilesCommand -LauncherPath $selectedLauncher -VerbId "gui" -VerbArgs ""
 Register-FlatVerb "HKCU:\Software\Classes\*\shell" $flatCmd -AppliesTo $appliesFilter
+Register-VisualizerVerb "HKCU:\Software\Classes\*\shell" $visualizerCmd -AppliesTo $appliesFilter
 Register-FlatVerb "HKCU:\Software\Classes\Directory\shell" ('"' + $exe + '" --size a4 "%V"')
 Register-FlatVerb "HKCU:\Software\Classes\Directory\Background\shell" ('"' + $exe + '" --size a4 "%V"')
 
@@ -646,6 +674,7 @@ foreach ($ext in $exts) {
     foreach ($root in $targets) {
         Register-Parent $root "Jpg2Pdf.FilesMenu"
         Register-FlatVerb $root $flatCmd
+        Register-VisualizerVerb $root $visualizerCmd
     }
 }
 

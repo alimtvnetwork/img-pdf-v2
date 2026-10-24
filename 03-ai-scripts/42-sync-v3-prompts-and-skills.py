@@ -47,7 +47,7 @@ TARGET_REPOS = [
     ("global-ppt-v1", WORK_ROOT / "presentations-repos" / "global-ppt-v1"),
     ("hiltrax-v1", WORK_ROOT / "presentations-repos" / "hiltrax"),
     ("icon-coding-guidelines", WORK_ROOT / "icon-coding-guidelines"),
-    ("img-pdf-v2", WORK_ROOT / "img-pdf"),
+    ("img-pdf-v2", WORK_ROOT / "img-pdf-v2"),
     ("ki-health-ppt-v5", WORK_ROOT / "presentations-repos" / "ki-health-ppt"),
     ("kubernetes-training-v1", WORK_ROOT / "aukgit" / "kubernetes-training"),
     ("lara-licensing-v4", WORK_ROOT / "lara-licensing"),

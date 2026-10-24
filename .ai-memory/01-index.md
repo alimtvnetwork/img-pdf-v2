@@ -1,6 +1,6 @@
 # Repository Context & AI Architecture Index
 
-> **Repository:** `img-pdf`
+> **Repository:** `img-pdf-v2`
 > **Target:** `.ai-memory/01-index.md`
 > **Purpose:** Master repository index, directory router, and operational architecture guide for AI agents.
 
@@ -8,7 +8,7 @@
 
 ## 1. Repository Architecture Overview
 
-`img-pdf` is a high-performance image-to-PDF generation tool and GUI utility:
+`img-pdf-v2` is a high-performance image-to-PDF generation tool and GUI utility:
 - **Specifications (`02-spec/`):** Coding standards, error management policies, and CLI/GUI contracts.
 - **Canonical Prompts (`01-prompts/`):** Execution workflows, reading protocols, and coding standards.
 - **AI Agent Capabilities (`.agents/skills/`):** Antigravity agent skills.

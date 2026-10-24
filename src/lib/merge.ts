@@ -21,6 +21,7 @@ export interface MergeItem {
   name: string;
   kind: MergeKind;
   file: File;
+  previewUrl?: string;
 }
 
 export interface SkippedItem {
@@ -55,6 +56,21 @@ export const PAGE_SIZES = {
 } as const;
 
 export type PageSizeKey = keyof typeof PAGE_SIZES;
+
+export type Orientation = "portrait" | "landscape";
+
+/** Page dimensions in points. PDF pages are copied as-is and never
+ * resized -- only image and text pages are laid out on this size,
+ * mirroring the desktop tool's --size / --orientation. */
+export function pageDims(
+  pageSize: PageSizeKey,
+  orientation: Orientation = "portrait",
+): { width: number; height: number } {
+  const { width, height } = PAGE_SIZES[pageSize];
+  return orientation === "landscape"
+    ? { width: height, height: width }
+    : { width, height };
+}
 
 function wrapText(text: string, width: number): string[] {
   const lines: string[] = [];
@@ -91,8 +107,9 @@ async function appendTextPages(
   out: PDFDocument,
   text: string,
   pageSize: PageSizeKey,
+  orientation: Orientation = "portrait",
 ): Promise<void> {
-  const { width, height } = PAGE_SIZES[pageSize];
+  const { width, height } = pageDims(pageSize, orientation);
   const font = await out.embedFont(StandardFonts.Helvetica);
   const fontSize = 11;
   const lineHeight = 15;
@@ -134,6 +151,7 @@ async function appendImage(
   out: PDFDocument,
   item: MergeItem,
   pageSize: PageSizeKey,
+  orientation: Orientation = "portrait",
 ): Promise<void> {
   const bytes = new Uint8Array(await item.file.arrayBuffer());
   const lower = item.name.toLowerCase();
@@ -145,7 +163,7 @@ async function appendImage(
   } else {
     image = await out.embedPng(await imageToPngBytes(item.file));
   }
-  const { width, height } = PAGE_SIZES[pageSize];
+  const { width, height } = pageDims(pageSize, orientation);
   const page = out.addPage([width, height]);
   const scale = Math.min(width / image.width, height / image.height);
   const drawWidth = image.width * scale;
@@ -168,7 +186,11 @@ async function docxToText(file: File): Promise<string> {
 export async function mergeFilesToPdf(
   items: MergeItem[],
   pageSize: PageSizeKey,
+  orientation: Orientation = "portrait",
 ): Promise<MergeResult> {
+  // Order is exactly the list order the caller passes in: the
+  // visualizer's Up/Down/Top/Bottom and sort-by-name controls are
+  // the only thing that changes it. Nothing here re-sorts.
   const out = await PDFDocument.create();
   const merged: string[] = [];
   const skipped: SkippedItem[] = [];
@@ -176,7 +198,7 @@ export async function mergeFilesToPdf(
   for (const item of items) {
     try {
       if (item.kind === "image") {
-        await appendImage(out, item, pageSize);
+        await appendImage(out, item, pageSize, orientation);
         merged.push(item.name);
       } else if (item.kind === "pdf") {
         const src = await PDFDocument.load(
@@ -186,7 +208,7 @@ export async function mergeFilesToPdf(
         for (const page of pages) out.addPage(page);
         merged.push(item.name);
       } else if (item.kind === "html") {
-        await appendTextPages(out, htmlToText(await item.file.text()), pageSize);
+        await appendTextPages(out, htmlToText(await item.file.text()), pageSize, orientation);
         merged.push(item.name);
       } else if (item.kind === "word") {
         if (item.name.toLowerCase().endsWith(".doc")) {
@@ -195,7 +217,7 @@ export async function mergeFilesToPdf(
               "Use the desktop app, or save it as .docx first.",
           );
         }
-        await appendTextPages(out, await docxToText(item.file), pageSize);
+        await appendTextPages(out, await docxToText(item.file), pageSize, orientation);
         merged.push(item.name);
       } else {
         throw new Error("Unsupported file type.");

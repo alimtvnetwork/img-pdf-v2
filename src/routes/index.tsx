@@ -26,6 +26,7 @@ import {
   kindOfFile,
   mergeFilesToPdf,
   type MergeItem,
+  type Orientation,
   type PageSizeKey,
   type SkippedItem,
 } from "@/lib/merge";
@@ -42,11 +43,15 @@ export const Route = createFileRoute("/")({
 
 let nextId = 1;
 function makeItem(file: File): MergeItem {
+  const kind = kindOfFile(file.name);
   return {
     id: `item-${nextId++}`,
     name: file.name,
-    kind: kindOfFile(file.name),
+    kind,
     file,
+    // Visualizer thumbnail, created once per item (not per render).
+    previewUrl:
+      kind === "image" ? URL.createObjectURL(file) : undefined,
   };
 }
 
@@ -56,6 +61,8 @@ const ACCEPT =
 function Index() {
   const [items, setItems] = useState<MergeItem[]>([]);
   const [pageSize, setPageSize] = useState<PageSizeKey>("a4");
+  const [orientation, setOrientation] =
+    useState<Orientation>("portrait");
   const [busy, setBusy] = useState(false);
   const [ytBusy, setYtBusy] = useState(false);
   const [ytUrl, setYtUrl] = useState("");
@@ -89,6 +96,22 @@ function Index() {
   const removeAt = (index: number) =>
     setItems((prev) => prev.filter((_, i) => i !== index));
 
+  const moveTo = (index: number, target: "top" | "bottom") => {
+    setItems((prev) => {
+      if (index < 0 || index >= prev.length) return prev;
+      const copy = [...prev];
+      const [entry] = copy.splice(index, 1);
+      if (target === "top") copy.unshift(entry);
+      else copy.push(entry);
+      return copy;
+    });
+  };
+
+  const sortByName = () =>
+    setItems((prev) =>
+      [...prev].sort((a, b) => a.name.localeCompare(b.name)),
+    );
+
   const addYoutube = async () => {
     const videoId = extractVideoId(ytUrl);
     if (!videoId) {
@@ -121,7 +144,7 @@ function Index() {
     setError(null);
     setSkipped([]);
     try {
-      const res = await mergeFilesToPdf(items, pageSize);
+      const res = await mergeFilesToPdf(items, pageSize, orientation);
       setSkipped(res.skipped);
       if (res.merged.length === 0) {
         setError("Nothing could be merged. See the skipped files below.");
@@ -180,7 +203,7 @@ function Index() {
                 Drop files here, or click to select
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Images, PDF, HTML, Word (.docx) -- merged in list order
+                Images, PDF, HTML, Word (.docx) -- merged in list order; PDF pages keep their own size
               </p>
             </div>
           </ContextMenuTrigger>
@@ -250,7 +273,16 @@ function Index() {
                 <ContextMenu key={item.id}>
                   <ContextMenuTrigger asChild>
                     <div className="flex items-center gap-3 rounded-lg border px-3 py-2">
-                      {item.kind === "image" ? (
+                      <span className="w-6 shrink-0 text-xs text-muted-foreground">
+                        {index + 1}.
+                      </span>
+                      {item.previewUrl ? (
+                        <img
+                          src={item.previewUrl}
+                          alt=""
+                          className="h-10 w-10 shrink-0 rounded object-cover"
+                        />
+                      ) : item.kind === "image" ? (
                         <ImageIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
                       ) : (
                         <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -302,6 +334,18 @@ function Index() {
                     >
                       Move down
                     </ContextMenuItem>
+                    <ContextMenuItem
+                      onSelect={() => moveTo(index, "top")}
+                      disabled={index === 0}
+                    >
+                      Move to top
+                    </ContextMenuItem>
+                    <ContextMenuItem
+                      onSelect={() => moveTo(index, "bottom")}
+                      disabled={index === items.length - 1}
+                    >
+                      Move to bottom
+                    </ContextMenuItem>
                     <ContextMenuSeparator />
                     <ContextMenuItem onSelect={() => removeAt(index)}>
                       Remove from list
@@ -325,6 +369,20 @@ function Index() {
                     </option>
                   ))}
                 </select>
+                <select
+                  value={orientation}
+                  onChange={(e) =>
+                    setOrientation(e.target.value as Orientation)
+                  }
+                  className="rounded-md border bg-background px-2 py-1.5 text-sm"
+                  aria-label="Orientation"
+                >
+                  <option value="portrait">Portrait</option>
+                  <option value="landscape">Landscape</option>
+                </select>
+                <Button variant="outline" onClick={sortByName}>
+                  Sort by name
+                </Button>
                 <Button onClick={() => void merge()} disabled={busy}>
                   <Merge className="mr-2 h-4 w-4" />
                   {busy ? "Merging..." : "Merge into PDF"}

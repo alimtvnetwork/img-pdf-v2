@@ -53,6 +53,9 @@ merge_pdfs = _engine.merge_pdfs
 apply_pencil = _engine.apply_pencil
 make_page = _engine.make_page
 format_pdf_name = _engine.format_pdf_name
+resolve_page_size = _engine.resolve_page_size
+move_item = _engine.move_item
+move_item_to = _engine.move_item_to
 load_prefs = _engine.load_prefs
 save_prefs = _engine.save_prefs
 
@@ -94,6 +97,9 @@ __all__ = [
     "apply_pencil",
     "make_page",
     "format_pdf_name",
+    "resolve_page_size",
+    "move_item",
+    "move_item_to",
     "load_prefs",
     "save_prefs",
     "download_thumbnail",

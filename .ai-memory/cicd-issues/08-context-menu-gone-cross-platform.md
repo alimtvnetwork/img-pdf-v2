@@ -116,3 +116,30 @@ jpg2pdf --install-context-menu
 python -m pytest -q tools/jpg2pdf/tests   # includes the new suites
 jpg2pdf a.png b.pdf c.docx --out merged.pdf
 ```
+
+## Follow-up v2.4.0: visualizer + selection order (2026-10-25)
+
+User question answered by this release: yes, multiple PDFs can be
+marked from the right-click menu, and yes, there is now a visualizer
+to correct the sequence and the page size before merging.
+
+- New verb "Review & merge in visualizer..." on every OS (Windows
+  flat Jpg2PdfVisualizer + PowerShell registrar, macOS Quick Action,
+  Linux Nautilus / Nemo / Thunar / KDE). It opens the desktop GUI
+  with the selection pre-loaded in delivered order.
+- Selection order is the merge contract: CLI --sort selection for
+  file selections, GUI forces Sort=selection on preload and on any
+  manual reorder (a persisted Sort=name used to silently undo a
+  reorder at Convert time), web merges strictly in list order.
+- Page size (A4 / Letter / Legal) + orientation + rotation are
+  visualizer controls on desktop and web; they lay out image / HTML /
+  Word pages only. Embedded PDF pages keep their native size.
+- Honest limit, unchanged: a file manager itself may deliver a
+  multi-selection in an order other than click order (Explorer's
+  per-file verb invocations, %F expansion). The visualizer exists
+  precisely to correct that before Convert; the CLI cannot recover
+  a click order the file manager never reported.
+- Universal installer: install.py (stdlib-only Python one-liner)
+  beside install.ps1 / install.sh.
+- Tests: tools/jpg2pdf/tests/test_visualizer_order.py and
+  tools/jpg2pdf/tests/test_install_py.py, run in Ubuntu CI.

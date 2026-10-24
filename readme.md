@@ -65,7 +65,7 @@ and registers the Explorer right-click entries. Open a new terminal afterwards.
 ### 🪟 Windows · PowerShell · pin a specific version
 
 ```powershell
-$env:JPG2PDF_VERSION = "v2.2.0"; irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf-v2/main/install.ps1 | iex
+$env:JPG2PDF_VERSION = "v2.4.0"; irm https://raw.githubusercontent.com/alimtvnetwork/img-pdf-v2/main/install.ps1 | iex
 ```
 
 ### 🐧 macOS · Linux · Bash
@@ -78,11 +78,23 @@ Drops `jpg2pdf` into `~/.local/bin` (override with `JPG2PDF_PREFIX=$HOME/bin`). 
 
 For installer diagnostics, add `--debug` or `JPG2PDF_DEBUG=1`. The installer prints a `jpg2pdf-install-*.log` path and leaves any Python fallback wrapper in place even if dependency verification fails.
 
+### 🌍 Any OS with Python · universal one-liner
+
+```bash
+python3 -c "import urllib.request; exec(urllib.request.urlopen('https://raw.githubusercontent.com/alimtvnetwork/img-pdf-v2/main/install.py').read().decode())"
+```
+
+Detects Windows / macOS / Linux + CPU arch, downloads the CLI and GUI
+release binaries, and registers the right-click entries. Add
+`JPG2PDF_VERSION=v2.4.0` or `JPG2PDF_PREFIX=$HOME/bin` in front on Unix
+to pin a version or change the install folder. If you have no Python,
+use the native one-liner for your OS above.
+
 ### 🐧 macOS · Linux · Bash · pin a specific version
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/alimtvnetwork/img-pdf-v2/main/install.sh \
-  | JPG2PDF_VERSION=v2.2.0 JPG2PDF_PREFIX=$HOME/bin bash
+  | JPG2PDF_VERSION=v2.4.0 JPG2PDF_PREFIX=$HOME/bin bash
 ```
 
 If PowerShell blocks scripts, use a process-only bypass for the current shell first:
@@ -167,6 +179,16 @@ After install, right-click works two ways — both route through a **single term
 - **On a folder** → *Combine into PDF* / *Combine into PDF (pencil)*
 - **On selected files** → mix images, PDFs, HTML, and Word docs in any order; they're merged into one PDF
 
+**Visualizer (v2.4.0):** right-click the selection and pick
+*Review & merge in visualizer...* instead of a one-click merge. It opens
+the GUI with your files in selection order, where you can move them
+Up / Down / Top / Bottom, remove files, and change page size, orientation
+and rotation before Convert. Merging follows the list order exactly --
+click order is the default, and the visualizer is how you correct it when
+a file manager delivers the selection in a different order. PDF pages
+keep their own native size; the page-size choice applies to image,
+HTML and Word pages.
+
 No more 30 terminals popping up for 30 selected files. The launcher batches
 everything into one conversion call.
 
@@ -205,6 +227,7 @@ python tools/jpg2pdf/src/jpg2pdf.py ./photos --size a4
 img-pdf-v2/
 ├── install.ps1                          # one-liner Windows installer
 ├── install.sh                           # one-liner macOS / Linux installer
+├── install.py                           # one-liner cross-platform installer (Python)
 ├── run.ps1 / uninstall.ps1              # local runner + uninstaller
 └── tools/jpg2pdf/
     ├── src/jpg2pdf.py                   # the CLI
@@ -224,7 +247,7 @@ a Release with `SHA256SUMS.txt`. macOS installs use the Python source fallback
 until macOS runners are restored:
 
 ```bash
-git tag v2.2.0 && git push origin v2.2.0
+git tag v2.4.0 && git push origin v2.4.0
 ```
 
 Released artifacts: `jpg2pdf-windows-x64.exe`, `jpg2pdf-linux-x64`,
