@@ -49,3 +49,17 @@ def test_dry_run_prints_plan_without_downloading(tmp_path):
     assert "Installing" in proc.stdout
     assert "jpg2pdf-linux-x64" in proc.stdout
     assert not (tmp_path / "bin").exists()
+
+
+def test_prefix_tilde_expands_in_dry_run(tmp_path):
+    """A literal ~/ prefix must expand to the real home, never to a
+    path joined onto HOME (the bash quirk where HOME=... X=~/... makes
+    X relative to the new HOME is the caller's doing, but a literal ~
+    arriving here must still expand)."""
+    proc = subprocess.run(
+        [sys.executable, str(INSTALL_PY), "--dry-run",
+         "--prefix", "~/jpg2pdf-tilde-test"],
+        capture_output=True, text=True, encoding="utf-8")
+    assert proc.returncode == 0, proc.stderr
+    assert "~" not in proc.stdout
+    assert str(Path.home() / "jpg2pdf-tilde-test") in proc.stdout

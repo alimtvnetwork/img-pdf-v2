@@ -61,7 +61,10 @@ def asset_names(os_name: str, arch: str) -> tuple:
 def default_prefix() -> Path:
     if sys.platform.startswith("win"):
         return Path.home() / "Tools" / "bin"
-    return Path(os.environ.get("JPG2PDF_PREFIX", "")) or (Path.home() / ".local" / "bin")
+    env = os.environ.get("JPG2PDF_PREFIX", "")
+    if env:
+        return Path(env).expanduser()
+    return Path.home() / ".local" / "bin"
 
 
 def resolve_tag(version: str | None) -> str:
@@ -82,14 +85,15 @@ def main(argv: list | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
     dry_run = "--dry-run" in args
     version = os.environ.get("JPG2PDF_VERSION", "")
-    prefix = Path(os.environ.get("JPG2PDF_PREFIX", "")) or None
+    prefix = (Path(os.environ.get("JPG2PDF_PREFIX", "")).expanduser()
+              if os.environ.get("JPG2PDF_PREFIX") else None)
     i = 0
     while i < len(args):
         if args[i] == "--version" and i + 1 < len(args):
             version = args[i + 1]
             i += 2
         elif args[i] == "--prefix" and i + 1 < len(args):
-            prefix = Path(args[i + 1])
+            prefix = Path(args[i + 1]).expanduser()
             i += 2
         else:
             i += 1
@@ -115,6 +119,12 @@ def main(argv: list | None = None) -> int:
     try:
         download(f"{base}/{gui_asset}", gui_dest)
     except Exception as exc:  # GUI is optional; CLI + menu still work
+        # Never leave a half-downloaded GUI binary behind: a truncated
+        # PyInstaller bundle fails with a cryptic archive error later.
+        try:
+            gui_dest.unlink()
+        except OSError:
+            pass
         print(f"[jpg2pdf] GUI binary unavailable ({exc}); continuing with CLI only.")
     for dest in (cli_dest, gui_dest):
         if dest.is_file():
