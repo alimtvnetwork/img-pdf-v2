@@ -9,3 +9,5 @@ Hard prohibitions for this project. Violating these causes user-visible breakage
 - **Re-encoding images when `--fit original`**: quality must be preserved.
 - **Using `Start-Process` for `winget`/`git`/`python` without try/catch in `Invoke-Logged`**: a missing binary then prints a raw .NET stack trace.
 - **Replacing the pencil-strength default with anything other than `subtle`**: user explicitly chose subtle as the default.
+- Do not store a personal access token inside a git remote URL. Use SSH.
+- Do not commit Go coverage profiles or SQLite `-shm` and `-wal` sidecars.

@@ -17,3 +17,6 @@ Before touching any code or drafting plans in img-pdf-v2, follow this strict seq
 13. **.ai-memory/cicd-issues/** - All historical and active CI/CD failure RCAs.
 14. **.ai-memory/issues/** - Known bugs, regressions, and environment caveats.
 15. **eadme.md** (root) - User-facing architecture, installation commands, and examples.
+- .ai-memory/memory/readme.md
+- .ai-memory/memory/learned/01-recent-session-2026-10-29.md
+- .ai-memory/plans/readme.md

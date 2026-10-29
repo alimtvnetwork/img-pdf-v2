@@ -258,3 +258,9 @@ Released artifacts: `jpg2pdf-windows-x64.exe`, `jpg2pdf-linux-x64`,
 ## License
 
 MIT © [alimtvnetwork](https://github.com/alimtvnetwork)
+
+## Memory
+
+- .ai-memory/memory/readme.md
+- .ai-memory/memory/learned/01-recent-session-2026-10-29.md
+- .ai-memory/plans/readme.md
