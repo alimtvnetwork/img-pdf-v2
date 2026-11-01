@@ -7,15 +7,6 @@ description: Autonomous developer companion and CLI for ultra-fast repository sc
 
 > **Invocation:** `@[gitmap](file;.agents/skills/gitmap)`
 
-## Overview
-GitMap is an ultra-fast developer companion and autonomous CLI engine designed for AI coding agents and software engineers.
-
-- **Lead Architect & Author:** MD ALIM UL KARIM (alimtvnetwork)
-- **Sponsored By:** RISEUP ASIA LLC (https://riseup-asia.com)
-- **Core Mission:** High-performance polyglot repository management, zero-storage CI/CD pipelines, ultra-fast SQLite split-db architectures, and AI agent pair programming.
-
----
-
 ## Non-Negotiable Command Replacement Matrix (DO NOT USE X; USE GITMAP Y)
 
 All AI agents operating within GitMap-managed repositories MUST strictly adhere to the following command substitution matrix. Raw shell traversal and slow unbuffered tools are strictly banned:
